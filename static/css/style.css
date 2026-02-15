@@ -1,0 +1,80 @@
+body {
+    background-color: #f5f6fa;
+}
+
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.todo-completed .todo-title {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.timer-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.log-row-ERROR, .log-row-CRITICAL {
+    background-color: #f8d7da !important;
+}
+
+.log-row-WARNING {
+    background-color: #fff3cd !important;
+}
+
+.navbar-brand i {
+    margin-right: 0.3rem;
+}
+
+.presence-available {
+    background-color: #198754 !important;
+}
+
+.presence-away {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.presence-out {
+    background-color: #0d6efd !important;
+}
+
+.presence-break {
+    background-color: #fd7e14 !important;
+}
+
+.presence-offline {
+    background-color: #6c757d !important;
+}
+
+.presence-meeting {
+    background-color: #6f42c1 !important;
+}
+
+.presence-remote {
+    background-color: #20c997 !important;
+}
+
+.alert-severity-critical {
+    border-left: 4px solid #dc3545 !important;
+}
+
+.alert-severity-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.alert-severity-info {
+    border-left: 4px solid #0dcaf0 !important;
+}
+
+#alert-badge {
+    font-size: 0.65em;
+    vertical-align: top;
+    margin-left: 2px;
+}
+
+.cursor-pointer { cursor: pointer; }
+#user-status-table .detail-row td { padding-top: 0; border-top: none; }

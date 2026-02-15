@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Calendar - Todo List Portal{% endblock %}
+{% block content %}
+<link href="/static/css/calendar.css" rel="stylesheet">
+
+<div class="calendar-container">
+    <!-- Sidebar -->
+    <div class="calendar-sidebar">
+        <div class="sidebar-section">
+            <button class="btn btn-primary btn-sm w-100 mb-3" onclick="openCreateModal()">
+                <i class="bi bi-plus-lg"></i> New Event
+            </button>
+        </div>
+
+        <div class="sidebar-section">
+            <h6>Users</h6>
+            <div id="user-filters"></div>
+        </div>
+
+        <div class="sidebar-section">
+            <h6>Sources</h6>
+            <label class="user-filter-item">
+                <input type="checkbox" id="chk-task-list" checked onchange="reloadEvents()">
+                <span class="user-color-dot" style="background:#6c757d"></span>
+                Task List
+            </label>
+            <label class="user-filter-item">
+                <input type="checkbox" id="chk-attendance" checked onchange="reloadEvents()">
+                <span class="user-color-dot" style="background:#adb5bd"></span>
+                Attendance
+            </label>
+            <label class="user-filter-item">
+                <input type="checkbox" id="chk-reports" onchange="reloadEvents()">
+                <span class="user-color-dot" style="background:#198754"></span>
+                Reports
+            </label>
+        </div>
+
+        <div class="sidebar-section">
+            <h6>Settings</h6>
+            <a href="#" class="small" onclick="openSettingsModal(); return false;">
+                <i class="bi bi-gear"></i> Calendar Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Calendar -->
+    <div class="calendar-main" id="calendar"></div>
+</div>
+
+<!-- Create/Edit Event Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalTitle">New Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="evt-id">
+                <div class="mb-3">
+                    <label class="form-label">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="evt-title" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="evt-type">
+                        <option value="event">Event</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="deadline">Deadline</option>
+                        <option value="reminder">Reminder</option>
+                        <option value="out_of_office">Out of Office</option>
+                    </select>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="evt-allday" onchange="toggleAllDay()">
+                    <label class="form-check-label">All Day</label>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">Start</label>
+                        <input type="date" class="form-control" id="evt-start-date">
+                    </div>
+                    <div class="col" id="start-time-col">
+                        <label class="form-label">&nbsp;</label>
+                        <input type="time" class="form-control" id="evt-start-time" value="09:00">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">End</label>
+                        <input type="date" class="form-control" id="evt-end-date">
+                    </div>
+                    <div class="col" id="end-time-col">
+                        <label class="form-label">&nbsp;</label>
+                        <input type="time" class="form-control" id="evt-end-time" value="10:00">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Location</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="loc-type" id="loc-type-room" value="room" checked onchange="toggleLocationType()">
+                        <label class="form-check-label" for="loc-type-room">Room</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="loc-type" id="loc-type-free" value="free" onchange="toggleLocationType()">
+                        <label class="form-check-label" for="loc-type-free">Free text</label>
+                    </div>
+                    <select class="form-select mt-1" id="evt-room">
+                        <option value="">-- No room --</option>
+                    </select>
+                    <input type="text" class="form-control mt-1 d-none" id="evt-location" placeholder="Location">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="evt-description" rows="2"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Recurrence</label>
+                    <select class="form-select" id="evt-recurrence">
+                        <option value="">None</option>
+                        <option value="FREQ=DAILY">Every Day</option>
+                        <option value="FREQ=WEEKLY">Every Week</option>
+                        <option value="FREQ=MONTHLY">Every Month</option>
+                        <option value="FREQ=YEARLY">Every Year</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-none" id="recurrence-end-group">
+                    <label class="form-label">Recurrence End</label>
+                    <input type="date" class="form-control" id="evt-recurrence-end">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Attendees</label>
+                    <select class="form-select" id="evt-attendees" multiple size="4">
+                    </select>
+                    <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">Visibility</label>
+                        <select class="form-select" id="evt-visibility">
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Reminder</label>
+                        <select class="form-select" id="evt-reminder">
+                            <option value="">None</option>
+                            <option value="5">5 min before</option>
+                            <option value="10" selected>10 min before</option>
+                            <option value="15">15 min before</option>
+                            <option value="30">30 min before</option>
+                            <option value="60">1 hour before</option>
+                            <option value="1440">1 day before</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Color</label>
+                    <input type="color" class="form-control form-control-color" id="evt-color" value="#3788d8">
+                    <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" id="evt-color-default" checked onchange="toggleColorPicker()">
+                        <label class="form-check-label small">Use default color</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto d-none" id="evt-delete-btn" onclick="deleteEvent()">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="evt-save-btn" onclick="saveEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Calendar Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Default View</label>
+                    <select class="form-select" id="set-view">
+                        <option value="dayGridMonth">Month</option>
+                        <option value="timeGridWeek">Week</option>
+                        <option value="timeGridDay">Day</option>
+                        <option value="listWeek">List</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">My Color</label>
+                    <input type="color" class="form-control form-control-color" id="set-color">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Default Reminder</label>
+                    <select class="form-select" id="set-reminder">
+                        <option value="0">None</option>
+                        <option value="5">5 min before</option>
+                        <option value="10">10 min before</option>
+                        <option value="15">15 min before</option>
+                        <option value="30">30 min before</option>
+                        <option value="60">1 hour before</option>
+                    </select>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">Working Hours Start</label>
+                        <input type="time" class="form-control" id="set-wh-start">
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Working Hours End</label>
+                        <input type="time" class="form-control" id="set-wh-end">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ fullcalendar_js_url }}"></script>
+<script src="/static/js/calendar.js?v=5"></script>
+{% endblock %}

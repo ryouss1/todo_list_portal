@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Todo List Portal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+<div class="row g-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-primary h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-list-check display-4 text-primary"></i>
+                <h5 class="card-title mt-2">Todo</h5>
+                <p class="card-text" id="todo-summary">Loading...</p>
+                <a href="/todos" class="btn btn-outline-primary btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-success h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history display-4 text-success"></i>
+                <h5 class="card-title mt-2">Attendance</h5>
+                <p class="card-text" id="attendance-summary">Loading...</p>
+                <a href="/attendance" class="btn btn-outline-success btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-warning h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-stopwatch display-4 text-warning"></i>
+                <h5 class="card-title mt-2">Tasks</h5>
+                <p class="card-text" id="task-summary">Loading...</p>
+                <a href="/tasks" class="btn btn-outline-warning btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-danger h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-terminal display-4 text-danger"></i>
+                <h5 class="card-title mt-2">Logs</h5>
+                <p class="card-text" id="log-summary">Loading...</p>
+                <a href="/logs" class="btn btn-outline-danger btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-0">
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-info h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people display-4 text-info"></i>
+                <h5 class="card-title mt-2">Presence</h5>
+                <p class="card-text" id="presence-summary">Loading...</p>
+                <a href="/presence" class="btn btn-outline-info btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-secondary h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-journal-text display-4 text-secondary"></i>
+                <h5 class="card-title mt-2">Reports</h5>
+                <p class="card-text" id="report-summary">Loading...</p>
+                <a href="/reports" class="btn btn-outline-secondary btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-dark h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up display-4 text-dark"></i>
+                <h5 class="card-title mt-2">Summary</h5>
+                <p class="card-text" id="summary-summary">Weekly overview</p>
+                <a href="/summary" class="btn btn-outline-dark btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card border-danger h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-bell display-4 text-danger"></i>
+                <h5 class="card-title mt-2">Alerts</h5>
+                <p class="card-text" id="alert-summary">Loading...</p>
+                <a href="/alerts" class="btn btn-outline-danger btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Recent Logs</div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="recent-logs">
+                    <div class="list-group-item text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Incomplete Todos</div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="incomplete-todos">
+                    <div class="list-group-item text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadDashboard() {
+    try {
+        const [todosRes, attRes, tasksRes, logsRes, presenceRes, reportsRes, alertsRes] = await Promise.all([
+            fetch('/api/todos/'), fetch('/api/attendances/status'),
+            fetch('/api/tasks/'), fetch('/api/logs/?limit=5'),
+            fetch('/api/presence/statuses'), fetch('/api/reports/'),
+            fetch('/api/alerts/count')
+        ]);
+        const todos = await todosRes.json();
+        const attStatus = await attRes.json();
+        const tasks = await tasksRes.json();
+        const logs = await logsRes.json();
+        const presenceStatuses = presenceRes.ok ? await presenceRes.json() : [];
+        const reports = reportsRes.ok ? await reportsRes.json() : [];
+        const alertCount = alertsRes.ok ? await alertsRes.json() : {count: 0};
+
+        const incomplete = todos.filter(t => !t.is_completed).length;
+        document.getElementById('todo-summary').textContent =
+            `${incomplete} incomplete / ${todos.length} total`;
+
+        document.getElementById('attendance-summary').textContent =
+            attStatus.is_clocked_in ? 'Clocked In' : 'Not Clocked In';
+
+        const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
+        document.getElementById('task-summary').textContent =
+            `${activeTasks} active / ${tasks.length} total`;
+
+        document.getElementById('log-summary').textContent =
+            `${logs.length} recent logs`;
+
+        const availableCount = presenceStatuses.filter(s => s.status === 'available').length;
+        document.getElementById('presence-summary').textContent =
+            `${availableCount} available / ${presenceStatuses.length} total`;
+
+        document.getElementById('report-summary').textContent =
+            `${reports.length} reports`;
+
+        document.getElementById('alert-summary').textContent =
+            alertCount.count > 0 ? `${alertCount.count} unacknowledged` : 'No active alerts';
+
+        const logsEl = document.getElementById('recent-logs');
+        if (logs.length === 0) {
+            logsEl.innerHTML = '<div class="list-group-item text-muted">No logs</div>';
+        } else {
+            logsEl.innerHTML = logs.map(l => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-${severityColor(l.severity)} me-2">${l.severity}</span>
+                        <small class="text-muted">[${l.system_name}]</small> ${escapeHtml(l.message)}
+                    </div>
+                    <small class="text-muted">${new Date(l.received_at).toLocaleString()}</small>
+                </div>
+            `).join('');
+        }
+
+        const todosEl = document.getElementById('incomplete-todos');
+        const incompleteTodos = todos.filter(t => !t.is_completed).slice(0, 5);
+        if (incompleteTodos.length === 0) {
+            todosEl.innerHTML = '<div class="list-group-item text-muted">All done!</div>';
+        } else {
+            todosEl.innerHTML = incompleteTodos.map(t => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${priorityBadge(t.priority)} ${escapeHtml(t.title)}</span>
+                    ${t.due_date ? '<small class="text-muted">' + t.due_date + '</small>' : ''}
+                </div>
+            `).join('');
+        }
+    } catch(e) { console.error(e); }
+}
+
+function severityColor(s) {
+    switch(s) {
+        case 'ERROR': case 'CRITICAL': return 'danger';
+        case 'WARNING': return 'warning';
+        case 'DEBUG': return 'secondary';
+        default: return 'info';
+    }
+}
+function priorityBadge(p) {
+    if (p === 2) return '<span class="badge bg-danger">Urgent</span>';
+    if (p === 1) return '<span class="badge bg-warning text-dark">High</span>';
+    return '';
+}
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+loadDashboard();
+</script>
+{% endblock %}

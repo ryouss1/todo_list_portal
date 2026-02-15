@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Report Detail - Todo List Portal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-journal-text"></i> Report Detail</h2>
+    <div>
+        <a href="/reports" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <span id="owner-actions"></span>
+    </div>
+</div>
+
+<div id="report-content">
+    <div class="text-muted text-center py-4">Loading...</div>
+</div>
+
+<div class="modal fade" id="editReportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Task info -->
+                <div class="card border-info mb-3">
+                    <div class="card-header bg-info bg-opacity-10 py-2">
+                        <i class="bi bi-tag text-info"></i> <strong>Task Info</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label small text-muted mb-1">タスク分類 *</label>
+                                <select class="form-select" id="edit-category" required></select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small text-muted mb-1">タスク名 *</label>
+                                <input type="text" class="form-control" id="edit-task-name" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label small text-muted mb-1">時間（分）</label>
+                                <input type="number" class="form-control" id="edit-time-minutes" value="0" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Work Content -->
+                <div class="card border-dark mb-3">
+                    <div class="card-header bg-dark bg-opacity-10 py-2">
+                        <i class="bi bi-pencil-square"></i> <strong>Work Content *</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <textarea class="form-control border-0" id="edit-work-content" rows="3" required></textarea>
+                    </div>
+                </div>
+                <!-- Achievements -->
+                <div class="card border-success mb-3">
+                    <div class="card-header bg-success bg-opacity-10 py-2">
+                        <i class="bi bi-trophy text-success"></i> <strong class="text-success">Achievements</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <textarea class="form-control border-0" id="edit-achievements" rows="2"></textarea>
+                    </div>
+                </div>
+                <!-- Issues -->
+                <div class="card border-danger mb-3">
+                    <div class="card-header bg-danger bg-opacity-10 py-2">
+                        <i class="bi bi-exclamation-triangle text-danger"></i> <strong class="text-danger">Issues</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <textarea class="form-control border-0" id="edit-issues" rows="2"></textarea>
+                    </div>
+                </div>
+                <!-- Next Plan -->
+                <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary bg-opacity-10 py-2">
+                        <i class="bi bi-arrow-right-circle text-primary"></i> <strong class="text-primary">Next Plan</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <textarea class="form-control border-0" id="edit-next-plan" rows="2"></textarea>
+                    </div>
+                </div>
+                <!-- Remarks -->
+                <div class="card border-secondary mb-3">
+                    <div class="card-header bg-secondary bg-opacity-10 py-2">
+                        <i class="bi bi-chat-dots text-secondary"></i> <strong class="text-secondary">Remarks</strong>
+                    </div>
+                    <div class="card-body p-2">
+                        <textarea class="form-control border-0" id="edit-remarks" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()"><i class="bi bi-check-lg"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>const REPORT_ID = {{ report_id }};</script>
+<script src="/static/js/report_detail.js?v=4"></script>
+{% endblock %}

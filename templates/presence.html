@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Presence - Todo List Portal{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-people"></i> Presence Status</h2>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                My Status
+                <span id="ws-badge" class="badge bg-secondary ms-2">Disconnected</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="my-status">
+                        <option value="available">Available</option>
+                        <option value="away">Away</option>
+                        <option value="out">Out</option>
+                        <option value="break">Break</option>
+                        <option value="offline">Offline</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="remote">Remote</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Message</label>
+                    <input type="text" class="form-control" id="my-message" placeholder="Optional status message">
+                </div>
+                <button class="btn btn-primary w-100" onclick="updateMyStatus()">
+                    <i class="bi bi-send"></i> Update Status
+                </button>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">My History</div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="my-logs">
+                    <div class="list-group-item text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">All Users</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                            <th>Tickets</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="status-table">
+                        <tr><td colspan="5" class="text-muted">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/presence.js?v=4"></script>
+{% endblock %}

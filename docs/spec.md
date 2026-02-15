@@ -1,0 +1,105 @@
+# Todo List Portal 仕様書
+
+## 1. 概要
+
+Todo List Portal は、個人・チームの業務効率化を目的とした統合Webポータルアプリケーションである。Todo管理、出勤管理、在籍状態管理、タスク時間追跡、タスクリスト管理、日報管理、業務サマリー、システムログ管理の主要機能を単一のWebアプリケーションとして提供する。
+
+### 1.1 システム構成
+
+| 項目 | 技術 |
+|------|------|
+| バックエンドフレームワーク | FastAPI 0.115.6 |
+| データベース | PostgreSQL 11以上 |
+| ORM | SQLAlchemy 2.0.36 |
+| バリデーション | Pydantic 2.10.3 |
+| テンプレートエンジン | Jinja2 3.1.4 |
+| フロントエンド | HTML5 / JavaScript / Bootstrap 5.3.3 |
+| アイコン | Bootstrap Icons 1.11.3 |
+| リアルタイム通信 | WebSocket (websockets 14.1) |
+| アプリケーションサーバー | Uvicorn 0.34.0 |
+| DBマイグレーション | Alembic 1.14.1 |
+| パスワードハッシュ | passlib[bcrypt] 1.7.4 |
+| セッション署名 | itsdangerous 2.2.0 |
+| コード品質 | Ruff |
+| 言語 | Python 3.9以上 |
+
+### 1.2 アーキテクチャ
+
+レイヤードアーキテクチャを採用し、以下の層で構成される。
+
+```
+[フロントエンド (HTML/JS)]
+        ↓ HTTP / WebSocket
+[認証ミドルウェア] → 未認証: /login リダイレクト or 401
+        ↓
+[ルーター層 (app/routers/)]
+        ↓
+[サービス層 (app/services/)]
+        ↓
+[CRUD層 (app/crud/)]
+        ↓
+[モデル層 (app/models/)]
+        ↓
+[データベース (PostgreSQL)]
+```
+
+- **認証**: セッションベース認証（`SessionMiddleware` + 署名Cookie）
+- **ルーター層**: HTTPリクエストの受付、バリデーション、レスポンス生成（薄いHTTPラッパー）
+- **サービス層**: ビジネスロジック（例外は `NotFoundError`/`ConflictError`/`AuthenticationError`）
+- **CRUD層**: データベースへのCRUD操作の実装
+- **モデル層**: SQLAlchemyのORMモデル定義
+- **スキーマ層** (`app/schemas/`): Pydanticによるリクエスト/レスポンスのデータ構造定義
+- **コア層** (`app/core/`): 横断的関心事（例外、セキュリティ、依存性注入、ロギング設定）
+
+---
+
+## 2. 仕様書一覧
+
+| ドキュメント | 内容 |
+|-------------|------|
+| [db-schema.md](./db-schema.md) | データベース設計（ER図、テーブル定義、カラム仕様） |
+| [spec_function.md](./spec_function.md) | 機能一覧・画面仕様・ビジネスロジック |
+| [api-design.md](./api-design.md) | API仕様（エンドポイント、リクエスト/レスポンス、WebSocket） |
+| [api-design-endpoint.md](./api-design-endpoint.md) | エンドポイント一覧（メソッド・パス・ステータスコード） |
+| [spec_nonfunction.md](./spec_nonfunction.md) | 非機能要件・テスト仕様 |
+| [spec_roadmap.md](./spec_roadmap.md) | 追加機能ロードマップ（今後の機能追加計画） |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | アーキテクチャ検討書（設計判断・実装フェーズ） |
+| [api/auth/security_enhancement.md](./api/auth/security_enhancement.md) | 認証セキュリティ強化設計書（パスワードポリシー、レート制限、ロックアウト、セッション無効化、監査ログ） |
+| [api/auth/oauth.md](./api/auth/oauth.md) | OAuth2/SSO連携設計書（Google/GitHub、プロバイダ管理、アカウントリンク） |
+| [api/auth/password_reset.md](./api/auth/password_reset.md) | パスワードリセット設計書（トークンベース、SMTP送信） |
+
+
+---
+
+## 3. ディレクトリ構造
+
+```
+todo_list_portal/
+├── main.py                  # アプリケーションエントリーポイント（認証ミドルウェア含む）
+├── pyproject.toml           # Ruff/pytest設定
+├── requirements.txt         # 依存パッケージ
+├── alembic.ini              # Alembicマイグレーション設定
+├── alembic/versions/        # マイグレーションファイル
+├── app/
+│   ├── config.py            # 設定（DB接続URL、SECRET_KEY等）
+│   ├── database.py          # SQLAlchemy エンジン・セッション定義
+│   ├── init_db.py           # DB初期化・シードデータ
+│   ├── core/                # 横断的関心事（例外、セキュリティ、DI、ロギング）
+│   ├── models/              # SQLAlchemy ORMモデル
+│   ├── schemas/             # Pydantic リクエスト/レスポンススキーマ
+│   ├── crud/                # CRUD操作
+│   ├── routers/             # APIルーター（pages.py + api_*.py）
+│   └── services/            # サービス層（ビジネスロジック）
+├── templates/               # Jinja2 HTMLテンプレート
+├── static/                  # 静的ファイル（CSS, JS）
+├── tests/                   # pytestテスト
+└── docs/                    # 仕様書・設計書
+```
+
+各ディレクトリの詳細なファイル構成は実際のディレクトリを参照してください。
+
+```bash
+# ディレクトリ構造の確認
+find . -type f -name "*.py" | head -50
+ls app/models/ app/routers/ app/services/
+```
