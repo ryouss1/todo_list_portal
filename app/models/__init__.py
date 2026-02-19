@@ -10,7 +10,10 @@ from app.models.calendar_room import CalendarRoom
 from app.models.daily_report import DailyReport
 from app.models.group import Group
 from app.models.log import Log
+from app.models.log_entry import LogEntry
+from app.models.log_file import LogFile
 from app.models.log_source import LogSource
+from app.models.log_source_path import LogSourcePath
 from app.models.login_attempt import LoginAttempt
 from app.models.oauth_provider import OAuthProvider
 from app.models.oauth_state import OAuthState
@@ -35,7 +38,10 @@ __all__ = [
     "TaskCategory",
     "TaskTimeEntry",
     "Log",
+    "LogEntry",
+    "LogFile",
     "LogSource",
+    "LogSourcePath",
     "Alert",
     "AlertRule",
     "PresenceStatus",

@@ -11,16 +11,14 @@ const LABELS = {
 };
 
 async function loadStatus() {
-    console.log("[attendance] loadStatus called");
     try {
         const data = await api.get("/api/attendances/status");
-        console.log("[attendance] status:", data);
         clockedIn = data.is_clocked_in;
         currentAttendance = data.current_attendance;
         updateUI();
     } catch (e) {
         console.error("[attendance] loadStatus error:", e);
-        showToast(e.message || "Failed to load status", "danger");
+        showToast(e.message || i18n.t("Failed to load status"), "danger");
     }
     // Always load history regardless of status result
     loadHistory();
@@ -34,7 +32,7 @@ function updateUI() {
     const activity = document.getElementById("activity-type").value;
 
     if (clockedIn && currentAttendance) {
-        statusEl.innerHTML = '<span class="text-success"><i class="bi bi-circle-fill"></i> Clocked In</span>';
+        statusEl.innerHTML = `<span class="text-success"><i class="bi bi-circle-fill"></i> ${i18n.t('Clocked In')}</span>`;
         if (activity === "work") {
             btnIn.disabled = true;
             btnOut.disabled = false;
@@ -44,7 +42,7 @@ function updateUI() {
         }
         startElapsedTimer();
     } else {
-        statusEl.innerHTML = '<span class="text-secondary"><i class="bi bi-circle"></i> Not Clocked In</span>';
+        statusEl.innerHTML = `<span class="text-secondary"><i class="bi bi-circle"></i> ${i18n.t('Not Clocked In')}</span>`;
         timeEl.textContent = "";
         if (activity === "work") {
             btnIn.disabled = false;
@@ -63,8 +61,8 @@ function updateUI() {
 function onActivityChange() {
     const activity = document.getElementById("activity-type").value;
     const labels = LABELS[activity];
-    document.getElementById("label-clock-in").textContent = labels.in;
-    document.getElementById("label-clock-out").textContent = labels.out;
+    document.getElementById("label-clock-in").textContent = i18n.t(labels.in);
+    document.getElementById("label-clock-out").textContent = i18n.t(labels.out);
     updateUI();
 }
 
@@ -81,7 +79,7 @@ function startElapsedTimer() {
         const m = Math.floor((elapsed % 3600) / 60);
         const s = elapsed % 60;
         document.getElementById("clock-time").textContent =
-            `Elapsed: ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+            `${i18n.t('Elapsed')}: ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
     }
     tick();
     elapsedTimer = setInterval(tick, 1000);
@@ -96,7 +94,7 @@ async function updatePresence(status) {
     try {
         await api.put("/api/presence/status", { status });
     } catch (e) {
-        showToast("Presence update failed: " + (e.message || "Unknown error"), "warning");
+        showToast(i18n.t("Presence update failed: {error}", {error: e.message || i18n.t("Unknown error")}), "warning");
     }
 }
 
@@ -105,66 +103,64 @@ function getReturnPresence() {
 }
 
 async function handleAction(direction) {
-    console.log("[attendance] handleAction called:", direction);
     const activity = document.getElementById("activity-type").value;
     const isRemote = document.getElementById("remote-check").checked;
     const note = document.getElementById("attendance-note").value || null;
-    console.log("[attendance] activity:", activity, "isRemote:", isRemote);
 
     try {
         if (activity === "work") {
             if (direction === "in") {
                 await api.post("/api/attendances/clock-in", { note });
                 await updatePresence(isRemote ? "remote" : "available");
-                showToast("Clock In completed", "success");
+                showToast(i18n.t("Clock In completed"), "success");
             } else {
                 await api.post("/api/attendances/clock-out", { note });
                 await updatePresence("offline");
-                showToast("Clock Out completed", "success");
+                showToast(i18n.t("Clock Out completed"), "success");
             }
             document.getElementById("attendance-note").value = "";
         } else if (activity === "break") {
             if (!currentAttendance) {
-                showToast("Clock In first before starting break", "warning");
+                showToast(i18n.t("Clock In first before starting break"), "warning");
                 return;
             }
             if (direction === "in") {
                 await api.post(`/api/attendances/${currentAttendance.id}/break-start`);
                 await updatePresence("break");
-                showToast("休憩開始", "success");
+                showToast(i18n.t("休憩開始"), "success");
             } else {
                 await api.post(`/api/attendances/${currentAttendance.id}/break-end`);
                 await updatePresence(getReturnPresence());
-                showToast("休憩終了", "success");
+                showToast(i18n.t("休憩終了"), "success");
             }
         } else if (activity === "out") {
             if (!clockedIn) {
-                showToast("Clock In first before going out", "warning");
+                showToast(i18n.t("Clock In first before going out"), "warning");
                 return;
             }
             if (direction === "in") {
                 await updatePresence("out");
-                showToast("外出しました", "success");
+                showToast(i18n.t("外出しました"), "success");
             } else {
                 await updatePresence(getReturnPresence());
-                showToast("戻りました", "success");
+                showToast(i18n.t("戻りました"), "success");
             }
         } else if (activity === "meeting") {
             if (!clockedIn) {
-                showToast("Clock In first before starting a meeting", "warning");
+                showToast(i18n.t("Clock In first before starting a meeting"), "warning");
                 return;
             }
             if (direction === "in") {
                 await updatePresence("meeting");
-                showToast("会議開始", "success");
+                showToast(i18n.t("会議開始"), "success");
             } else {
                 await updatePresence(getReturnPresence());
-                showToast("会議終了", "success");
+                showToast(i18n.t("会議終了"), "success");
             }
         }
         loadStatus();
     } catch (e) {
-        showToast(e.message || "Action failed", "danger");
+        showToast(e.message || i18n.t("Action failed"), "danger");
     }
 }
 
@@ -207,7 +203,7 @@ function formatBreaks(breaks) {
         if (brk.break_end) {
             return `${start} - ${formatTimeLocal(brk.break_end)}`;
         }
-        return `${start} - <span class="badge bg-warning text-dark">On Break</span>`;
+        return `${start} - <span class="badge bg-warning text-dark">${i18n.t('On Break')}</span>`;
     }).join("<br>");
 }
 
@@ -228,7 +224,6 @@ function downloadExcel() {
 }
 
 async function loadHistory() {
-    console.log("[attendance] loadHistory called");
     try {
         const monthVal = document.getElementById("filter-month").value;
         let url = "/api/attendances/";
@@ -237,20 +232,19 @@ async function loadHistory() {
             url += `?year=${y}&month=${m}`;
         }
         const list = await api.get(url);
-        console.log("[attendance] history count:", list.length);
         const tbody = document.getElementById("attendance-list");
         if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">No records</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="8" class="text-muted text-center">${i18n.t('No records')}</td></tr>`;
             return;
         }
         tbody.innerHTML = list
             .map((a) => {
                 const cin = formatTimeLocal(a.clock_in);
-                const cout = a.clock_out ? formatTimeLocal(a.clock_out) : '<span class="badge bg-success">Active</span>';
+                const cout = a.clock_out ? formatTimeLocal(a.clock_out) : `<span class="badge bg-success">${i18n.t('Active')}</span>`;
                 const breakStr = formatBreaks(a.breaks);
                 const duration = calcDuration(a);
                 const inputType = a.input_type || "web";
-                const inputBadge = { web: "WEB", ic_card: "IC", admin: "管理者" }[inputType] || inputType;
+                const inputBadge = { web: "WEB", ic_card: "IC", admin: i18n.t("管理者") }[inputType] || inputType;
                 const inputClass = { web: "bg-secondary", ic_card: "bg-info", admin: "bg-danger" }[inputType] || "bg-secondary";
                 const isLocked = inputType === "admin";
                 return `<tr>
@@ -273,14 +267,14 @@ async function loadHistory() {
             })
             .join("");
     } catch (e) {
-        showToast(e.message || "Failed to load history", "danger");
+        showToast(e.message || i18n.t("Failed to load history"), "danger");
     }
 }
 
 function addBreakRow(startVal, endVal) {
     const container = document.getElementById("edit-breaks");
     if (container.querySelectorAll(".break-row").length >= 3) {
-        showToast("最大3件までです", "warning");
+        showToast(i18n.t("最大3件までです"), "warning");
         return;
     }
     const row = document.createElement("div");
@@ -311,7 +305,7 @@ async function openEdit(id) {
         }
         new bootstrap.Modal(document.getElementById("editModal")).show();
     } catch (e) {
-        showToast(e.message || "Failed to load record", "danger");
+        showToast(e.message || i18n.t("Failed to load record"), "danger");
     }
 }
 
@@ -338,10 +332,10 @@ async function updateAttendance() {
 
         await api.put(`/api/attendances/${id}`, payload);
         bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
-        showToast("Attendance record updated", "success");
+        showToast(i18n.t("Attendance record updated"), "success");
         loadHistory();
     } catch (e) {
-        showToast(e.message || "Failed to update record", "danger");
+        showToast(e.message || i18n.t("Failed to update record"), "danger");
     }
 }
 
@@ -355,10 +349,102 @@ async function deleteAttendance() {
         const id = document.getElementById("delete-id").value;
         await api.del(`/api/attendances/${id}`);
         bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
-        showToast("Attendance record deleted", "success");
+        showToast(i18n.t("Attendance record deleted"), "success");
         loadStatus();
     } catch (e) {
-        showToast(e.message || "Failed to delete record", "danger");
+        showToast(e.message || i18n.t("Failed to delete record"), "danger");
+    }
+}
+
+// ---- Manual Create ----
+
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function openCreate() {
+    document.getElementById("create-date").value = todayStr();
+    document.getElementById("create-clock-in").value = "";
+    document.getElementById("create-clock-out").value = "";
+    document.getElementById("create-note").value = "";
+    document.getElementById("create-breaks").innerHTML = "";
+    renderCreatePresetButtons();
+    new bootstrap.Modal(document.getElementById("createModal")).show();
+}
+
+function renderCreatePresetButtons() {
+    const container = document.getElementById("create-preset-buttons");
+    if (presets.length === 0) {
+        container.innerHTML = `<span class="text-muted small">${i18n.t('プリセットなし')}</span>`;
+        return;
+    }
+    container.innerHTML = presets.map(p => {
+        let label = `${p.clock_in}-${p.clock_out}`;
+        return `<button type="button" class="btn btn-sm btn-outline-primary" onclick="fillFromPreset(${p.id})">
+            <i class="bi bi-clock"></i> ${escapeHtml(p.name)}
+        </button>`;
+    }).join("");
+}
+
+function fillFromPreset(presetId) {
+    const p = presets.find(x => x.id === presetId);
+    if (!p) return;
+    document.getElementById("create-clock-in").value = p.clock_in;
+    document.getElementById("create-clock-out").value = p.clock_out;
+    // Replace breaks with preset break
+    document.getElementById("create-breaks").innerHTML = "";
+    if (p.break_start) {
+        addCreateBreakRow(p.break_start, p.break_end || "");
+    }
+}
+
+function addCreateBreakRow(startVal, endVal) {
+    const container = document.getElementById("create-breaks");
+    if (container.querySelectorAll(".break-row").length >= 3) {
+        showToast(i18n.t("最大3件までです"), "warning");
+        return;
+    }
+    const row = document.createElement("div");
+    row.className = "d-flex gap-2 mb-1 break-row";
+    row.innerHTML = `
+        <input type="time" class="form-control form-control-sm create-break-start" value="${startVal || ""}">
+        <span class="align-self-center">-</span>
+        <input type="time" class="form-control form-control-sm create-break-end" value="${endVal || ""}">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.break-row').remove()">\u00d7</button>
+    `;
+    container.appendChild(row);
+}
+
+async function createAttendance() {
+    try {
+        const dateVal = document.getElementById("create-date").value;
+        const clockIn = document.getElementById("create-clock-in").value;
+        if (!dateVal || !clockIn) {
+            showToast(i18n.t("日付とClock Inは必須です"), "warning");
+            return;
+        }
+        const payload = { date: dateVal, clock_in: clockIn };
+        const clockOut = document.getElementById("create-clock-out").value;
+        if (clockOut) payload.clock_out = clockOut;
+        const note = document.getElementById("create-note").value;
+        if (note) payload.note = note;
+
+        const breakRows = document.querySelectorAll("#create-breaks .break-row");
+        const breaks = [];
+        breakRows.forEach(row => {
+            const start = row.querySelector(".create-break-start").value;
+            const end = row.querySelector(".create-break-end").value;
+            if (start) breaks.push({ start, end: end || null });
+        });
+        if (breaks.length > 0) payload.breaks = breaks;
+
+        await api.post("/api/attendances/", payload);
+        bootstrap.Modal.getInstance(document.getElementById("createModal")).hide();
+        showToast(i18n.t("勤怠を登録しました"), "success");
+        loadStatus();
+    } catch (e) {
+        showToast(e.message || i18n.t("登録に失敗しました"), "danger");
     }
 }
 
@@ -388,9 +474,9 @@ function updateDefaultSetPreview() {
     if (preset) {
         let text = `${preset.clock_in} - ${preset.clock_out}`;
         if (preset.break_start && preset.break_end) {
-            text += ` / 休憩 ${preset.break_start} - ${preset.break_end}`;
+            text += ` / ${i18n.t('休憩')} ${preset.break_start} - ${preset.break_end}`;
         }
-        el.textContent = `適用されるプリセット: ${text}`;
+        el.textContent = i18n.t('適用されるプリセット: {text}', {text});
     } else {
         el.textContent = "";
     }
@@ -402,17 +488,17 @@ async function defaultSet() {
         bootstrap.Modal.getInstance(document.getElementById("defaultSetConfirmModal")).hide();
         const preset = presets.find((p) => p.id === userPresetId);
         const name = preset ? preset.name : "default";
-        showToast(`Default Set 完了 (${name})`, "success");
+        showToast(i18n.t("Default Set 完了 ({name})", {name}), "success");
         loadStatus();
     } catch (e) {
-        showToast(e.message || "Failed to set default attendance", "danger");
+        showToast(e.message || i18n.t("Failed to set default attendance"), "danger");
     }
 }
 
 function openPresetModal() {
     const container = document.getElementById("preset-list");
     if (presets.length === 0) {
-        container.innerHTML = '<p class="text-muted">No presets available</p>';
+        container.innerHTML = `<p class="text-muted">${i18n.t('No presets available')}</p>`;
         return;
     }
     container.innerHTML = presets
@@ -420,7 +506,7 @@ function openPresetModal() {
             const checked = p.id === userPresetId ? "checked" : "";
             let desc = `${p.clock_in} - ${p.clock_out}`;
             if (p.break_start && p.break_end) {
-                desc += ` / 休憩 ${p.break_start} - ${p.break_end}`;
+                desc += ` / ${i18n.t('休憩')} ${p.break_start} - ${p.break_end}`;
             }
             return `<div class="form-check mb-2">
                 <input class="form-check-input" type="radio" name="preset" id="preset-${p.id}" value="${p.id}" ${checked}>
@@ -436,7 +522,7 @@ function openPresetModal() {
 async function savePreset() {
     const selected = document.querySelector('input[name="preset"]:checked');
     if (!selected) {
-        showToast("プリセットを選択してください", "warning");
+        showToast(i18n.t("プリセットを選択してください"), "warning");
         return;
     }
     try {
@@ -446,10 +532,25 @@ async function savePreset() {
         updateDefaultSetPreview();
         bootstrap.Modal.getInstance(document.getElementById("presetModal")).hide();
         const preset = presets.find((p) => p.id === presetId);
-        showToast(`デフォルトを「${preset ? preset.name : presetId}」に変更しました`, "success");
+        showToast(i18n.t("デフォルトを「{name}」に変更しました", {name: preset ? preset.name : presetId}), "success");
     } catch (e) {
-        showToast(e.message || "Failed to save preset", "danger");
+        showToast(e.message || i18n.t("Failed to save preset"), "danger");
     }
+}
+
+function fillEditBreakFromPreset() {
+    const preset = presets.find(p => p.id === userPresetId) || (presets.length > 0 ? presets[0] : null);
+    if (!preset) {
+        showToast(i18n.t("プリセットがありません"), "warning");
+        return;
+    }
+    if (!preset.break_start) {
+        showToast(i18n.t("プリセットに休憩が設定されていません"), "warning");
+        return;
+    }
+    const container = document.getElementById("edit-breaks");
+    container.innerHTML = "";
+    addBreakRow(preset.break_start, preset.break_end || "");
 }
 
 // Render preset options when modal opens

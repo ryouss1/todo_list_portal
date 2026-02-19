@@ -1,0 +1,82 @@
+/* ===== Shared modal design language ===== */
+
+/* --- Dark header / compact footer --- */
+.modal-styled .modal-header {
+    padding: 10px 16px;
+    background: #2c3e6b;
+    color: #fff;
+}
+.modal-styled .modal-header .btn-close {
+    filter: invert(1);
+}
+.modal-styled .modal-footer {
+    padding: 6px 16px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* --- Tab pills --- */
+.modal-styled .stl-tabs {
+    gap: 4px;
+}
+.modal-styled .stl-tabs .nav-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #495057;
+    background: #edf0f3;
+    border-radius: 6px;
+    padding: 5px 0;
+    transition: background 0.15s, color 0.15s;
+}
+.modal-styled .stl-tabs .nav-link:hover {
+    background: #dde2e7;
+    color: #212529;
+}
+.modal-styled .stl-tabs .nav-link.active {
+    background: #0d6efd;
+    color: #fff;
+}
+.modal-styled .stl-tabs .nav-link i {
+    margin-right: 2px;
+}
+
+/* --- Tab pane area --- */
+.modal-styled .tab-content {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 8px 10px 4px;
+}
+
+/* --- Field group — left accent bar + tight spacing --- */
+.modal-styled .stl-field {
+    margin-bottom: 6px;
+    padding-left: 8px;
+    border-left: 3px solid #0d6efd;
+}
+
+/* --- Field label — bold, small, icon-colored --- */
+.modal-styled .stl-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0d6efd;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 1px;
+    line-height: 1.4;
+}
+.modal-styled .stl-label i {
+    font-size: 0.7rem;
+    margin-right: 2px;
+}
+
+/* --- Compact form controls --- */
+.modal-styled .form-control-sm,
+.modal-styled .form-select-sm {
+    font-size: 0.82rem;
+    padding: 3px 8px;
+}
+
+/* --- Confirmation modals — simple body text --- */
+.modal-styled .modal-body p:last-child {
+    margin-bottom: 0;
+}

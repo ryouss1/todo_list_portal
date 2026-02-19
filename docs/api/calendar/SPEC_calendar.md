@@ -487,18 +487,21 @@ function showDesktopNotification(data) {
 ├──────────┬───────────────────────────────────────────┤
 │ サイドバー │                                           │
 │          │                                           │
-│ ■ 自分   │        FullCalendar メイン領域              │
-│ ■ UserA  │        （Month / Week / Day / List）       │
+│ [+ 予定]  │                                           │
+│          │                                           │
+│ グループ  │        FullCalendar メイン領域              │
+│ [全員 ▼]  │        （Month / Week / Day / List）       │
+│          │                                           │
+│ ユーザー  │                                           │
+│ ■ 自分   │                                           │
+│ ■ UserA  │                                           │
 │ ■ UserB  │                                           │
-│ □ UserC  │                                           │
 │          │                                           │
 │ ──────── │                                           │
 │ 表示設定  │                                           │
 │ ☑ Tasks  │                                           │
 │ ☑ 出勤   │                                           │
 │ □ 日報   │                                           │
-│          │                                           │
-│ [+ 予定]  │                                           │
 └──────────┴───────────────────────────────────────────┘
 ```
 
@@ -529,54 +532,91 @@ function showDesktopNotification(data) {
 日付セルをクリック → インライン入力欄が表示 → タイトル入力＋Enter で即座に作成。
 詳細は後から編集。
 
-### 7.4 イベント作成・編集モーダル
+### 7.4 イベント作成・編集モーダル（タブ切替レイアウト）
+
+13 個のフィールド群を 3 タブに分割し、各タブがスクロール不要な高さに収まるよう設計。
+Bootstrap 5 の `nav-pills nav-fill` を使用したピル型タブで、アクティブタブは青 (`#0d6efd`)、非アクティブはグレー背景。
+
+#### レイアウト概要
 
 ```
 ┌─────────────────────────────────────┐
-│ イベント作成                    [×] │
+│ New Event (dark header)         [×] │
 ├─────────────────────────────────────┤
-│ タイトル: [________________________] │
-│                                     │
-│ 種別: [event ▼]                     │
-│   event / meeting / deadline /      │
-│   reminder / out_of_office          │
-│                                     │
-│ 日時:                               │
-│   ☐ 終日                            │
-│   開始: [2026-02-11] [10:00]        │
-│   終了: [2026-02-11] [11:00]        │
-│                                     │
-│ 繰り返し: [なし ▼]                   │
-│   なし / 毎日 / 毎週 / 毎月 /       │
-│   毎年 / カスタム                    │
-│                                     │
-│ 場所:                               │
-│   ◉ 施設予約  ○ 自由入力            │
-│   [大会議室 ▼]                       │
-│     なし / 大会議室 / 中会議室 /     │
-│     小会議室                         │
-│   ※ 重複時はエラー表示              │
-│                                     │
-│ 説明: [________________________]     │
-│       [________________________]     │
-│                                     │
-│ 参加者:                             │
-│   [ユーザー検索...         ] [追加]  │
-│   ■ Admin (自分・主催者)            │
-│   ■ UserA  [×]                      │
-│   ■ UserB  [×]                      │
-│                                     │
-│ 公開範囲: ◉ 公開  ○ 非公開          │
-│                                     │
-│ リマインダー: [10分前 ▼]             │
-│   なし / 5分前 / 10分前 / 15分前 /  │
-│   30分前 / 1時間前 / 1日前          │
-│                                     │
-│ 色: [■ デフォルト ▼]                │
-│                                     │
-│        [キャンセル] [保存]           │
+│ [ ✏ Basic ] [ 📍 Location ] [ 👥 Attendees ] │  ← nav-pills
+│ ┌─────────────────────────────────┐ │
+│ │  (アクティブなタブの内容)       │ │  ← 薄グレー背景 (#f8f9fa)
+│ │  各フィールドは青い左ボーダー   │ │
+│ │  ラベルは青色太字 + アイコン    │ │
+│ └─────────────────────────────────┘ │
+├─────────────────────────────────────┤
+│ [🗑 Delete]          [Cancel] [Save] │  ← footer (タブ外)
 └─────────────────────────────────────┘
 ```
+
+#### Tab 1: Basic（デフォルト表示）
+
+```
+│ TITLE *          [________________________]  │
+│ TYPE             [event ▼]     ☐ All Day     │  ← 横並び (col-8 / col-4)
+│ START  [date][time]   END  [date][time]      │  ← 1行に Start/End 横並び
+│ DESCRIPTION      [________________________]  │  ← textarea rows=2
+```
+
+- Start / End は 1 行で横並び表示（`row > col + col`）
+- date 入力: `max-width: 130px`, time 入力: `max-width: 90px`
+- All Day チェック時は time 入力を `d-none` で非表示
+
+#### Tab 2: Location（場所・繰り返し）
+
+```
+│ LOCATION   ◉ Room  ○ Free text               │
+│            [大会議室 ▼] / [自由入力テキスト]   │
+│ RECURRENCE [None ▼]                           │
+│ RECURRENCE END  [date]  ← Recurrence選択時のみ │
+```
+
+#### Tab 3: Attendees（参加者・表示設定）
+
+```
+│ ATTENDEES  [multi-select size=4]              │
+│ VISIBILITY [Public ▼]   REMINDER [10min ▼]    │  ← 横並び
+│ COLOR      [■] ☑ Use default                  │  ← カラーピッカー + チェック横並び
+```
+
+#### デザイン仕様
+
+| 要素 | スタイル |
+|------|---------|
+| modal-header | `background: #212529`, 白文字 |
+| タブ（非アクティブ） | `background: #edf0f3`, `color: #495057`, `border-radius: 6px` |
+| タブ（アクティブ） | `background: #0d6efd`, `color: #fff` |
+| タブ（ホバー） | `background: #dde2e7` |
+| タブアイコン | Basic=`bi-pencil-square`, Location=`bi-geo-alt`, Attendees=`bi-people` |
+| タブコンテンツ領域 | `background: #f8f9fa`, `border-radius: 6px`, `padding: 8px 10px` |
+| フィールドグループ | `border-left: 3px solid #0d6efd`, `padding-left: 8px`, `margin-bottom: 6px` |
+| ラベル | `font-size: 0.72rem`, `font-weight: 700`, `color: #0d6efd`, `text-transform: uppercase` |
+| ラベルアイコン | Title=`bi-type-bold`, Type=`bi-tag`, Start=`bi-play-circle`, End=`bi-stop-circle`, Description=`bi-text-left`, Location=`bi-geo-alt-fill`, Recurrence=`bi-arrow-repeat`, Recurrence End=`bi-calendar-x`, Attendees=`bi-people-fill`, Visibility=`bi-eye`, Reminder=`bi-bell`, Color=`bi-palette` |
+| 入力コントロール | `form-control-sm` / `form-select-sm` (`font-size: 0.82rem`, `padding: 3px 8px`) |
+| modal-footer | `padding: 6px 16px` |
+
+#### JS 動作
+
+- `openCreateModal()` / `openEditModal()`: モーダル表示前にタブ 1（Basic）をアクティブにリセット
+  ```javascript
+  const firstTab = document.querySelector('#eventTabs .nav-link');
+  if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+  ```
+- `toggleAllDay()`: time 入力要素に直接 `d-none` を toggle（ラッパー div 不要）
+- 全 `getElementById` 呼び出しはタブを跨いで同一 ID で動作（DOM 構造に依存しない）
+
+#### 関連ファイル
+
+| ファイル | 内容 |
+|---------|------|
+| `templates/calendar.html` | モーダル HTML（タブ構造 + フィールド配置） |
+| `static/css/calendar.css` | タブ・フィールドグループ・ラベルのスタイル定義 |
+| `static/js/calendar.js` | タブリセット + toggleAllDay 修正 |
 
 ### 7.5 Multi-User 閲覧性の工夫
 
@@ -589,6 +629,32 @@ function showDesktopNotification(data) {
 | **Private マスク** | 非公開イベントは「予定あり」のみ表示。時間帯は見えるがタイトル・詳細は非表示 |
 | **ソースイベント折畳** | TaskList / Attendance は折りたたんで表示。展開で詳細表示 |
 | **レスポンシブ** | モバイルでは List ビューをデフォルト表示 |
+
+### 7.6 グループフィルタ
+
+サイドバーの「Users」セクション上部にグループドロップダウンを配置し、グループ単位でユーザーを絞り込む。
+
+| 項目 | 仕様 |
+|------|------|
+| 配置 | サイドバー「Users」見出しの直下、ユーザーチェックボックスの直上 |
+| UI | `<select>` ドロップダウン (`form-select-sm`) |
+| 選択肢 | 「All」（デフォルト） + 各グループ名（`GET /api/groups/` から取得） |
+| 動作 | グループ選択 → ユーザーチェックボックスをグループメンバーのみに絞り込み表示 → 表示中ユーザーを全チェック → イベント再取得 |
+| 「All」選択時 | 全ユーザーのチェックボックスを表示・全チェック（初期状態に戻す） |
+| データソース | `GET /api/users/` の `group_id` でユーザーをグループに関連付け |
+
+**動作フロー:**
+
+1. ページロード時に `GET /api/groups/` でグループ一覧取得
+2. ドロップダウンに「All」+ 各グループ名を設定
+3. グループ選択時:
+   - 選択グループに属するユーザーのチェックボックスのみ表示（`d-none` で非表示切替）
+   - 表示中のユーザーを全チェック ON
+   - `selectedUserIds` を更新
+   - `reloadEvents()` を呼び出してイベント再取得
+4. 「All」選択時: 全ユーザーを表示・全チェック ON
+
+**API変更**: なし（クライアントサイドのみ。`GET /api/users/` の `group_id` と `GET /api/groups/` を活用）
 
 ---
 

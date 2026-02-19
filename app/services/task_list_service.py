@@ -3,11 +3,14 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.constants import ItemStatus
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.crud import task as crud_task
 from app.crud import task_list_item as crud_tli
 from app.models.task import Task
 from app.models.task_list_item import TaskListItem
 from app.schemas.task_list_item import TaskListItemCreate, TaskListItemUpdate
+from app.services import task_service as svc_task
 
 logger = logging.getLogger("app.services.task_list")
 
@@ -34,12 +37,16 @@ def list_unassigned(db: Session) -> List[TaskListItem]:
     return crud_tli.get_unassigned_items(db)
 
 
-def list_all(db: Session, assignee_id: Optional[int] = None) -> List[TaskListItem]:
-    return crud_tli.get_all_items(db, assignee_id)
+def list_all(
+    db: Session,
+    assignee_id: Optional[int] = None,
+    statuses: Optional[List[str]] = None,
+) -> List[TaskListItem]:
+    return crud_tli.get_all_items(db, assignee_id, statuses)
 
 
-def list_mine(db: Session, user_id: int) -> List[TaskListItem]:
-    return crud_tli.get_assigned_items(db, user_id)
+def list_mine(db: Session, user_id: int, statuses: Optional[List[str]] = None) -> List[TaskListItem]:
+    return crud_tli.get_assigned_items(db, user_id, statuses)
 
 
 def get_item(db: Session, item_id: int, user_id: int) -> TaskListItem:
@@ -78,14 +85,25 @@ def assign_to_me(db: Session, item_id: int, user_id: int) -> TaskListItem:
 def unassign_item(db: Session, item_id: int, user_id: int) -> TaskListItem:
     item = _get_visible_item(db, item_id, user_id)
     _check_edit_permission(item, user_id)
+    if item.status == ItemStatus.IN_PROGRESS:
+        raise ForbiddenError("Cannot unassign an in-progress item")
     logger.info("Unassigning item %d", item_id)
     return crud_tli.unassign_item(db, item)
 
 
 def start_as_task(db: Session, item_id: int, user_id: int) -> Task:
-    """Copy a TaskListItem to a new Task and set item status to in_progress."""
+    """Copy a TaskListItem to a new Task, start its timer, and set item status to in_progress."""
     item = _get_visible_item(db, item_id, user_id)
-    task = Task(
+    if item.status != ItemStatus.OPEN:
+        raise ConflictError("Item is already started")
+
+    # DB-level duplicate check: prevent multiple Tasks for the same item
+    existing_count = crud_task.count_by_source_item_id(db, item.id)
+    if existing_count > 0:
+        raise ConflictError("A task already exists for this item")
+
+    task = svc_task.create_and_start_task(
+        db,
         user_id=user_id,
         title=item.title,
         description=item.description,
@@ -93,9 +111,11 @@ def start_as_task(db: Session, item_id: int, user_id: int) -> Task:
         backlog_ticket_id=item.backlog_ticket_id,
         source_item_id=item.id,
     )
-    db.add(task)
-    item.status = "in_progress"
+
+    item.status = ItemStatus.IN_PROGRESS
+    if item.assignee_id is None:
+        item.assignee_id = user_id
     db.commit()
     db.refresh(task)
-    logger.info("Started task %d from item %d", task.id, item_id)
+    logger.info("Started task %d from item %d (timer auto-started)", task.id, item_id)
     return task

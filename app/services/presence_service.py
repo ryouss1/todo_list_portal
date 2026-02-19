@@ -3,6 +3,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from app.core.constants import PresenceStatusValue, TaskStatus
 from app.crud import presence as crud_presence
 from app.crud import user as crud_user
 from app.models.presence import PresenceStatus
@@ -23,7 +24,7 @@ def get_my_status(db: Session, user_id: int) -> PresenceStatus:
     existing = crud_presence.get_presence_status(db, user_id)
     if existing:
         return existing
-    return PresenceStatus(id=0, user_id=user_id, status="offline", message=None, updated_at=None)
+    return PresenceStatus(id=0, user_id=user_id, status=PresenceStatusValue.OFFLINE, message=None, updated_at=None)
 
 
 def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
@@ -31,7 +32,9 @@ def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
     users = crud_user.get_users(db)
 
     # Query in_progress tasks with backlog_ticket_id for all users
-    active_tasks = db.query(Task).filter(Task.status == "in_progress", Task.backlog_ticket_id.isnot(None)).all()
+    active_tasks = (
+        db.query(Task).filter(Task.status == TaskStatus.IN_PROGRESS, Task.backlog_ticket_id.isnot(None)).all()
+    )
     tickets_by_user = {}
     for task in active_tasks:
         tickets_by_user.setdefault(task.user_id, []).append(
@@ -50,7 +53,7 @@ def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
             PresenceStatusWithUser(
                 user_id=user.id,
                 display_name=user.display_name,
-                status=s.status if s else "offline",
+                status=s.status if s else PresenceStatusValue.OFFLINE,
                 message=s.message if s else None,
                 updated_at=s.updated_at if s else None,
                 active_tickets=tickets_by_user.get(user.id, []),

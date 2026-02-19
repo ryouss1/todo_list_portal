@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Reports - Todo List Portal{% endblock %}
+{% block title %}{{ _("Reports") }} - Todo List Portal{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-journal-text"></i> Daily Reports</h2>
+    <h2><i class="bi bi-journal-text"></i> {{ _("Daily Reports") }}</h2>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reportModal" onclick="openNewReport()">
-        <i class="bi bi-plus-lg"></i> New Report
+        <i class="bi bi-plus-lg"></i> {{ _("New Report") }}
     </button>
 </div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <ul class="nav nav-tabs mb-0">
         <li class="nav-item">
-            <a class="nav-link active" href="#" onclick="switchTab('my', this)">My Reports</a>
+            <a class="nav-link active" href="#" onclick="switchTab('my', this)">{{ _("My Reports") }}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="#" onclick="switchTab('all', this)">All Reports</a>
+            <a class="nav-link" href="#" onclick="switchTab('all', this)">{{ _("All Reports") }}</a>
         </li>
     </ul>
     <div class="d-flex align-items-center gap-2">
@@ -32,12 +32,13 @@
     <table class="table table-hover align-middle mb-0" id="report-table" style="display:none;">
         <thead class="table-light">
             <tr>
-                <th style="width:110px;">日付</th>
-                <th style="width:100px;">分類</th>
-                <th>タスク名</th>
-                <th style="width:80px;" class="text-end">時間</th>
-                <th>作業内容</th>
-                <th id="th-author" style="width:110px;display:none;">投稿者</th>
+                <th style="width:110px;">{{ _("日付") }}</th>
+                <th style="width:100px;">{{ _("分類") }}</th>
+                <th>{{ _("タスク名") }}</th>
+                <th style="width:120px;">Backlog</th>
+                <th style="width:80px;" class="text-end">{{ _("時間") }}</th>
+                <th>{{ _("作業内容") }}</th>
+                <th id="th-author" style="width:110px;display:none;">{{ _("投稿者") }}</th>
             </tr>
         </thead>
         <tbody id="report-tbody"></tbody>
@@ -46,62 +47,94 @@
 <div id="report-list"></div>
 
 <div class="modal fade" id="reportModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog">
+        <div class="modal-content modal-styled">
             <div class="modal-header">
-                <h5 class="modal-title" id="reportModalTitle">New Report</h5>
+                <h5 class="modal-title" id="reportModalTitle">{{ _("New Report") }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body py-2 px-3">
                 <input type="hidden" id="report-id">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-control" id="report-date" required>
+                <ul class="nav nav-pills nav-fill stl-tabs mb-2">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#rpt-tab-basic">
+                            <i class="bi bi-tag"></i> {{ _("Basic") }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#rpt-tab-content">
+                            <i class="bi bi-pencil-square"></i> {{ _("Content") }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#rpt-tab-details">
+                            <i class="bi bi-list-check"></i> {{ _("Details") }}
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="rpt-tab-basic">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stl-field">
+                                    <label class="stl-label"><i class="bi bi-calendar3"></i> {{ _("Date") }}</label>
+                                    <input type="date" class="form-control form-control-sm" id="report-date" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stl-field">
+                                    <label class="stl-label"><i class="bi bi-folder"></i> {{ _("タスク分類") }}</label>
+                                    <select class="form-select form-select-sm" id="report-category" required></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-card-text"></i> {{ _("タスク名") }}</label>
+                            <input type="text" class="form-control form-control-sm" id="report-task-name" required>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-link-45deg"></i> Backlog</label>
+                            <input type="text" class="form-control form-control-sm" id="report-backlog-ticket" placeholder="e.g. WHT-488">
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-clock"></i> {{ _("時間（分）") }}</label>
+                            <input type="number" class="form-control form-control-sm" id="report-time-minutes" value="0" min="0" style="max-width:100px;" required>
+                        </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">タスク分類 *</label>
-                        <select class="form-select" id="report-category" required>
-                        </select>
+                    <div class="tab-pane fade" id="rpt-tab-content">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-pencil"></i> {{ _("Work Content") }}</label>
+                            <textarea class="form-control form-control-sm" id="report-work-content" rows="4" required></textarea>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-trophy"></i> {{ _("Achievements") }}</label>
+                            <textarea class="form-control form-control-sm" id="report-achievements" rows="3"></textarea>
+                        </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">時間（分）</label>
-                        <input type="number" class="form-control" id="report-time-minutes" value="0" min="0" required>
+                    <div class="tab-pane fade" id="rpt-tab-details">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-exclamation-triangle"></i> {{ _("Issues") }}</label>
+                            <textarea class="form-control form-control-sm" id="report-issues" rows="3"></textarea>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-arrow-right-circle"></i> {{ _("Next Plan") }}</label>
+                            <textarea class="form-control form-control-sm" id="report-next-plan" rows="3"></textarea>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-chat-left-text"></i> {{ _("Remarks") }}</label>
+                            <textarea class="form-control form-control-sm" id="report-remarks" rows="2"></textarea>
+                        </div>
                     </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">タスク名 *</label>
-                    <input type="text" class="form-control" id="report-task-name" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Work Content *</label>
-                    <textarea class="form-control" id="report-work-content" rows="3" required></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Achievements</label>
-                    <textarea class="form-control" id="report-achievements" rows="2"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Issues</label>
-                    <textarea class="form-control" id="report-issues" rows="2"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Next Plan</label>
-                    <textarea class="form-control" id="report-next-plan" rows="2"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Remarks</label>
-                    <textarea class="form-control" id="report-remarks" rows="2"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveReport()">Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Cancel") }}</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveReport()">{{ _("Save") }}</button>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/reports.js?v=5"></script>
+<script src="/static/js/reports.js?v=8"></script>
 {% endblock %}

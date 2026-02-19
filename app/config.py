@@ -29,17 +29,22 @@ DB_POOL_RECYCLE: int = int(os.environ.get("DB_POOL_RECYCLE", "-1"))
 DB_POOL_PRE_PING: bool = os.environ.get("DB_POOL_PRE_PING", "true").lower() == "true"
 
 # Logging
-LOG_COLLECTOR_ENABLED: bool = os.environ.get("LOG_COLLECTOR_ENABLED", "false").lower() == "true"
-LOG_COLLECTOR_LOOP_INTERVAL: int = int(os.environ.get("LOG_COLLECTOR_LOOP_INTERVAL", "5"))
 LOG_MAX_BYTES: int = int(os.environ.get("LOG_MAX_BYTES", "10485760"))  # 10 MB
 LOG_BACKUP_COUNT: int = int(os.environ.get("LOG_BACKUP_COUNT", "5"))
 
-# Comma-separated list of allowed directories for log source file_path (empty = allow all)
-LOG_ALLOWED_PATHS: str = os.environ.get("LOG_ALLOWED_PATHS", "")
-
 # Log source polling
-LOG_SOURCE_DEFAULT_POLLING_SEC: int = int(os.environ.get("LOG_SOURCE_DEFAULT_POLLING_SEC", "30"))
-LOG_SOURCE_MIN_POLLING_SEC: int = int(os.environ.get("LOG_SOURCE_MIN_POLLING_SEC", "5"))
+LOG_SOURCE_DEFAULT_POLLING_SEC: int = int(os.environ.get("LOG_SOURCE_DEFAULT_POLLING_SEC", "60"))
+LOG_SOURCE_MIN_POLLING_SEC: int = int(os.environ.get("LOG_SOURCE_MIN_POLLING_SEC", "60"))
+LOG_SOURCE_MAX_POLLING_SEC: int = int(os.environ.get("LOG_SOURCE_MAX_POLLING_SEC", "3600"))
+
+# Log collection v2
+CREDENTIAL_ENCRYPTION_KEY: str = os.environ.get("CREDENTIAL_ENCRYPTION_KEY", "")
+LOG_FTP_CONNECT_TIMEOUT: int = int(os.environ.get("LOG_FTP_CONNECT_TIMEOUT", "30"))
+LOG_FTP_READ_TIMEOUT: int = int(os.environ.get("LOG_FTP_READ_TIMEOUT", "60"))
+LOG_SCAN_PATH_TIMEOUT: int = int(os.environ.get("LOG_SCAN_PATH_TIMEOUT", "300"))  # per-path scan timeout (seconds)
+
+# Source type constants
+LOG_SOURCE_TYPES: list = ["WEB", "HT", "BATCH", "OTHER"]
 
 # Business logic
 MAX_ATTENDANCE_BREAKS: int = int(os.environ.get("MAX_ATTENDANCE_BREAKS", "3"))
@@ -102,3 +107,14 @@ SMTP_USE_SSL: bool = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
 # Calendar
 CALENDAR_REMINDER_ENABLED: bool = os.environ.get("CALENDAR_REMINDER_ENABLED", "true").lower() == "true"
 CALENDAR_REMINDER_INTERVAL: int = int(os.environ.get("CALENDAR_REMINDER_INTERVAL", "60"))
+
+# Log scanner (background)
+LOG_SCANNER_ENABLED: bool = os.environ.get("LOG_SCANNER_ENABLED", "false").lower() == "true"
+LOG_SCANNER_LOOP_INTERVAL: int = int(os.environ.get("LOG_SCANNER_LOOP_INTERVAL", "30"))
+
+# Log alert content reading
+LOG_ALERT_CONTENT_MAX_LINES: int = int(os.environ.get("LOG_ALERT_CONTENT_MAX_LINES", "200"))
+
+# i18n
+DEFAULT_LOCALE: str = os.environ.get("DEFAULT_LOCALE", "ja")
+SUPPORTED_LOCALES: list = ["ja", "en"]

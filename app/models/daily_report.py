@@ -11,6 +11,7 @@ class DailyReport(Base):
     report_date = Column(Date, nullable=False)
     category_id = Column(Integer, ForeignKey("task_categories.id"), nullable=False)
     task_name = Column(String(200), nullable=False)
+    backlog_ticket_id = Column(String(50), nullable=True)
     time_minutes = Column(Integer, nullable=False, default=0)
     work_content = Column(Text, nullable=False)
     achievements = Column(Text, nullable=True)

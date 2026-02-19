@@ -16,30 +16,30 @@ logger = logging.getLogger("app.services.alert")
 # --- Alert Rules ---
 
 
-async def create_rule(db: Session, data: AlertRuleCreate) -> AlertRule:
+def create_rule(db: Session, data: AlertRuleCreate) -> AlertRule:
     logger.info("Creating alert rule: name=%s", data.name)
     return crud_alert.create_alert_rule(db, data)
 
 
-async def list_rules(db: Session) -> List[AlertRule]:
+def list_rules(db: Session) -> List[AlertRule]:
     return crud_alert.get_alert_rules(db)
 
 
-async def get_rule(db: Session, rule_id: int) -> AlertRule:
+def get_rule(db: Session, rule_id: int) -> AlertRule:
     rule = crud_alert.get_alert_rule(db, rule_id)
     if not rule:
         raise NotFoundError("Alert rule not found")
     return rule
 
 
-async def update_rule(db: Session, rule_id: int, data: AlertRuleUpdate) -> AlertRule:
-    rule = await get_rule(db, rule_id)
+def update_rule(db: Session, rule_id: int, data: AlertRuleUpdate) -> AlertRule:
+    rule = get_rule(db, rule_id)
     logger.info("Updating alert rule: id=%d", rule_id)
     return crud_alert.update_alert_rule(db, rule, data)
 
 
-async def delete_rule(db: Session, rule_id: int) -> None:
-    rule = await get_rule(db, rule_id)
+def delete_rule(db: Session, rule_id: int) -> None:
+    rule = get_rule(db, rule_id)
     logger.info("Deleting alert rule: id=%d", rule_id)
     crud_alert.delete_alert_rule(db, rule)
 
@@ -54,36 +54,36 @@ async def create_alert(db: Session, data: AlertCreate) -> Alert:
     return alert
 
 
-async def list_alerts(db: Session, active_only: bool = False, limit: int = 100) -> List[Alert]:
+def list_alerts(db: Session, active_only: bool = False, limit: int = 100) -> List[Alert]:
     return crud_alert.get_alerts(db, active_only=active_only, limit=limit)
 
 
-async def get_alert(db: Session, alert_id: int) -> Alert:
+def get_alert(db: Session, alert_id: int) -> Alert:
     alert = crud_alert.get_alert(db, alert_id)
     if not alert:
         raise NotFoundError("Alert not found")
     return alert
 
 
-async def acknowledge_alert(db: Session, alert_id: int, user_id: int) -> Alert:
-    alert = await get_alert(db, alert_id)
+def acknowledge_alert(db: Session, alert_id: int, user_id: int) -> Alert:
+    alert = get_alert(db, alert_id)
     logger.info("Acknowledging alert: id=%d by user=%d", alert_id, user_id)
     return crud_alert.acknowledge_alert(db, alert, user_id)
 
 
-async def deactivate_alert(db: Session, alert_id: int) -> Alert:
-    alert = await get_alert(db, alert_id)
+def deactivate_alert(db: Session, alert_id: int) -> Alert:
+    alert = get_alert(db, alert_id)
     logger.info("Deactivating alert: id=%d", alert_id)
     return crud_alert.deactivate_alert(db, alert)
 
 
-async def delete_alert(db: Session, alert_id: int) -> None:
-    alert = await get_alert(db, alert_id)
+def delete_alert(db: Session, alert_id: int) -> None:
+    alert = get_alert(db, alert_id)
     logger.info("Deleting alert: id=%d", alert_id)
     crud_alert.delete_alert(db, alert)
 
 
-async def count_unacknowledged(db: Session) -> int:
+def count_unacknowledged(db: Session) -> int:
     return crud_alert.count_unacknowledged_alerts(db)
 
 

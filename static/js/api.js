@@ -15,7 +15,13 @@ const api = {
         }
         if (!res.ok) {
             const error = await res.json().catch(() => ({ detail: res.statusText }));
-            throw new Error(error.detail || `HTTP ${res.status}`);
+            let message;
+            if (Array.isArray(error.detail)) {
+                message = error.detail.map(e => e.msg || String(e)).join('; ');
+            } else {
+                message = error.detail || `HTTP ${res.status}`;
+            }
+            throw new Error(message);
         }
         if (res.status === 204) return null;
         return res.json();

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Summary - Todo List Portal{% endblock %}
+{% block title %}{{ _("Summary") }} - Todo List Portal{% endblock %}
 {% block content %}
-<h2 class="mb-4"><i class="bi bi-graph-up"></i> Business Summary</h2>
+<h2 class="mb-4"><i class="bi bi-graph-up"></i> {{ _("Business Summary") }}</h2>
 
 <div class="d-flex align-items-center mb-3">
     <div class="btn-group btn-group-sm me-3">
-        <button class="btn btn-outline-primary" id="btn-daily" onclick="setPeriod('daily')">Daily</button>
-        <button class="btn btn-outline-primary active" id="btn-weekly" onclick="setPeriod('weekly')">Weekly</button>
-        <button class="btn btn-outline-primary" id="btn-monthly" onclick="setPeriod('monthly')">Monthly</button>
+        <button class="btn btn-outline-primary" id="btn-daily" onclick="setPeriod('daily')">{{ _("Daily") }}</button>
+        <button class="btn btn-outline-primary active" id="btn-weekly" onclick="setPeriod('weekly')">{{ _("Weekly") }}</button>
+        <button class="btn btn-outline-primary" id="btn-monthly" onclick="setPeriod('monthly')">{{ _("Monthly") }}</button>
     </div>
     <button class="btn btn-outline-secondary btn-sm me-2" onclick="navigate(-1)">
         <i class="bi bi-chevron-left"></i>
@@ -16,24 +16,24 @@
     <button class="btn btn-outline-secondary btn-sm me-2" onclick="navigate(1)">
         <i class="bi bi-chevron-right"></i>
     </button>
-    <button class="btn btn-outline-secondary btn-sm me-3" onclick="goToday()">Today</button>
+    <button class="btn btn-outline-secondary btn-sm me-3" onclick="goToday()">{{ _("Today") }}</button>
     <select class="form-select form-select-sm" id="group-filter" style="width:180px" onchange="loadSummary()">
-        <option value="">All Groups</option>
+        <option value="">{{ _("All Groups") }}</option>
     </select>
 </div>
 
 <div class="row g-4">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">User Report Status</div>
+            <div class="card-header">{{ _("User Report Status") }}</div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
                     <thead id="user-status-thead">
                         <tr>
-                            <th style="width:120px">User</th>
-                            <th>Category Distribution</th>
-                            <th class="text-center" style="width:60px">Total</th>
-                            <th class="text-center" style="width:60px">Today</th>
+                            <th style="width:120px">{{ _("User") }}</th>
+                            <th>{{ _("Category Distribution") }}</th>
+                            <th class="text-center" style="width:60px">{{ _("Total") }}</th>
+                            <th class="text-center" style="width:60px">{{ _("Today") }}</th>
                         </tr>
                     </thead>
                     <tbody id="user-status-table"></tbody>
@@ -43,7 +43,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Report Trends</div>
+            <div class="card-header">{{ _("Report Trends") }}</div>
             <div class="card-body">
                 <div id="trend-legend" class="mb-2"></div>
                 <div id="trend-chart"></div>
@@ -56,14 +56,14 @@
 <div class="row g-4 mt-0">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Category Breakdown</div>
+            <div class="card-header">{{ _("Category Breakdown") }}</div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Category</th>
-                            <th>Reports</th>
-                            <th>Time</th>
+                            <th>{{ _("Category") }}</th>
+                            <th>{{ _("Reports") }}</th>
+                            <th>{{ _("Time") }}</th>
                         </tr>
                     </thead>
                     <tbody id="category-table"></tbody>
@@ -73,7 +73,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Issues</div>
+            <div class="card-header">{{ _("Issues") }}</div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="issues-list"></div>
             </div>
@@ -84,7 +84,7 @@
 <div class="row g-4 mt-0">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Recent Reports</div>
+            <div class="card-header">{{ _("Recent Reports") }}</div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="recent-reports"></div>
             </div>

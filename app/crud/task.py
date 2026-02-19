@@ -3,43 +3,34 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.core.constants import TaskStatus
+from app.crud.base import CRUDBase
 from app.models.task import Task
 from app.models.task_time_entry import TaskTimeEntry
 from app.schemas.task import TaskCreate, TaskUpdate
+
+_crud = CRUDBase(Task)
+
+get_task = _crud.get
 
 
 def get_tasks(db: Session, user_id: int) -> List[Task]:
     return db.query(Task).filter(Task.user_id == user_id).order_by(Task.created_at.desc()).all()
 
 
-def get_task(db: Session, task_id: int) -> Optional[Task]:
-    return db.query(Task).filter(Task.id == task_id).first()
-
-
 def create_task(db: Session, user_id: int, data: TaskCreate) -> Task:
-    task = Task(user_id=user_id, **data.model_dump())
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-    return task
+    return _crud.create(db, data, user_id=user_id)
 
 
 def update_task(db: Session, task: Task, data: TaskUpdate) -> Task:
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(task, key, value)
-    db.commit()
-    db.refresh(task)
-    return task
+    return _crud.update(db, task, data)
 
 
-def delete_task(db: Session, task: Task) -> None:
-    db.delete(task)
-    db.commit()
+delete_task = _crud.delete
 
 
 def start_timer(db: Session, task: Task) -> TaskTimeEntry:
-    task.status = "in_progress"
+    task.status = TaskStatus.IN_PROGRESS
     entry = TaskTimeEntry(
         task_id=task.id,
         started_at=datetime.now(timezone.utc),
@@ -61,7 +52,7 @@ def stop_timer(db: Session, task: Task) -> Optional[TaskTimeEntry]:
     elapsed = int((now - entry.started_at).total_seconds())
     entry.elapsed_seconds = elapsed
     task.total_seconds += elapsed
-    task.status = "pending"
+    task.status = TaskStatus.PENDING
     db.commit()
     db.refresh(entry)
     db.refresh(task)
@@ -91,6 +82,6 @@ def stop_timer_at(db: Session, task: Task, end_time_utc: datetime) -> Optional[T
     elapsed = max(0, int((end_time_utc - entry.started_at).total_seconds()))
     entry.elapsed_seconds = elapsed
     task.total_seconds += elapsed
-    task.status = "pending"
+    task.status = TaskStatus.PENDING
     db.flush()
     return entry

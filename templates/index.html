@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - Todo List Portal{% endblock %}
+{% block title %}{{ _("Dashboard") }} - Todo List Portal{% endblock %}
 {% block content %}
-<h2 class="mb-4">Dashboard</h2>
+<h2 class="mb-4">{{ _("Dashboard") }}</h2>
 <div class="row g-4">
     <div class="col-md-6 col-lg-3">
         <div class="card border-primary h-100">
             <div class="card-body text-center">
                 <i class="bi bi-list-check display-4 text-primary"></i>
-                <h5 class="card-title mt-2">Todo</h5>
-                <p class="card-text" id="todo-summary">Loading...</p>
-                <a href="/todos" class="btn btn-outline-primary btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Todo") }}</h5>
+                <p class="card-text" id="todo-summary">{{ _("Loading...") }}</p>
+                <a href="/todos" class="btn btn-outline-primary btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -17,9 +17,9 @@
         <div class="card border-success h-100">
             <div class="card-body text-center">
                 <i class="bi bi-clock-history display-4 text-success"></i>
-                <h5 class="card-title mt-2">Attendance</h5>
-                <p class="card-text" id="attendance-summary">Loading...</p>
-                <a href="/attendance" class="btn btn-outline-success btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Attendance") }}</h5>
+                <p class="card-text" id="attendance-summary">{{ _("Loading...") }}</p>
+                <a href="/attendance" class="btn btn-outline-success btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -27,9 +27,9 @@
         <div class="card border-warning h-100">
             <div class="card-body text-center">
                 <i class="bi bi-stopwatch display-4 text-warning"></i>
-                <h5 class="card-title mt-2">Tasks</h5>
-                <p class="card-text" id="task-summary">Loading...</p>
-                <a href="/tasks" class="btn btn-outline-warning btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Tasks") }}</h5>
+                <p class="card-text" id="task-summary">{{ _("Loading...") }}</p>
+                <a href="/tasks" class="btn btn-outline-warning btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -37,9 +37,9 @@
         <div class="card border-danger h-100">
             <div class="card-body text-center">
                 <i class="bi bi-terminal display-4 text-danger"></i>
-                <h5 class="card-title mt-2">Logs</h5>
-                <p class="card-text" id="log-summary">Loading...</p>
-                <a href="/logs" class="btn btn-outline-danger btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Logs") }}</h5>
+                <p class="card-text" id="log-summary">{{ _("Loading...") }}</p>
+                <a href="/logs" class="btn btn-outline-danger btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -50,9 +50,9 @@
         <div class="card border-info h-100">
             <div class="card-body text-center">
                 <i class="bi bi-people display-4 text-info"></i>
-                <h5 class="card-title mt-2">Presence</h5>
-                <p class="card-text" id="presence-summary">Loading...</p>
-                <a href="/presence" class="btn btn-outline-info btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Presence") }}</h5>
+                <p class="card-text" id="presence-summary">{{ _("Loading...") }}</p>
+                <a href="/presence" class="btn btn-outline-info btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -60,9 +60,9 @@
         <div class="card border-secondary h-100">
             <div class="card-body text-center">
                 <i class="bi bi-journal-text display-4 text-secondary"></i>
-                <h5 class="card-title mt-2">Reports</h5>
-                <p class="card-text" id="report-summary">Loading...</p>
-                <a href="/reports" class="btn btn-outline-secondary btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Reports") }}</h5>
+                <p class="card-text" id="report-summary">{{ _("Loading...") }}</p>
+                <a href="/reports" class="btn btn-outline-secondary btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -70,9 +70,9 @@
         <div class="card border-dark h-100">
             <div class="card-body text-center">
                 <i class="bi bi-graph-up display-4 text-dark"></i>
-                <h5 class="card-title mt-2">Summary</h5>
-                <p class="card-text" id="summary-summary">Weekly overview</p>
-                <a href="/summary" class="btn btn-outline-dark btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Summary") }}</h5>
+                <p class="card-text" id="summary-summary">{{ _("Weekly overview") }}</p>
+                <a href="/summary" class="btn btn-outline-dark btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -80,9 +80,9 @@
         <div class="card border-danger h-100">
             <div class="card-body text-center">
                 <i class="bi bi-bell display-4 text-danger"></i>
-                <h5 class="card-title mt-2">Alerts</h5>
-                <p class="card-text" id="alert-summary">Loading...</p>
-                <a href="/alerts" class="btn btn-outline-danger btn-sm">Open</a>
+                <h5 class="card-title mt-2">{{ _("Alerts") }}</h5>
+                <p class="card-text" id="alert-summary">{{ _("Loading...") }}</p>
+                <a href="/alerts" class="btn btn-outline-danger btn-sm">{{ _("Open") }}</a>
             </div>
         </div>
     </div>
@@ -91,20 +91,20 @@
 <div class="row mt-4">
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Recent Logs</div>
+            <div class="card-header">{{ _("Recent Logs") }}</div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="recent-logs">
-                    <div class="list-group-item text-muted">Loading...</div>
+                    <div class="list-group-item text-muted">{{ _("Loading...") }}</div>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-lg-6">
         <div class="card">
-            <div class="card-header">Incomplete Todos</div>
+            <div class="card-header">{{ _("Incomplete Todos") }}</div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="incomplete-todos">
-                    <div class="list-group-item text-muted">Loading...</div>
+                    <div class="list-group-item text-muted">{{ _("Loading...") }}</div>
                 </div>
             </div>
         </div>

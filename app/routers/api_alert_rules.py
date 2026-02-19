@@ -12,45 +12,45 @@ router = APIRouter(prefix="/api/alert-rules", tags=["alert-rules"])
 
 
 @router.get("/", response_model=List[AlertRuleResponse])
-async def list_rules(
+def list_rules(
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.list_rules(db)
+    return svc.list_rules(db)
 
 
 @router.post("/", response_model=AlertRuleResponse, status_code=201)
-async def create_rule(
+def create_rule(
     data: AlertRuleCreate,
     db: Session = Depends(get_db),
     _user_id: int = Depends(require_admin),
 ):
-    return await svc.create_rule(db, data)
+    return svc.create_rule(db, data)
 
 
 @router.get("/{rule_id}", response_model=AlertRuleResponse)
-async def get_rule(
+def get_rule(
     rule_id: int,
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.get_rule(db, rule_id)
+    return svc.get_rule(db, rule_id)
 
 
 @router.put("/{rule_id}", response_model=AlertRuleResponse)
-async def update_rule(
+def update_rule(
     rule_id: int,
     data: AlertRuleUpdate,
     db: Session = Depends(get_db),
     _user_id: int = Depends(require_admin),
 ):
-    return await svc.update_rule(db, rule_id, data)
+    return svc.update_rule(db, rule_id, data)
 
 
 @router.delete("/{rule_id}", status_code=204)
-async def delete_rule(
+def delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
     _user_id: int = Depends(require_admin),
 ):
-    await svc.delete_rule(db, rule_id)
+    svc.delete_rule(db, rule_id)

@@ -1,0 +1,1275 @@
+# Japanese translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-02-17 16:23+0900\n"
+"PO-Revision-Date: 2026-02-17 16:28+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ja\n"
+"Language-Team: ja <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: templates/alerts.html:2 templates/alerts.html:5 templates/base.html:79
+#: templates/index.html:83
+msgid "Alerts"
+msgstr "アラート"
+
+#: templates/alerts.html:7 templates/logs.html:7 templates/presence.html:11
+msgid "Disconnected"
+msgstr "切断"
+
+#: templates/alerts.html:9 templates/logs.html:9 templates/task_list.html:23
+#: templates/todos.html:13
+msgid "All"
+msgstr "すべて"
+
+#: templates/alerts.html:10
+msgid "Active Only"
+msgstr "アクティブのみ"
+
+#: templates/alerts.html:13 templates/alerts.html:49
+msgid "Create Alert"
+msgstr "アラート作成"
+
+#: templates/alerts.html:23
+msgid "Alert Rules"
+msgstr "アラートルール"
+
+#: templates/alerts.html:25
+msgid "Add Rule"
+msgstr "ルール追加"
+
+#: templates/alerts.html:33 templates/logs.html:43 templates/logs.html:69
+#: templates/users.html:41
+msgid "Name"
+msgstr "名前"
+
+#: templates/alerts.html:34
+msgid "Condition"
+msgstr "条件"
+
+#: templates/alerts.html:35 templates/alerts.html:63 templates/logs.html:20
+msgid "Severity"
+msgstr "重要度"
+
+#: templates/alerts.html:36 templates/logs.html:47 templates/presence.html:15
+#: templates/presence.html:54 templates/task_list.html:43
+#: templates/users.html:20
+msgid "Status"
+msgstr "ステータス"
+
+#: templates/alerts.html:37 templates/attendance.html:66 templates/logs.html:49
+#: templates/task_list.html:50 templates/users.html:21 templates/users.html:45
+msgid "Actions"
+msgstr "操作"
+
+#: templates/alerts.html:54 templates/calendar.html:79
+#: templates/task_list.html:44 templates/task_list.html:69
+#: templates/tasks.html:23 templates/todos.html:34
+msgid "Title"
+msgstr "タイトル"
+
+#: templates/alerts.html:58 templates/logs.html:23 templates/presence.html:27
+#: templates/presence.html:55
+msgid "Message"
+msgstr "メッセージ"
+
+#: templates/alerts.html:65 templates/alerts.html:102
+msgid "Info"
+msgstr "情報"
+
+#: templates/alerts.html:66 templates/alerts.html:103
+msgid "Warning"
+msgstr "警告"
+
+#: templates/alerts.html:67 templates/alerts.html:104
+msgid "Critical"
+msgstr "致命的"
+
+#: templates/alerts.html:71
+msgid "Source"
+msgstr "ソース"
+
+#: templates/alerts.html:72
+msgid "Optional"
+msgstr "任意"
+
+#: templates/alerts.html:77 templates/alerts.html:132
+#: templates/attendance.html:111 templates/attendance.html:149
+#: templates/attendance.html:169 templates/attendance.html:188
+#: templates/attendance.html:207 templates/base.html:140
+#: templates/calendar.html:207 templates/calendar.html:259
+#: templates/logs.html:111 templates/report_detail.html:95
+#: templates/reports.html:98 templates/task_list.html:92
+#: templates/tasks.html:42 templates/todos.html:64 templates/users.html:83
+#: templates/users.html:129 templates/users.html:153 templates/users.html:174
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: templates/alerts.html:78 templates/users.html:84
+msgid "Create"
+msgstr "作成"
+
+#: templates/alerts.html:89
+msgid "Add Alert Rule"
+msgstr "アラートルール追加"
+
+#: templates/alerts.html:96
+msgid "Rule Name"
+msgstr "ルール名"
+
+#: templates/alerts.html:100
+msgid "Alert Severity"
+msgstr "アラート重要度"
+
+#: templates/alerts.html:108
+msgid "Condition (JSON)"
+msgstr "条件（JSON）"
+
+#: templates/alerts.html:111
+#, python-brace-format
+msgid "Supports: exact match, {\"$in\": [...]}, {\"$contains\": \"substr\"}"
+msgstr "対応: 完全一致、{\"$in\": [...]}、{\"$contains\": \"substr\"}"
+
+#: templates/alerts.html:114
+msgid "Title Template"
+msgstr "タイトルテンプレート"
+
+#: templates/alerts.html:119
+msgid "Message Template (optional)"
+msgstr "メッセージテンプレート（任意）"
+
+#: templates/alerts.html:126 templates/logs.html:104
+msgid "Enabled"
+msgstr "有効"
+
+#: templates/alerts.html:133 templates/attendance.html:150
+#: templates/attendance.html:208 templates/calendar.html:208
+#: templates/calendar.html:260 templates/logs.html:112
+#: templates/report_detail.html:96 templates/reports.html:99
+#: templates/task_list.html:93 templates/tasks.html:43 templates/todos.html:65
+#: templates/users.html:130
+msgid "Save"
+msgstr "保存"
+
+#: templates/attendance.html:2 templates/attendance.html:4
+#: templates/base.html:44 templates/index.html:20
+msgid "Attendance"
+msgstr "勤怠管理"
+
+#: templates/attendance.html:8 templates/attendance.html:185
+#: templates/attendance.html:204 templates/index.html:11
+#: templates/index.html:21 templates/index.html:31 templates/index.html:41
+#: templates/index.html:54 templates/index.html:64 templates/index.html:84
+#: templates/index.html:97 templates/index.html:107 templates/presence.html:40
+#: templates/presence.html:61 templates/report_detail.html:15
+#: templates/reset_password.html:24 templates/todos_public.html:12
+msgid "Loading..."
+msgstr "読み込み中..."
+
+#: templates/attendance.html:12
+msgid "出退勤"
+msgstr "出退勤"
+
+#: templates/attendance.html:13
+msgid "休憩"
+msgstr "休憩"
+
+#: templates/attendance.html:14
+msgid "外出中"
+msgstr "外出中"
+
+#: templates/attendance.html:15
+msgid "会議中"
+msgstr "会議中"
+
+#: templates/attendance.html:19
+msgid "リモート勤務"
+msgstr "リモート勤務"
+
+#: templates/attendance.html:23
+msgid "Note (optional)"
+msgstr "メモ（任意）"
+
+#: templates/attendance.html:26 templates/attendance.html:60
+#: templates/attendance.html:91 templates/attendance.html:129
+msgid "Clock In"
+msgstr "出勤"
+
+#: templates/attendance.html:29 templates/attendance.html:61
+#: templates/attendance.html:95 templates/attendance.html:133
+msgid "Clock Out"
+msgstr "退勤"
+
+#: templates/attendance.html:35
+msgid "History"
+msgstr "履歴"
+
+#: templates/attendance.html:42
+msgid "Excel"
+msgstr "Excel"
+
+#: templates/attendance.html:45
+msgid "手動登録"
+msgstr "手動登録"
+
+#: templates/attendance.html:48 templates/attendance.html:200
+msgid "デフォルト変更"
+msgstr "デフォルト変更"
+
+#: templates/attendance.html:51 templates/attendance.html:180
+msgid "Default Set"
+msgstr "デフォルト設定"
+
+#: templates/attendance.html:59 templates/reports.html:59
+#: templates/task_list.html:46
+msgid "Date"
+msgstr "日付"
+
+#: templates/attendance.html:62 templates/presence.html:20
+msgid "Break"
+msgstr "休憩"
+
+#: templates/attendance.html:63
+msgid "Duration"
+msgstr "勤務時間"
+
+#: templates/attendance.html:64
+msgid "入力"
+msgstr "入力"
+
+#: templates/attendance.html:65 templates/attendance.html:99
+#: templates/attendance.html:137
+msgid "Note"
+msgstr "メモ"
+
+#: templates/attendance.html:78
+msgid "勤怠手動登録"
+msgstr "勤怠手動登録"
+
+#: templates/attendance.html:83 templates/reports.html:35
+msgid "日付"
+msgstr "日付"
+
+#: templates/attendance.html:87
+msgid "プリセット（選択で時刻を自動入力）"
+msgstr "プリセット（選択で時刻を自動入力）"
+
+#: templates/attendance.html:103 templates/attendance.html:141
+msgid "Breaks"
+msgstr "休憩"
+
+#: templates/attendance.html:106 templates/attendance.html:144
+msgid "Add Break"
+msgstr "休憩追加"
+
+#: templates/attendance.html:112
+msgid "登録"
+msgstr "登録"
+
+#: templates/attendance.html:123
+msgid "Edit Attendance Record"
+msgstr "勤怠記録編集"
+
+#: templates/attendance.html:161
+msgid "Delete Attendance"
+msgstr "勤怠記録削除"
+
+#: templates/attendance.html:166
+msgid "Are you sure you want to delete this attendance record?"
+msgstr "この勤怠記録を削除しますか？"
+
+#: templates/attendance.html:170 templates/calendar.html:205
+#: templates/users.html:175
+msgid "Delete"
+msgstr "削除"
+
+#: templates/attendance.html:184
+msgid "勤怠をデフォルト値で上書きします。よろしいですか？"
+msgstr "勤怠をデフォルト値で上書きします。よろしいですか？"
+
+#: templates/attendance.html:189
+msgid "OK"
+msgstr "OK"
+
+#: templates/base.html:24 templates/index.html:2 templates/index.html:4
+msgid "Dashboard"
+msgstr "ダッシュボード"
+
+#: templates/base.html:29 templates/index.html:10
+msgid "Todo"
+msgstr "Todo"
+
+#: templates/base.html:34 templates/todos.html:18 templates/todos_public.html:2
+#: templates/todos_public.html:5
+msgid "Public Todos"
+msgstr "公開Todo"
+
+#: templates/base.html:39 templates/calendar.html:25 templates/task_list.html:2
+#: templates/task_list.html:5
+msgid "Task List"
+msgstr "タスクリスト"
+
+#: templates/base.html:49 templates/index.html:53 templates/presence.html:2
+msgid "Presence"
+msgstr "在籍状態"
+
+#: templates/base.html:54 templates/index.html:30 templates/tasks.html:2
+msgid "Tasks"
+msgstr "タスク"
+
+#: templates/base.html:59 templates/calendar.html:30 templates/index.html:63
+#: templates/reports.html:2 templates/summary.html:65
+msgid "Reports"
+msgstr "日報"
+
+#: templates/base.html:64 templates/index.html:73 templates/summary.html:2
+msgid "Summary"
+msgstr "サマリー"
+
+#: templates/base.html:69 templates/calendar.html:2
+msgid "Calendar"
+msgstr "カレンダー"
+
+#: templates/base.html:74 templates/index.html:40 templates/logs.html:2
+msgid "Logs"
+msgstr "ログ"
+
+#: templates/base.html:85 templates/calendar.html:16 templates/users.html:2
+#: templates/users.html:5
+msgid "Users"
+msgstr "ユーザー"
+
+#: templates/base.html:96 templates/base.html:121 templates/base.html:141
+msgid "Change Password"
+msgstr "パスワード変更"
+
+#: templates/base.html:107
+msgid "Logout"
+msgstr "ログアウト"
+
+#: templates/base.html:126
+msgid "Current Password"
+msgstr "現在のパスワード"
+
+#: templates/base.html:130 templates/reset_password.html:48
+#: templates/users.html:148
+msgid "New Password"
+msgstr "新しいパスワード"
+
+#: templates/base.html:134
+msgid "Confirm New Password"
+msgstr "新しいパスワード（確認）"
+
+#: templates/calendar.html:11 templates/calendar.html:51
+msgid "New Event"
+msgstr "新規イベント"
+
+#: templates/calendar.html:21
+msgid "Sources"
+msgstr "データソース"
+
+#: templates/calendar.html:35
+msgid "Settings"
+msgstr "設定"
+
+#: templates/calendar.html:37 templates/calendar.html:219
+msgid "Calendar Settings"
+msgstr "カレンダー設定"
+
+#: templates/calendar.html:60
+msgid "Basic"
+msgstr "基本"
+
+#: templates/calendar.html:65 templates/calendar.html:128
+#: templates/calendar.html:142
+msgid "Location"
+msgstr "場所"
+
+#: templates/calendar.html:70 templates/calendar.html:162
+msgid "Attendees"
+msgstr "参加者"
+
+#: templates/calendar.html:85 templates/logs.html:22
+msgid "Type"
+msgstr "種別"
+
+#: templates/calendar.html:87
+msgid "Event"
+msgstr "イベント"
+
+#: templates/calendar.html:88 templates/presence.html:22
+msgid "Meeting"
+msgstr "会議中"
+
+#: templates/calendar.html:89
+msgid "Deadline"
+msgstr "締切"
+
+#: templates/calendar.html:90 templates/calendar.html:177
+msgid "Reminder"
+msgstr "リマインダー"
+
+#: templates/calendar.html:91
+msgid "Out of Office"
+msgstr "不在"
+
+#: templates/calendar.html:97
+msgid "All Day"
+msgstr "終日"
+
+#: templates/calendar.html:105
+msgid "Start"
+msgstr "開始"
+
+#: templates/calendar.html:112
+msgid "End"
+msgstr "終了"
+
+#: templates/calendar.html:121 templates/task_list.html:73
+#: templates/tasks.html:27 templates/todos.html:38 templates/users.html:42
+msgid "Description"
+msgstr "説明"
+
+#: templates/calendar.html:132
+msgid "Room"
+msgstr "会議室"
+
+#: templates/calendar.html:136
+msgid "Free text"
+msgstr "自由入力"
+
+#: templates/calendar.html:140
+msgid "No room"
+msgstr "会議室なし"
+
+#: templates/calendar.html:145
+msgid "Recurrence"
+msgstr "繰り返し"
+
+#: templates/calendar.html:147 templates/calendar.html:179
+#: templates/calendar.html:239 templates/task_list.html:83
+#: templates/tasks.html:33 templates/users.html:111
+msgid "None"
+msgstr "なし"
+
+#: templates/calendar.html:148
+msgid "Every Day"
+msgstr "毎日"
+
+#: templates/calendar.html:149
+msgid "Every Week"
+msgstr "毎週"
+
+#: templates/calendar.html:150
+msgid "Every Month"
+msgstr "毎月"
+
+#: templates/calendar.html:151
+msgid "Every Year"
+msgstr "毎年"
+
+#: templates/calendar.html:155
+msgid "Recurrence End"
+msgstr "繰り返し終了日"
+
+#: templates/calendar.html:165
+msgid "Ctrl/Cmd + click to select multiple"
+msgstr "Ctrl/Cmd + クリックで複数選択"
+
+#: templates/calendar.html:170 templates/todos.html:55
+msgid "Visibility"
+msgstr "公開範囲"
+
+#: templates/calendar.html:172 templates/todos.html:58
+msgid "Public"
+msgstr "公開"
+
+#: templates/calendar.html:173 templates/todos.html:57
+msgid "Private"
+msgstr "非公開"
+
+#: templates/calendar.html:180 templates/calendar.html:240
+msgid "5 min before"
+msgstr "5分前"
+
+#: templates/calendar.html:181 templates/calendar.html:241
+msgid "10 min before"
+msgstr "10分前"
+
+#: templates/calendar.html:182 templates/calendar.html:242
+msgid "15 min before"
+msgstr "15分前"
+
+#: templates/calendar.html:183 templates/calendar.html:243
+msgid "30 min before"
+msgstr "30分前"
+
+#: templates/calendar.html:184 templates/calendar.html:244
+msgid "1 hour before"
+msgstr "1時間前"
+
+#: templates/calendar.html:185
+msgid "1 day before"
+msgstr "1日前"
+
+#: templates/calendar.html:191
+msgid "Color"
+msgstr "色"
+
+#: templates/calendar.html:196
+msgid "Use default"
+msgstr "デフォルトを使用"
+
+#: templates/calendar.html:224
+msgid "Default View"
+msgstr "デフォルト表示"
+
+#: templates/calendar.html:226
+msgid "Month"
+msgstr "月"
+
+#: templates/calendar.html:227
+msgid "Week"
+msgstr "週"
+
+#: templates/calendar.html:228
+msgid "Day"
+msgstr "日"
+
+#: templates/calendar.html:229
+msgid "List"
+msgstr "リスト"
+
+#: templates/calendar.html:233
+msgid "My Color"
+msgstr "マイカラー"
+
+#: templates/calendar.html:237
+msgid "Default Reminder"
+msgstr "デフォルトリマインダー"
+
+#: templates/calendar.html:249
+msgid "Working Hours Start"
+msgstr "勤務開始時刻"
+
+#: templates/calendar.html:253
+msgid "Working Hours End"
+msgstr "勤務終了時刻"
+
+#: templates/forgot_password.html:6
+msgid "Forgot Password"
+msgstr "パスワードを忘れた場合"
+
+#: templates/forgot_password.html:19
+msgid "Password Reset"
+msgstr "パスワードリセット"
+
+#: templates/forgot_password.html:25
+msgid ""
+"If an account with that email exists, a reset link has been sent. Please "
+"check your email."
+msgstr ""
+"そのメールアドレスのアカウントが存在する場合、リセットリンクが送信されます。"
+"メールをご確認ください。"
+
+#: templates/forgot_password.html:29
+msgid "Enter your email address and we'll send you a link to reset your password."
+msgstr "メールアドレスを入力してください。パスワードリセット用のリンクをお送りします。"
+
+#: templates/forgot_password.html:31 templates/login.html:24
+#: templates/users.html:16 templates/users.html:63 templates/users.html:101
+msgid "Email"
+msgstr "メールアドレス"
+
+#: templates/forgot_password.html:35
+msgid "Send Reset Link"
+msgstr "リセットリンクを送信"
+
+#: templates/forgot_password.html:39 templates/reset_password.html:60
+msgid "Back to Login"
+msgstr "ログインに戻る"
+
+#: templates/index.html:12 templates/index.html:22 templates/index.html:32
+#: templates/index.html:42 templates/index.html:55 templates/index.html:65
+#: templates/index.html:75 templates/index.html:85 templates/task_list.html:24
+msgid "Open"
+msgstr "オープン"
+
+#: templates/index.html:74
+msgid "Weekly overview"
+msgstr "週次概要"
+
+#: templates/index.html:94
+msgid "Recent Logs"
+msgstr "最近のログ"
+
+#: templates/index.html:104
+msgid "Incomplete Todos"
+msgstr "未完了Todo"
+
+#: templates/login.html:6 templates/login.html:32
+msgid "Login"
+msgstr "ログイン"
+
+#: templates/login.html:28 templates/users.html:71
+msgid "Password"
+msgstr "パスワード"
+
+#: templates/login.html:36
+msgid "Forgot your password?"
+msgstr "パスワードを忘れた方はこちら"
+
+#: templates/login.html:40
+msgid "Or sign in with"
+msgstr "または以下でログイン"
+
+#: templates/logs.html:5
+msgid "System Logs"
+msgstr "システムログ"
+
+#: templates/logs.html:10
+msgid "Important"
+msgstr "重要"
+
+#: templates/logs.html:19 templates/summary.html:66 templates/task_list.html:47
+msgid "Time"
+msgstr "時間"
+
+#: templates/logs.html:21 templates/logs.html:45
+msgid "System"
+msgstr "システム"
+
+#: templates/logs.html:33
+msgid "Log Sources"
+msgstr "ログソース"
+
+#: templates/logs.html:35
+msgid "Add Source"
+msgstr "ソース追加"
+
+#: templates/logs.html:44 templates/logs.html:73
+msgid "File Path"
+msgstr "ファイルパス"
+
+#: templates/logs.html:46
+msgid "Interval"
+msgstr "間隔"
+
+#: templates/logs.html:48
+msgid "Last Collected"
+msgstr "最終収集"
+
+#: templates/logs.html:61
+msgid "Add Log Source"
+msgstr "ログソース追加"
+
+#: templates/logs.html:77
+msgid "System Name"
+msgstr "システム名"
+
+#: templates/logs.html:81
+msgid "Log Type"
+msgstr "ログ種別"
+
+#: templates/logs.html:85
+msgid "Parser Pattern (regex with named groups)"
+msgstr "パーサーパターン（名前付きグループの正規表現）"
+
+#: templates/logs.html:90
+msgid "Severity Field"
+msgstr "重要度フィールド"
+
+#: templates/logs.html:94
+msgid "Default Severity"
+msgstr "デフォルト重要度"
+
+#: templates/logs.html:98
+msgid "Polling Interval (sec)"
+msgstr "ポーリング間隔（秒）"
+
+#: templates/presence.html:4
+msgid "Presence Status"
+msgstr "在籍状態"
+
+#: templates/presence.html:10
+msgid "My Status"
+msgstr "自分のステータス"
+
+#: templates/presence.html:17
+msgid "Available"
+msgstr "在席"
+
+#: templates/presence.html:18
+msgid "Away"
+msgstr "離席"
+
+#: templates/presence.html:19
+msgid "Out"
+msgstr "外出"
+
+#: templates/presence.html:21
+msgid "Offline"
+msgstr "オフライン"
+
+#: templates/presence.html:23
+msgid "Remote"
+msgstr "リモート"
+
+#: templates/presence.html:28
+msgid "Optional status message"
+msgstr "ステータスメッセージ（任意）"
+
+#: templates/presence.html:31
+msgid "Update Status"
+msgstr "ステータス更新"
+
+#: templates/presence.html:37
+msgid "My History"
+msgstr "自分の履歴"
+
+#: templates/presence.html:48
+msgid "All Users"
+msgstr "全ユーザー"
+
+#: templates/presence.html:53 templates/summary.html:33 templates/users.html:77
+#: templates/users.html:117
+msgid "User"
+msgstr "ユーザー"
+
+#: templates/presence.html:56
+msgid "Tickets"
+msgstr "チケット"
+
+#: templates/presence.html:57
+msgid "Updated"
+msgstr "更新日時"
+
+#: templates/report_detail.html:2 templates/report_detail.html:5
+msgid "Report Detail"
+msgstr "日報詳細"
+
+#: templates/report_detail.html:8
+msgid "Back"
+msgstr "戻る"
+
+#: templates/report_detail.html:22
+msgid "Edit Report"
+msgstr "日報編集"
+
+#: templates/report_detail.html:29
+msgid "Task Info"
+msgstr "タスク情報"
+
+#: templates/report_detail.html:34 templates/reports.html:63
+msgid "タスク分類"
+msgstr "タスク分類"
+
+#: templates/report_detail.html:38 templates/reports.html:37
+#: templates/reports.html:73
+msgid "タスク名"
+msgstr "タスク名"
+
+#: templates/report_detail.html:42 templates/reports.html:68
+msgid "時間（分）"
+msgstr "時間（分）"
+
+#: templates/report_detail.html:51 templates/reports.html:77
+msgid "Work Content"
+msgstr "作業内容"
+
+#: templates/report_detail.html:60 templates/reports.html:81
+msgid "Achievements"
+msgstr "成果・進捗"
+
+#: templates/report_detail.html:69 templates/reports.html:85
+#: templates/summary.html:76
+msgid "Issues"
+msgstr "課題・問題"
+
+#: templates/report_detail.html:78 templates/reports.html:89
+msgid "Next Plan"
+msgstr "翌日の予定"
+
+#: templates/report_detail.html:87 templates/reports.html:93
+msgid "Remarks"
+msgstr "備考"
+
+#: templates/reports.html:5
+msgid "Daily Reports"
+msgstr "日報一覧"
+
+#: templates/reports.html:7 templates/reports.html:52
+msgid "New Report"
+msgstr "新規日報"
+
+#: templates/reports.html:14
+msgid "My Reports"
+msgstr "自分の日報"
+
+#: templates/reports.html:17
+msgid "All Reports"
+msgstr "全日報"
+
+#: templates/reports.html:36
+msgid "分類"
+msgstr "分類"
+
+#: templates/reports.html:38
+msgid "時間"
+msgstr "時間"
+
+#: templates/reports.html:39
+msgid "作業内容"
+msgstr "作業内容"
+
+#: templates/reports.html:40
+msgid "投稿者"
+msgstr "投稿者"
+
+#: templates/reset_password.html:6 templates/reset_password.html:19
+#: templates/reset_password.html:56 templates/users.html:141
+#: templates/users.html:154
+msgid "Reset Password"
+msgstr "パスワードリセット"
+
+#: templates/reset_password.html:26
+msgid "Verifying token..."
+msgstr "トークンを確認中..."
+
+#: templates/reset_password.html:31
+msgid "This reset link is invalid or has expired. Please request a new one."
+msgstr "このリセットリンクは無効または期限切れです。新しいリンクを要求してください。"
+
+#: templates/reset_password.html:34
+msgid "Request New Reset Link"
+msgstr "新しいリセットリンクを要求"
+
+#: templates/reset_password.html:40
+msgid "Your password has been reset successfully."
+msgstr "パスワードが正常にリセットされました。"
+
+#: templates/reset_password.html:43
+msgid "Go to Login"
+msgstr "ログインへ"
+
+#: templates/reset_password.html:52
+msgid "Confirm Password"
+msgstr "パスワード確認"
+
+#: templates/summary.html:4
+msgid "Business Summary"
+msgstr "業務サマリー"
+
+#: templates/summary.html:8
+msgid "Daily"
+msgstr "日次"
+
+#: templates/summary.html:9
+msgid "Weekly"
+msgstr "週次"
+
+#: templates/summary.html:10
+msgid "Monthly"
+msgstr "月次"
+
+#: templates/summary.html:19 templates/summary.html:36
+msgid "Today"
+msgstr "今日"
+
+#: templates/summary.html:21
+msgid "All Groups"
+msgstr "全グループ"
+
+#: templates/summary.html:28
+msgid "User Report Status"
+msgstr "ユーザー日報提出状況"
+
+#: templates/summary.html:34
+msgid "Category Distribution"
+msgstr "分類別分布"
+
+#: templates/summary.html:35
+msgid "Total"
+msgstr "合計"
+
+#: templates/summary.html:46
+msgid "Report Trends"
+msgstr "日報推移"
+
+#: templates/summary.html:59
+msgid "Category Breakdown"
+msgstr "分類別集計"
+
+#: templates/summary.html:64 templates/task_list.html:45
+#: templates/task_list.html:81 templates/tasks.html:31
+msgid "Category"
+msgstr "分類"
+
+#: templates/summary.html:87
+msgid "Recent Reports"
+msgstr "最近の日報"
+
+#: templates/task_list.html:7 templates/task_list.html:63
+msgid "New Item"
+msgstr "新規アイテム"
+
+#: templates/task_list.html:13
+msgid "My Items"
+msgstr "自分の担当"
+
+#: templates/task_list.html:16
+msgid "All Items"
+msgstr "全アイテム"
+
+#: templates/task_list.html:25
+msgid "In Progress"
+msgstr "作業中"
+
+#: templates/task_list.html:26
+msgid "Done"
+msgstr "完了"
+
+#: templates/task_list.html:29
+msgid "All Categories"
+msgstr "全カテゴリ"
+
+#: templates/task_list.html:32
+msgid "Search title / ticket..."
+msgstr "タイトル/チケットで検索..."
+
+#: templates/task_list.html:35
+msgid "Show Done"
+msgstr "完了を表示"
+
+#: templates/task_list.html:48
+msgid "Backlog"
+msgstr "Backlog"
+
+#: templates/task_list.html:49
+msgid "Assignee"
+msgstr "担当者"
+
+#: templates/task_list.html:77
+msgid "Scheduled Date"
+msgstr "予定日"
+
+#: templates/task_list.html:87 templates/tasks.html:37
+msgid "Backlog Ticket"
+msgstr "Backlogチケット"
+
+#: templates/task_list.html:88 templates/tasks.html:38
+msgid "e.g. WHT-488"
+msgstr "例: WHT-488"
+
+#: templates/tasks.html:5
+msgid "Task Timer"
+msgstr "タスクタイマー"
+
+#: templates/tasks.html:7 templates/tasks.html:17
+msgid "New Task"
+msgstr "新規タスク"
+
+#: templates/tasks.html:53
+msgid "Overdue Tasks"
+msgstr "期限超過タスク"
+
+#: templates/tasks.html:56
+msgid ""
+"The following tasks are from previous days. Please enter the time you "
+"finished working on each task."
+msgstr ""
+"以下のタスクは前日以前のものです。各タスクの終了時刻を入力してください。"
+
+#: templates/tasks.html:60
+msgid "Complete All"
+msgstr "一括完了"
+
+#: templates/todos.html:2
+msgid "Todos"
+msgstr "Todo一覧"
+
+#: templates/todos.html:5
+msgid "Todo List"
+msgstr "Todoリスト"
+
+#: templates/todos.html:7 templates/todos.html:28
+msgid "New Todo"
+msgstr "新規Todo"
+
+#: templates/todos.html:14 templates/users.html:124
+msgid "Active"
+msgstr "有効"
+
+#: templates/todos.html:15
+msgid "Completed"
+msgstr "完了"
+
+#: templates/todos.html:43
+msgid "Priority"
+msgstr "優先度"
+
+#: templates/todos.html:45
+msgid "Normal"
+msgstr "通常"
+
+#: templates/todos.html:46
+msgid "High"
+msgstr "高"
+
+#: templates/todos.html:47
+msgid "Urgent"
+msgstr "緊急"
+
+#: templates/todos.html:51
+msgid "Due Date"
+msgstr "期限"
+
+#: templates/todos_public.html:7
+msgid "My Todos"
+msgstr "自分のTodo"
+
+#: templates/users.html:7 templates/users.html:58
+msgid "Add User"
+msgstr "ユーザー追加"
+
+#: templates/users.html:15
+msgid "ID"
+msgstr "ID"
+
+#: templates/users.html:17 templates/users.html:67 templates/users.html:105
+msgid "Display Name"
+msgstr "表示名"
+
+#: templates/users.html:18 templates/users.html:109
+msgid "Group"
+msgstr "グループ"
+
+#: templates/logs.html:123
+msgid "Select Group"
+msgstr "グループ選択"
+
+#: templates/users.html:19 templates/users.html:75 templates/users.html:115
+msgid "Role"
+msgstr "ロール"
+
+#: templates/users.html:32
+msgid "Groups"
+msgstr "グループ"
+
+#: templates/users.html:34
+msgid "Add Group"
+msgstr "グループ追加"
+
+#: templates/users.html:43
+msgid "Members"
+msgstr "メンバー"
+
+#: templates/users.html:44
+msgid "Sort Order"
+msgstr "表示順"
+
+#: templates/users.html:78 templates/users.html:118
+msgid "Admin"
+msgstr "管理者"
+
+#: templates/users.html:95
+msgid "Edit User"
+msgstr "ユーザー編集"
+
+#: templates/users.html:146
+msgid "Reset password for:"
+msgstr "パスワードリセット対象:"
+
+#: templates/users.html:165
+msgid "Delete User"
+msgstr "ユーザー削除"
+
+#: templates/users.html:170
+msgid "Are you sure you want to delete user:"
+msgstr "このユーザーを削除しますか:"
+
+#: templates/users.html:171
+msgid "This action cannot be undone."
+msgstr "この操作は取り消せません。"
+
+#: app/services (backend error messages)
+msgid "Attendance not found"
+msgstr "勤怠記録が見つかりません"
+
+msgid "Preset not found"
+msgstr "プリセットが見つかりません"
+
+msgid "User not found"
+msgstr "ユーザーが見つかりません"
+
+msgid "Alert rule not found"
+msgstr "アラートルールが見つかりません"
+
+msgid "Alert not found"
+msgstr "アラートが見つかりません"
+
+msgid "Group not found"
+msgstr "グループが見つかりません"
+
+msgid "Todo not found"
+msgstr "Todoが見つかりません"
+
+msgid "Task category not found"
+msgstr "タスク分類が見つかりません"
+
+msgid "Event not found"
+msgstr "イベントが見つかりません"
+
+msgid "Attendee not found"
+msgstr "参加者が見つかりません"
+
+msgid "You are not an attendee of this event"
+msgstr "このイベントの参加者ではありません"
+
+msgid "Reminder not found"
+msgstr "リマインダーが見つかりません"
+
+msgid "Room not found"
+msgstr "会議室が見つかりません"
+
+msgid "Task not found"
+msgstr "タスクが見つかりません"
+
+msgid "Log source not found"
+msgstr "ログソースが見つかりません"
+
+msgid "OAuth account not linked"
+msgstr "OAuthアカウントがリンクされていません"
+
+msgid "Item not found"
+msgstr "アイテムが見つかりません"
+
+msgid "Invalid or expired reset token"
+msgstr "無効または期限切れのリセットトークンです"
+
+msgid "Report not found"
+msgstr "日報が見つかりません"
+
+msgid "Already clocked in"
+msgstr "既に出勤済みです"
+
+msgid "Already clocked in today"
+msgstr "本日は既に出勤済みです"
+
+msgid "Not clocked in"
+msgstr "出勤していません"
+
+msgid "Attendance already exists for this date"
+msgstr "この日付の勤怠記録は既に存在します"
+
+msgid "Already clocked out"
+msgstr "既に退勤済みです"
+
+msgid "Break already active"
+msgstr "休憩中です"
+
+msgid "No active break"
+msgstr "休憩中ではありません"
+
+msgid "Group name already exists"
+msgstr "グループ名は既に使用されています"
+
+msgid "Timer already running"
+msgstr "タイマーは既に稼働中です"
+
+msgid "No active timer"
+msgstr "稼働中のタイマーがありません"
+
+msgid "Email already exists"
+msgstr "メールアドレスは既に使用されています"
+
+msgid "Current password is incorrect"
+msgstr "現在のパスワードが正しくありません"
+
+msgid "Invalid or expired OAuth state"
+msgstr "無効または期限切れのOAuth状態です"
+
+msgid "Failed to obtain access token"
+msgstr "アクセストークンの取得に失敗しました"
+
+msgid "Could not get user ID from OAuth provider"
+msgstr "OAuthプロバイダからユーザーIDを取得できませんでした"
+
+msgid "Linked account is disabled"
+msgstr "リンクされたアカウントは無効です"
+
+msgid "Account is disabled"
+msgstr "アカウントは無効です"
+
+msgid "No matching user found. Please ask an administrator to create your account first."
+msgstr "一致するユーザーが見つかりません。管理者にアカウント作成を依頼してください。"
+
+msgid "This OAuth account is already linked to another user"
+msgstr "このOAuthアカウントは既に別のユーザーにリンクされています"
+
+msgid "Cannot unlink last authentication method"
+msgstr "最後の認証方法のリンクは解除できません"
+
+msgid "Item is already started"
+msgstr "アイテムは既に開始されています"
+
+msgid "A task already exists for this item"
+msgstr "このアイテムのタスクは既に存在します"
+
+msgid "No permission to edit this item"
+msgstr "このアイテムを編集する権限がありません"
+
+msgid "Item is already assigned to another user"
+msgstr "アイテムは既に別のユーザーに割り当てられています"
+
+msgid "Cannot unassign an in-progress item"
+msgstr "作業中のアイテムの割り当てを解除できません"
+
+msgid "Only creator can update event"
+msgstr "作成者のみイベントを更新できます"
+
+msgid "Only creator can delete event"
+msgstr "作成者のみイベントを削除できます"
+
+msgid "Only creator can add attendees"
+msgstr "作成者のみ参加者を追加できます"
+
+msgid "Only creator can remove attendees"
+msgstr "作成者のみ参加者を削除できます"
+
+msgid "Cannot edit other users"
+msgstr "他のユーザーは編集できません"
+
+msgid "Cannot change these fields"
+msgstr "これらのフィールドは変更できません"
+
+msgid "Cannot change own role or active status"
+msgstr "自分のロールまたは有効状態は変更できません"
+
+msgid "Cannot delete yourself"
+msgstr "自分自身は削除できません"
+
+msgid "Invalid email or password"
+msgstr "メールアドレスまたはパスワードが正しくありません"
+
+msgid "Not authenticated"
+msgstr "認証されていません"
+
+msgid "Admin access required"
+msgstr "管理者権限が必要です"
+
+msgid "Password changed"
+msgstr "パスワードを変更しました"
+
+msgid "Password reset"
+msgstr "パスワードをリセットしました"

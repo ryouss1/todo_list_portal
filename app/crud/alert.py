@@ -3,18 +3,18 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.alert import Alert, AlertRule
 from app.schemas.alert import AlertCreate, AlertRuleCreate, AlertRuleUpdate
+
+_crud_rule = CRUDBase(AlertRule)
+_crud_alert = CRUDBase(Alert)
 
 # --- Alert Rules ---
 
 
 def create_alert_rule(db: Session, data: AlertRuleCreate) -> AlertRule:
-    rule = AlertRule(**data.model_dump())
-    db.add(rule)
-    db.commit()
-    db.refresh(rule)
-    return rule
+    return _crud_rule.create(db, data)
 
 
 def get_alert_rules(db: Session) -> List[AlertRule]:
@@ -25,39 +25,21 @@ def get_enabled_alert_rules(db: Session) -> List[AlertRule]:
     return db.query(AlertRule).filter(AlertRule.is_enabled.is_(True)).order_by(AlertRule.id).all()
 
 
-def get_alert_rule(db: Session, rule_id: int) -> Optional[AlertRule]:
-    return db.query(AlertRule).filter(AlertRule.id == rule_id).first()
+get_alert_rule = _crud_rule.get
 
 
 def update_alert_rule(db: Session, rule: AlertRule, data: AlertRuleUpdate) -> AlertRule:
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(rule, key, value)
-    db.commit()
-    db.refresh(rule)
-    return rule
+    return _crud_rule.update(db, rule, data)
 
 
-def delete_alert_rule(db: Session, rule: AlertRule) -> None:
-    db.delete(rule)
-    db.commit()
+delete_alert_rule = _crud_rule.delete
 
 
 # --- Alerts ---
 
 
 def create_alert(db: Session, data: AlertCreate, rule_id: Optional[int] = None) -> Alert:
-    alert = Alert(
-        title=data.title,
-        message=data.message,
-        severity=data.severity,
-        source=data.source,
-        rule_id=rule_id,
-    )
-    db.add(alert)
-    db.commit()
-    db.refresh(alert)
-    return alert
+    return _crud_alert.create(db, data, rule_id=rule_id)
 
 
 def get_alerts(db: Session, active_only: bool = False, limit: int = 100) -> List[Alert]:
@@ -67,8 +49,7 @@ def get_alerts(db: Session, active_only: bool = False, limit: int = 100) -> List
     return query.order_by(Alert.created_at.desc()).limit(limit).all()
 
 
-def get_alert(db: Session, alert_id: int) -> Optional[Alert]:
-    return db.query(Alert).filter(Alert.id == alert_id).first()
+get_alert = _crud_alert.get
 
 
 def acknowledge_alert(db: Session, alert: Alert, user_id: int) -> Alert:
@@ -87,9 +68,7 @@ def deactivate_alert(db: Session, alert: Alert) -> Alert:
     return alert
 
 
-def delete_alert(db: Session, alert: Alert) -> None:
-    db.delete(alert)
-    db.commit()
+delete_alert = _crud_alert.delete
 
 
 def count_unacknowledged_alerts(db: Session) -> int:

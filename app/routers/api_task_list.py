@@ -23,19 +23,21 @@ def list_unassigned(
 
 @router.get("/mine", response_model=List[TaskListItemResponse])
 def list_mine(
+    status: Optional[List[str]] = Query(None),
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    return svc.list_mine(db, user_id)
+    return svc.list_mine(db, user_id, status)
 
 
 @router.get("/all", response_model=List[TaskListItemResponse])
 def list_all(
     assignee_id: Optional[int] = Query(None),
+    status: Optional[List[str]] = Query(None),
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    return svc.list_all(db, assignee_id)
+    return svc.list_all(db, assignee_id, status)
 
 
 @router.post("/", response_model=TaskListItemResponse, status_code=201)

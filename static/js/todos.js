@@ -13,7 +13,7 @@ function renderTodos() {
 
     const el = document.getElementById('todo-list');
     if (filtered.length === 0) {
-        el.innerHTML = '<div class="text-muted text-center py-4">No todos found</div>';
+        el.innerHTML = `<div class="text-muted text-center py-4">${i18n.t('No todos found')}</div>`;
         return;
     }
     el.innerHTML = filtered.map(t => `
@@ -49,7 +49,7 @@ function filterTodos(filter, btn) {
 }
 
 function openNewTodo() {
-    document.getElementById('todoModalTitle').textContent = 'New Todo';
+    document.getElementById('todoModalTitle').textContent = i18n.t('New Todo');
     document.getElementById('todo-id').value = '';
     document.getElementById('todo-title').value = '';
     document.getElementById('todo-description').value = '';
@@ -61,7 +61,7 @@ function openNewTodo() {
 function openEditTodo(id) {
     const t = allTodos.find(x => x.id === id);
     if (!t) return;
-    document.getElementById('todoModalTitle').textContent = 'Edit Todo';
+    document.getElementById('todoModalTitle').textContent = i18n.t('Edit Todo');
     document.getElementById('todo-id').value = t.id;
     document.getElementById('todo-title').value = t.title;
     document.getElementById('todo-description').value = t.description || '';
@@ -81,7 +81,7 @@ async function saveTodo() {
         visibility: document.getElementById('todo-visibility').value,
     };
 
-    if (!data.title) return alert('Title is required');
+    if (!data.title) return alert(i18n.t('Title is required'));
 
     if (id) {
         await api.put(`/api/todos/${id}`, data);
@@ -98,19 +98,19 @@ async function toggleTodo(id) {
 }
 
 async function deleteTodo(id) {
-    if (!confirm('Delete this todo?')) return;
+    if (!confirm(i18n.t('Delete this todo?'))) return;
     await api.del(`/api/todos/${id}`);
     loadTodos();
 }
 
 function priorityBadge(p) {
-    if (p === 2) return '<span class="badge bg-danger">Urgent</span>';
-    if (p === 1) return '<span class="badge bg-warning text-dark">High</span>';
+    if (p === 2) return `<span class="badge bg-danger">${i18n.t('Urgent')}</span>`;
+    if (p === 1) return `<span class="badge bg-warning text-dark">${i18n.t('High')}</span>`;
     return '';
 }
 
 function visibilityBadge(v) {
-    if (v === 'public') return '<span class="badge bg-info">Public</span>';
+    if (v === 'public') return `<span class="badge bg-info">${i18n.t('Public')}</span>`;
     return '';
 }
 

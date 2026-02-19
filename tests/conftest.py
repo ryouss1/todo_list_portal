@@ -62,7 +62,8 @@ def db_session():
     yield session
 
     session.close()
-    transaction.rollback()
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
 
 
@@ -87,7 +88,8 @@ def client(db_session):
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user_id] = lambda: 1
-    with TestClient(app, cookies={"session": _make_session_cookie({"user_id": 1, "session_version": 1})}) as c:
+    session_data = {"user_id": 1, "session_version": 1, "locale": "en"}
+    with TestClient(app, cookies={"session": _make_session_cookie(session_data)}) as c:
         yield c
     app.dependency_overrides.clear()
 
@@ -103,7 +105,7 @@ def raw_client(db_session):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    with TestClient(app, cookies={"session": _make_session_cookie({"locale": "en"})}) as c:
         yield c
     app.dependency_overrides.clear()
 
@@ -139,6 +141,7 @@ def client_user2(db_session, other_user):
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user_id] = lambda: 2
-    with TestClient(app, cookies={"session": _make_session_cookie({"user_id": 2, "session_version": 1})}) as c:
+    session_data = {"user_id": 2, "session_version": 1, "locale": "en"}
+    with TestClient(app, cookies={"session": _make_session_cookie(session_data)}) as c:
         yield c
     app.dependency_overrides.clear()

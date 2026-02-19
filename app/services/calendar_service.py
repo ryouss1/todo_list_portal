@@ -48,7 +48,6 @@ USER_COLORS = [
 
 SOURCE_COLORS = {
     "task_list": "#6c757d",
-    "attendance": "#adb5bd",
     "report": "#198754",
 }
 
@@ -593,89 +592,61 @@ def _get_source_events(
     start_date = start.date() if hasattr(start, "date") else start
     end_date = end.date() if hasattr(end, "date") else end
 
-    if settings.show_task_list:
-        from app.models.task_list_item import TaskListItem
+    # Task List items (client-side filtering handles show/hide)
+    from app.models.task_list_item import TaskListItem
 
-        query = db.query(TaskListItem).filter(
-            TaskListItem.scheduled_date.isnot(None),
-            TaskListItem.scheduled_date >= start_date,
-            TaskListItem.scheduled_date < end_date,
-        )
-        if user_ids:
-            query = query.filter(TaskListItem.assignee_id.in_(user_ids))
-        for item in query.all():
-            assignee_name = user_map.get(item.assignee_id, "") if item.assignee_id else ""
-            result.append(
-                FullCalendarEvent(
-                    id=f"tli_{item.id}",
-                    title=f"[Task] {item.title}",
-                    start=item.scheduled_date.isoformat(),
-                    allDay=True,
-                    color=SOURCE_COLORS["task_list"],
-                    extendedProps={
-                        "source_type": "task_list",
-                        "source_id": item.id,
-                        "creator_name": assignee_name,
-                        "status": item.status,
-                        "read_only": True,
-                    },
-                )
+    query = db.query(TaskListItem).filter(
+        TaskListItem.scheduled_date.isnot(None),
+        TaskListItem.scheduled_date >= start_date,
+        TaskListItem.scheduled_date < end_date,
+    )
+    if user_ids:
+        query = query.filter(TaskListItem.assignee_id.in_(user_ids))
+    for item in query.all():
+        assignee_name = user_map.get(item.assignee_id, "") if item.assignee_id else ""
+        result.append(
+            FullCalendarEvent(
+                id=f"tli_{item.id}",
+                title=f"[Task] {item.title}",
+                start=item.scheduled_date.isoformat(),
+                allDay=True,
+                color=SOURCE_COLORS["task_list"],
+                extendedProps={
+                    "source_type": "task_list",
+                    "source_id": item.id,
+                    "creator_name": assignee_name,
+                    "status": item.status,
+                    "read_only": True,
+                },
             )
-
-    if settings.show_attendance:
-        from app.models.attendance import Attendance
-
-        query = db.query(Attendance).filter(
-            Attendance.date >= start_date,
-            Attendance.date < end_date,
         )
-        if user_ids:
-            query = query.filter(Attendance.user_id.in_(user_ids))
-        for att in query.all():
-            user_name = user_map.get(att.user_id, "")
-            result.append(
-                FullCalendarEvent(
-                    id=f"att_{att.id}",
-                    title=f"[出勤] {user_name}",
-                    start=att.clock_in.isoformat() if att.clock_in else att.date.isoformat(),
-                    end=att.clock_out.isoformat() if att.clock_out else None,
-                    allDay=not att.clock_in,
-                    color=SOURCE_COLORS["attendance"],
-                    extendedProps={
-                        "source_type": "attendance",
-                        "source_id": att.id,
-                        "creator_name": user_name,
-                        "read_only": True,
-                    },
-                )
+
+    # Daily Reports (client-side filtering handles show/hide)
+    from app.models.daily_report import DailyReport
+
+    query = db.query(DailyReport).filter(
+        DailyReport.report_date >= start_date,
+        DailyReport.report_date < end_date,
+    )
+    if user_ids:
+        query = query.filter(DailyReport.user_id.in_(user_ids))
+    for rpt in query.all():
+        user_name = user_map.get(rpt.user_id, "")
+        result.append(
+            FullCalendarEvent(
+                id=f"rpt_{rpt.id}",
+                title=f"[日報] {rpt.task_name or user_name}",
+                start=rpt.report_date.isoformat(),
+                allDay=True,
+                color=SOURCE_COLORS["report"],
+                extendedProps={
+                    "source_type": "report",
+                    "source_id": rpt.id,
+                    "creator_name": user_name,
+                    "read_only": True,
+                },
             )
-
-    if settings.show_reports:
-        from app.models.daily_report import DailyReport
-
-        query = db.query(DailyReport).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date < end_date,
         )
-        if user_ids:
-            query = query.filter(DailyReport.user_id.in_(user_ids))
-        for rpt in query.all():
-            user_name = user_map.get(rpt.user_id, "")
-            result.append(
-                FullCalendarEvent(
-                    id=f"rpt_{rpt.id}",
-                    title=f"[日報] {rpt.task_name or user_name}",
-                    start=rpt.report_date.isoformat(),
-                    allDay=True,
-                    color=SOURCE_COLORS["report"],
-                    extendedProps={
-                        "source_type": "report",
-                        "source_id": rpt.id,
-                        "creator_name": user_name,
-                        "read_only": True,
-                    },
-                )
-            )
 
     return result
 

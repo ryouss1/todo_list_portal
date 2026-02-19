@@ -20,6 +20,9 @@ Todo List Portal は、個人・チームの業務効率化を目的とした統
 | DBマイグレーション | Alembic 1.14.1 |
 | パスワードハッシュ | passlib[bcrypt] 1.7.4 |
 | セッション署名 | itsdangerous 2.2.0 |
+| 認証情報暗号化 | cryptography 46.0.5 (Fernet) |
+| SMBアクセス | smbprotocol 1.16.0 |
+| 国際化(i18n) | Babel 2.16 + gettext |
 | コード品質 | Ruff |
 | 言語 | Python 3.9以上 |
 
@@ -67,7 +70,8 @@ Todo List Portal は、個人・チームの業務効率化を目的とした統
 | [api/auth/security_enhancement.md](./api/auth/security_enhancement.md) | 認証セキュリティ強化設計書（パスワードポリシー、レート制限、ロックアウト、セッション無効化、監査ログ） |
 | [api/auth/oauth.md](./api/auth/oauth.md) | OAuth2/SSO連携設計書（Google/GitHub、プロバイダ管理、アカウントリンク） |
 | [api/auth/password_reset.md](./api/auth/password_reset.md) | パスワードリセット設計書（トークンベース、SMTP送信） |
-
+| [spec_log_function.md](./spec_log_function.md) | ログ収集機能設計（リモートサーバー接続、スキャン、アラート連携） |
+| [spec_log_problem.md](./spec_log_problem.md) | ログ関連 問題点・技術的負債 |
 
 ---
 
@@ -80,11 +84,14 @@ todo_list_portal/
 ├── requirements.txt         # 依存パッケージ
 ├── alembic.ini              # Alembicマイグレーション設定
 ├── alembic/versions/        # マイグレーションファイル
+├── babel.cfg                # Babel翻訳抽出設定
 ├── app/
 │   ├── config.py            # 設定（DB接続URL、SECRET_KEY等）
 │   ├── database.py          # SQLAlchemy エンジン・セッション定義
 │   ├── init_db.py           # DB初期化・シードデータ
 │   ├── core/                # 横断的関心事（例外、セキュリティ、DI、ロギング）
+│   │   ├── auth/            # 認証関連（パスワードポリシー、レート制限、OAuth）
+│   │   └── i18n.py          # 国際化（gettext翻訳、ロケール管理）
 │   ├── models/              # SQLAlchemy ORMモデル
 │   ├── schemas/             # Pydantic リクエスト/レスポンススキーマ
 │   ├── crud/                # CRUD操作
@@ -92,14 +99,11 @@ todo_list_portal/
 │   └── services/            # サービス層（ビジネスロジック）
 ├── templates/               # Jinja2 HTMLテンプレート
 ├── static/                  # 静的ファイル（CSS, JS）
+│   └── locale/              # フロントエンド翻訳ファイル（JSON）
+├── translations/            # バックエンド翻訳ファイル（gettext .po/.mo）
+├── scripts/                 # ユーティリティスクリプト（po2json等）
 ├── tests/                   # pytestテスト
 └── docs/                    # 仕様書・設計書
 ```
 
 各ディレクトリの詳細なファイル構成は実際のディレクトリを参照してください。
-
-```bash
-# ディレクトリ構造の確認
-find . -type f -name "*.py" | head -50
-ls app/models/ app/routers/ app/services/
-```

@@ -3,12 +3,13 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.calendar_event import CalendarEvent, CalendarEventException
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate
 
+_crud = CRUDBase(CalendarEvent)
 
-def get_event(db: Session, event_id: int) -> Optional[CalendarEvent]:
-    return db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+get_event = _crud.get
 
 
 def get_events_in_range(
@@ -49,39 +50,16 @@ def get_recurring_events_in_range(
 
 
 def create_event(db: Session, creator_id: int, data: CalendarEventCreate) -> CalendarEvent:
-    event = CalendarEvent(
-        creator_id=creator_id,
-        title=data.title,
-        description=data.description,
-        event_type=data.event_type,
-        start_at=data.start_at,
-        end_at=data.end_at,
-        all_day=data.all_day,
-        room_id=data.room_id,
-        location=data.location,
-        color=data.color,
-        visibility=data.visibility,
-        recurrence_rule=data.recurrence_rule,
-        recurrence_end=data.recurrence_end,
-    )
-    db.add(event)
-    db.commit()
-    db.refresh(event)
-    return event
+    # Exclude non-model fields (attendee_ids, reminder_minutes are handled separately by service)
+    event_data = data.model_dump(exclude={"attendee_ids", "reminder_minutes"})
+    return _crud.create(db, event_data, creator_id=creator_id)
 
 
 def update_event(db: Session, event: CalendarEvent, data: CalendarEventUpdate) -> CalendarEvent:
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(event, key, value)
-    db.commit()
-    db.refresh(event)
-    return event
+    return _crud.update(db, event, data)
 
 
-def delete_event(db: Session, event: CalendarEvent) -> None:
-    db.delete(event)
-    db.commit()
+delete_event = _crud.delete
 
 
 def get_exceptions(db: Session, parent_event_id: int) -> List[CalendarEventException]:

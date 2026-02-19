@@ -26,7 +26,7 @@ function renderTickets(tickets) {
 function renderStatuses(statuses) {
     const tbody = document.getElementById('status-table');
     if (statuses.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No users</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">${i18n.t('No users')}</td></tr>`;
         return;
     }
     tbody.innerHTML = statuses.map(s => `
@@ -43,7 +43,7 @@ function renderStatuses(statuses) {
 function renderLogs(logs) {
     const el = document.getElementById('my-logs');
     if (logs.length === 0) {
-        el.innerHTML = '<div class="list-group-item text-muted">No history</div>';
+        el.innerHTML = `<div class="list-group-item text-muted">${i18n.t('No history')}</div>`;
         return;
     }
     el.innerHTML = logs.slice(0, 10).map(l => `
@@ -67,7 +67,7 @@ function connectWebSocket() {
     ws = new WebSocket(`${protocol}//${location.host}/ws/presence`);
 
     ws.onopen = () => {
-        document.getElementById('ws-badge').textContent = 'Connected';
+        document.getElementById('ws-badge').textContent = i18n.t('Connected');
         document.getElementById('ws-badge').className = 'badge bg-success ms-2';
     };
 
@@ -79,7 +79,7 @@ function connectWebSocket() {
     };
 
     ws.onclose = () => {
-        document.getElementById('ws-badge').textContent = 'Disconnected';
+        document.getElementById('ws-badge').textContent = i18n.t('Disconnected');
         document.getElementById('ws-badge').className = 'badge bg-secondary ms-2';
         setTimeout(connectWebSocket, 3000);
     };

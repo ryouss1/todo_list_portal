@@ -1,12 +1,15 @@
 import logging
-from datetime import date, datetime, time, timezone
+from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from io import BytesIO
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.config import MAX_ATTENDANCE_BREAKS
+from app.core.constants import InputType
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.core.utils import parse_hhmm_to_utc
 from app.crud import attendance as crud_att
 from app.crud import attendance_break as crud_break
 from app.crud import attendance_preset as crud_preset
@@ -17,37 +20,22 @@ from app.schemas.attendance import AttendanceCreate, AttendanceUpdate
 logger = logging.getLogger("app.services.attendance")
 
 MAX_BREAKS = MAX_ATTENDANCE_BREAKS
+MIN_DURATION_SECONDS = 60  # 1 minute minimum for attendance/break duration
 
 
-def _parse_time(target_date: date, time_str: str) -> datetime:
-    """Parse 'HH:MM' string + date into a timezone-aware UTC datetime.
-
-    The time string is interpreted as local time (server timezone),
-    then converted to UTC for storage.
-    """
-    t = time.fromisoformat(time_str)
-    local_dt = datetime.combine(target_date, t)
-    return local_dt.astimezone(timezone.utc)
+@dataclass
+class AttendanceStatusResult:
+    is_clocked_in: bool
+    current_attendance: Optional[Attendance] = None
 
 
-def _attach_breaks(db: Session, att: Attendance) -> dict:
-    """Convert an Attendance model to a dict with breaks list attached."""
-    breaks = crud_break.get_breaks(db, att.id)
-    return {
-        "id": att.id,
-        "user_id": att.user_id,
-        "clock_in": att.clock_in,
-        "clock_out": att.clock_out,
-        "date": att.date,
-        "input_type": att.input_type,
-        "note": att.note,
-        "created_at": att.created_at,
-        "updated_at": att.updated_at,
-        "breaks": breaks,
-    }
+def _validate_min_duration(start: datetime, end: datetime, label: str) -> None:
+    """Raise ConflictError if the duration between start and end is less than 1 minute."""
+    if (end - start).total_seconds() < MIN_DURATION_SECONDS:
+        raise ConflictError(f"{label}は1分以上必要です")
 
 
-def clock_in(db: Session, user_id: int, note: Optional[str] = None) -> dict:
+def clock_in(db: Session, user_id: int, note: Optional[str] = None) -> Attendance:
     current = crud_att.get_current_attendance(db, user_id)
     if current:
         logger.warning("Clock-in rejected: user_id=%d already clocked in", user_id)
@@ -62,47 +50,63 @@ def clock_in(db: Session, user_id: int, note: Optional[str] = None) -> dict:
 
     result = crud_att.clock_in(db, user_id, note)
     logger.info("Clock-in: user_id=%d, attendance_id=%d", user_id, result.id)
-    return _attach_breaks(db, result)
+    return result
 
 
-def clock_out(db: Session, user_id: int, note: Optional[str] = None) -> dict:
+def clock_out(db: Session, user_id: int, note: Optional[str] = None) -> Attendance:
     current = crud_att.get_current_attendance(db, user_id)
     if not current:
         logger.warning("Clock-out rejected: user_id=%d not clocked in", user_id)
         raise ConflictError("Not clocked in")
+    now = datetime.now(timezone.utc)
+    _validate_min_duration(current.clock_in, now, "勤務時間")
     result = crud_att.clock_out(db, current, note)
     logger.info("Clock-out: user_id=%d, attendance_id=%d", user_id, result.id)
-    return _attach_breaks(db, result)
+    return result
 
 
-def get_status(db: Session, user_id: int) -> dict:
+def get_status(db: Session, user_id: int) -> AttendanceStatusResult:
     current = crud_att.get_current_attendance(db, user_id)
     if current:
-        return {"is_clocked_in": True, "current_attendance": _attach_breaks(db, current)}
-    return {"is_clocked_in": False, "current_attendance": None}
+        return AttendanceStatusResult(is_clocked_in=True, current_attendance=current)
+    return AttendanceStatusResult(is_clocked_in=False, current_attendance=None)
 
 
-def list_attendances(db: Session, user_id: int, year: Optional[int] = None, month: Optional[int] = None) -> List[dict]:
+def list_attendances(
+    db: Session, user_id: int, year: Optional[int] = None, month: Optional[int] = None
+) -> List[Attendance]:
     logger.info("Listing attendances for user_id=%d (year=%s, month=%s)", user_id, year, month)
-    attendances = crud_att.get_attendances(db, user_id, year=year, month=month)
-    return [_attach_breaks(db, att) for att in attendances]
+    return crud_att.get_attendances(db, user_id, year=year, month=month)
 
 
-def get_attendance(db: Session, attendance_id: int, user_id: int) -> dict:
+def get_attendance(db: Session, attendance_id: int, user_id: int) -> Attendance:
     att = crud_att.get_attendance(db, attendance_id)
     if not att or att.user_id != user_id:
         logger.warning("Attendance not found: id=%d", attendance_id)
         raise NotFoundError("Attendance not found")
-    return _attach_breaks(db, att)
+    return att
 
 
-def create_attendance(db: Session, user_id: int, data: AttendanceCreate) -> dict:
+def create_attendance(db: Session, user_id: int, data: AttendanceCreate) -> Attendance:
     existing = crud_att.get_attendance_by_date(db, user_id, data.date)
     if existing:
         raise ConflictError("Attendance already exists for this date")
 
-    clock_in_dt = _parse_time(data.date, data.clock_in)
-    clock_out_dt = _parse_time(data.date, data.clock_out) if data.clock_out else None
+    clock_in_dt = parse_hhmm_to_utc(data.date, data.clock_in)
+    clock_out_dt = parse_hhmm_to_utc(data.date, data.clock_out) if data.clock_out else None
+
+    if clock_out_dt:
+        _validate_min_duration(clock_in_dt, clock_out_dt, "勤務時間")
+
+    # Validate break durations before creating
+    if data.breaks:
+        for brk in data.breaks[:MAX_BREAKS]:
+            if brk.end:
+                _validate_min_duration(
+                    parse_hhmm_to_utc(data.date, brk.start),
+                    parse_hhmm_to_utc(data.date, brk.end),
+                    "休憩時間",
+                )
 
     result = crud_att.create_attendance(
         db,
@@ -116,35 +120,54 @@ def create_attendance(db: Session, user_id: int, data: AttendanceCreate) -> dict
     # Create breaks if provided
     if data.breaks:
         for brk in data.breaks[:MAX_BREAKS]:
-            break_start_dt = _parse_time(data.date, brk.start)
+            break_start_dt = parse_hhmm_to_utc(data.date, brk.start)
             brk_obj = crud_break.create_break(db, result.id, break_start_dt)
             if brk.end:
-                break_end_dt = _parse_time(data.date, brk.end)
+                break_end_dt = parse_hhmm_to_utc(data.date, brk.end)
                 crud_break.end_break(db, brk_obj, break_end_dt)
+        db.refresh(result)
 
     logger.info("Manual attendance created: user_id=%d, date=%s, id=%d", user_id, data.date, result.id)
-    return _attach_breaks(db, result)
+    return result
 
 
 def _check_admin_lock(att: Attendance) -> None:
     """Raise ForbiddenError if the record was entered by an admin."""
-    if att.input_type == "admin":
+    if att.input_type == InputType.ADMIN:
         raise ForbiddenError("管理者入力のレコードは変更できません")
 
 
-def update_attendance(db: Session, attendance_id: int, user_id: int, data: AttendanceUpdate) -> dict:
+def update_attendance(db: Session, attendance_id: int, user_id: int, data: AttendanceUpdate) -> Attendance:
     att = crud_att.get_attendance(db, attendance_id)
     if not att or att.user_id != user_id:
         raise NotFoundError("Attendance not found")
     _check_admin_lock(att)
 
     update_data = {}
+    new_clock_in = att.clock_in
+    new_clock_out = att.clock_out
     if data.clock_in is not None:
-        update_data["clock_in"] = _parse_time(att.date, data.clock_in)
+        new_clock_in = parse_hhmm_to_utc(att.date, data.clock_in)
+        update_data["clock_in"] = new_clock_in
     if data.clock_out is not None:
-        update_data["clock_out"] = _parse_time(att.date, data.clock_out)
+        new_clock_out = parse_hhmm_to_utc(att.date, data.clock_out)
+        update_data["clock_out"] = new_clock_out
     if data.note is not None:
         update_data["note"] = data.note
+
+    # Validate minimum duration for the resulting clock_in/clock_out
+    if new_clock_in and new_clock_out:
+        _validate_min_duration(new_clock_in, new_clock_out, "勤務時間")
+
+    # Validate break durations before applying
+    if data.breaks is not None:
+        for brk in data.breaks[:MAX_BREAKS]:
+            if brk.end:
+                _validate_min_duration(
+                    parse_hhmm_to_utc(att.date, brk.start),
+                    parse_hhmm_to_utc(att.date, brk.end),
+                    "休憩時間",
+                )
 
     result = crud_att.update_attendance(db, att, update_data)
 
@@ -154,14 +177,15 @@ def update_attendance(db: Session, attendance_id: int, user_id: int, data: Atten
         db.query(AttendanceBreak).filter(AttendanceBreak.attendance_id == result.id).delete()
         db.flush()
         for brk in data.breaks[:MAX_BREAKS]:
-            break_start_dt = _parse_time(result.date, brk.start)
+            break_start_dt = parse_hhmm_to_utc(result.date, brk.start)
             brk_obj = crud_break.create_break(db, result.id, break_start_dt)
             if brk.end:
-                break_end_dt = _parse_time(result.date, brk.end)
+                break_end_dt = parse_hhmm_to_utc(result.date, brk.end)
                 crud_break.end_break(db, brk_obj, break_end_dt)
+        db.refresh(result)
 
     logger.info("Attendance updated: id=%d, user_id=%d", attendance_id, user_id)
-    return _attach_breaks(db, result)
+    return result
 
 
 def delete_attendance(db: Session, attendance_id: int, user_id: int) -> None:
@@ -173,7 +197,7 @@ def delete_attendance(db: Session, attendance_id: int, user_id: int) -> None:
     logger.info("Attendance deleted: id=%d, user_id=%d", attendance_id, user_id)
 
 
-def start_break(db: Session, attendance_id: int, user_id: int) -> dict:
+def start_break(db: Session, attendance_id: int, user_id: int) -> Attendance:
     """Start a break for the given attendance record."""
     att = crud_att.get_attendance(db, attendance_id)
     if not att or att.user_id != user_id:
@@ -193,11 +217,12 @@ def start_break(db: Session, attendance_id: int, user_id: int) -> dict:
 
     now = datetime.now(timezone.utc)
     crud_break.create_break(db, attendance_id, now)
+    db.refresh(att)
     logger.info("Break started: attendance_id=%d, user_id=%d", attendance_id, user_id)
-    return _attach_breaks(db, att)
+    return att
 
 
-def end_break(db: Session, attendance_id: int, user_id: int) -> dict:
+def end_break(db: Session, attendance_id: int, user_id: int) -> Attendance:
     """End the active break for the given attendance record."""
     att = crud_att.get_attendance(db, attendance_id)
     if not att or att.user_id != user_id:
@@ -209,9 +234,11 @@ def end_break(db: Session, attendance_id: int, user_id: int) -> dict:
         raise ConflictError("No active break")
 
     now = datetime.now(timezone.utc)
+    _validate_min_duration(active.break_start, now, "休憩時間")
     crud_break.end_break(db, active, now)
+    db.refresh(att)
     logger.info("Break ended: attendance_id=%d, user_id=%d", attendance_id, user_id)
-    return _attach_breaks(db, att)
+    return att
 
 
 def get_user_preset_id(db: Session, user_id: int) -> Optional[int]:
@@ -231,7 +258,7 @@ def set_user_preset_id(db: Session, user_id: int, preset_id: int) -> None:
     logger.info("User %d default preset set to %d", user_id, preset_id)
 
 
-def default_set(db: Session, user_id: int) -> dict:
+def default_set(db: Session, user_id: int) -> Attendance:
     """Set today's attendance from user's default preset.
 
     Clock_in and clock_out are set from the preset.
@@ -245,10 +272,10 @@ def default_set(db: Session, user_id: int) -> dict:
         raise NotFoundError("Preset not found")
 
     today = date.today()
-    clock_in_dt = _parse_time(today, preset.clock_in)
-    clock_out_dt = _parse_time(today, preset.clock_out)
-    break_start_dt = _parse_time(today, preset.break_start) if preset.break_start else None
-    break_end_dt = _parse_time(today, preset.break_end) if preset.break_end else None
+    clock_in_dt = parse_hhmm_to_utc(today, preset.clock_in)
+    clock_out_dt = parse_hhmm_to_utc(today, preset.clock_out)
+    break_start_dt = parse_hhmm_to_utc(today, preset.break_start) if preset.break_start else None
+    break_end_dt = parse_hhmm_to_utc(today, preset.break_end) if preset.break_end else None
 
     existing = crud_att.get_attendance_by_date(db, user_id, today)
     if existing:
@@ -286,7 +313,8 @@ def default_set(db: Session, user_id: int) -> dict:
                 crud_break.end_break(db, brk, break_end_dt)
 
         logger.info("Default-set: created attendance id=%d, preset=%s, user_id=%d", result.id, preset.name, user_id)
-    return _attach_breaks(db, result)
+    db.refresh(result)
+    return result
 
 
 def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> BytesIO:
@@ -296,7 +324,7 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
 
     records = list_attendances(db, user_id, year=year, month=month)
     # Sort ascending by date for the report
-    records.sort(key=lambda r: r["date"])
+    records.sort(key=lambda r: r.date)
 
     wb = Workbook()
     ws = wb.active
@@ -330,15 +358,15 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
     total_work_seconds = 0
     row = 4
     for rec in records:
-        clock_in = _to_dt(rec["clock_in"])
-        clock_out = _to_dt(rec["clock_out"])
+        clock_in_val = _to_dt(rec.clock_in)
+        clock_out_val = _to_dt(rec.clock_out)
 
         # Break total
         break_seconds = 0
         break_parts = []
-        for brk in rec.get("breaks", []):
-            bs = _to_dt(brk.break_start if hasattr(brk, "break_start") else brk.get("break_start"))
-            be = _to_dt(brk.break_end if hasattr(brk, "break_end") else brk.get("break_end"))
+        for brk in rec.breaks:
+            bs = _to_dt(brk.break_start)
+            be = _to_dt(brk.break_end)
             if bs and be:
                 break_seconds += int((be - bs).total_seconds())
                 break_parts.append(f"{bs.strftime('%H:%M')}-{be.strftime('%H:%M')}")
@@ -347,8 +375,8 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
 
         # Work duration
         work_str = ""
-        if clock_in and clock_out:
-            work_seconds = int((clock_out - clock_in).total_seconds()) - break_seconds
+        if clock_in_val and clock_out_val:
+            work_seconds = int((clock_out_val - clock_in_val).total_seconds()) - break_seconds
             if work_seconds < 0:
                 work_seconds = 0
             total_work_seconds += work_seconds
@@ -357,15 +385,15 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
             work_str = f"{h}h {m}m"
 
         input_type_map = {"web": "WEB", "ic_card": "IC", "admin": "管理者"}
-        input_label = input_type_map.get(rec.get("input_type", "web"), rec.get("input_type", ""))
+        input_label = input_type_map.get(rec.input_type, rec.input_type)
 
-        ws.cell(row=row, column=1, value=str(rec["date"]))
-        ws.cell(row=row, column=2, value=clock_in.strftime("%H:%M") if clock_in else "")
-        ws.cell(row=row, column=3, value=clock_out.strftime("%H:%M") if clock_out else "")
+        ws.cell(row=row, column=1, value=str(rec.date))
+        ws.cell(row=row, column=2, value=clock_in_val.strftime("%H:%M") if clock_in_val else "")
+        ws.cell(row=row, column=3, value=clock_out_val.strftime("%H:%M") if clock_out_val else "")
         ws.cell(row=row, column=4, value=", ".join(break_parts) if break_parts else "")
         ws.cell(row=row, column=5, value=work_str)
         ws.cell(row=row, column=6, value=input_label)
-        ws.cell(row=row, column=7, value=rec.get("note") or "")
+        ws.cell(row=row, column=7, value=rec.note or "")
         row += 1
 
     # Total row

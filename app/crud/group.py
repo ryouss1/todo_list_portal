@@ -2,12 +2,13 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.group import Group
 from app.models.user import User
 
+_crud = CRUDBase(Group)
 
-def get_group(db: Session, group_id: int) -> Optional[Group]:
-    return db.query(Group).filter(Group.id == group_id).first()
+get_group = _crud.get
 
 
 def get_groups(db: Session) -> List[Group]:
@@ -15,24 +16,14 @@ def get_groups(db: Session) -> List[Group]:
 
 
 def create_group(db: Session, name: str, description: Optional[str] = None, sort_order: int = 0) -> Group:
-    group = Group(name=name, description=description, sort_order=sort_order)
-    db.add(group)
-    db.commit()
-    db.refresh(group)
-    return group
+    return _crud.create(db, {"name": name, "description": description, "sort_order": sort_order})
 
 
 def update_group(db: Session, group: Group, data: dict) -> Group:
-    for key, value in data.items():
-        setattr(group, key, value)
-    db.commit()
-    db.refresh(group)
-    return group
+    return _crud.update(db, group, data)
 
 
-def delete_group(db: Session, group: Group) -> None:
-    db.delete(group)
-    db.commit()
+delete_group = _crud.delete
 
 
 def count_members(db: Session, group_id: int) -> int:

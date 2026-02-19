@@ -35,7 +35,7 @@
 | | 出勤履歴 | 過去の出勤・退勤記録を一覧表示（月別フィルタ対応） |
 | | 休憩管理 | 1回の出勤あたり最大3回まで休憩の開始・終了を記録 |
 | | 手動入力 | 日付・出勤退勤時刻を指定して勤怠記録を手動作成 |
-| | プリセット | 定時パターン（出勤・退勤・休憩時刻）の設定・適用 |
+| | プリセット | 定時パターン（出勤・退勤・休憩時刻）の設定・適用（手動作成・編集モーダルの両方で利用可能） |
 | | Excelエクスポート | 月別の勤怠データをExcelファイルでエクスポート |
 | | 入力種別ロック | input_type=admin の記録は編集・削除不可 |
 | **タスク管理** | タスク作成 | タイトル、説明、タスク分類、Backlogチケット番号を指定して作成 |
@@ -54,6 +54,7 @@
 | | 担当解除 | 割り当て済みアイテムを未割当に戻す（公開プールに返却） |
 | | タスク開始 | アイテムをTasksにコピーしてタイマー管理を開始 |
 | | 時間蓄積 | Task完了時に作業時間をソースアイテムに蓄積 |
+| | フィルタ | ステータス・カテゴリ・キーワードでフィルタリング（done はデフォルト非表示） |
 | **在籍管理** | ステータス更新 | 自分の在籍状態を更新（available/away/out/break/offline/meeting/remote） |
 | | 全員の状態表示 | 全ユーザーの在籍状態を一覧表示（display_name付き） |
 | | 作業中チケット表示 | in_progressタスクのBacklogチケットを在籍一覧に表示 |
@@ -72,11 +73,17 @@
 | | ログ一覧 | 受信日時降順でログを一覧表示（件数上限指定可） |
 | | 重要ログフィルタ | WARNING/ERROR/CRITICALのログのみ表示 |
 | | リアルタイム配信 | WebSocketでログをリアルタイムにブラウザへ配信 |
-| **ログソース管理** | ログソース作成 | 監視対象ファイルパス、パーサーパターン等を指定して作成（管理者操作） |
+| **ログソース管理** | ログソース作成 | リモートサーバー接続情報（FTP/SMB）、パーサーパターン等を指定して作成（管理者操作） |
 | | ログソース更新 | 各フィールドの部分更新に対応（管理者操作） |
 | | ログソース削除 | 管理者のみ削除可能 |
-| | バックグラウンド収集 | ファイルポーリングによる自動ログ収集（ローテーション検出対応） |
-| **アラート管理** | アラート一覧 | アラートの一覧表示（アクティブのみフィルタ対応） |
+| | 接続テスト | リモートサーバーへの接続テストを実行し、ファイル一覧取得を検証（管理者操作） |
+| | ファイル一覧 | ログソースに紐づく収集対象ファイルの一覧表示 |
+| | バックグラウンド収集 | リモートサーバーへのポーリングによる自動ログ収集（`LOG_SCANNER_ENABLED=true` で有効化、各ソースの `polling_interval_sec` に基づく自動スキャン） |
+| | スキャン実行 | リモートサーバーに接続してファイル一覧を取得し、当日のファイルのみDB更新（管理者操作） |
+| | コンテンツ再読込 | 既存のlog_entriesを削除しlast_read_lineをリセットした後、再スキャンを実行（エンコーディング変更後の再取得用、管理者操作） |
+| | ファイル変更通知 | alert_on_change有効時、スキャンでファイルのタイムスタンプ更新を検出し、画面に「エラーあり」表示 + 変更ファイル名 + フォルダリンクを表示。アラートも自動生成（変更ファイル名・フォルダパス含む） |
+| | フォルダリンク | 変更検出時にフォルダパスを表示（SMB: `\\host\path`、FTP: `ftp://host/path`）。クリックでパスをクリップボードにコピー（ブラウザのセキュリティ制約により `file://` リンクは動作しないため） |
+| **アラート管理** | アラート一覧 | アラートの一覧表示（アクティブ/重要度/ソース/キーワードフィルタ対応） |
 | | 手動アラート作成 | タイトル、メッセージ、重要度を指定して手動作成 |
 | | アラート確認 | 確認済みにマーク（確認者・日時を記録） |
 | | アラート非活性化 | アラートを非アクティブに変更 |
@@ -95,9 +102,24 @@
 | | ユーザー削除 | 管理者のみ（自分自身の削除は不可） |
 | | パスワード変更 | 自分のパスワードを現パスワード検証の上で変更 |
 | | パスワードリセット | 管理者が他ユーザーのパスワードを強制リセット |
+| **カレンダー管理** | イベント作成 | タイトル、日時、場所、会議室、繰り返しルールを指定して作成 |
+| | イベント更新 | 各フィールドの部分更新、繰り返しイベントのスコープ指定（all/this/series） |
+| | イベント削除 | 単一/シリーズ/以降を指定して削除 |
+| | 参加者管理 | イベントへの参加者追加・削除・応答（accept/decline/tentative） |
+| | リマインダー | イベント開始前の通知設定 |
+| | 会議室管理 | 会議室の作成・更新・削除・空き状況確認（管理者操作） |
+| | カレンダー設定 | デフォルト表示・色・リマインダー・表示項目のユーザー個別設定 |
+| | グループフィルタ | サイドバーのグループドロップダウンでグループ単位のイベント表示切替 |
+| **グループ管理** | グループ一覧 | グループの一覧取得 |
+| | グループCUD | 管理者のみ作成・更新・削除可能 |
+| | ユーザー所属 | ユーザーをグループに割り当て（ユーザー編集経由） |
 | **Dashboard** | サマリー表示 | 各機能の概要をカード形式で一覧表示 |
 | | 直近ログ | 直近5件のログを表示 |
 | | 未完了Todo | 未完了Todoの上位5件を表示 |
+| **国際化 (i18n)** | ロケール切替 | ユーザー設定の `preferred_locale`（ja/en）によるUI言語切替 |
+| | テンプレート翻訳 | Jinja2 `_()` 関数によるサーバーサイド翻訳（gettext + Babel） |
+| | JS翻訳 | `i18n.t()` 関数によるクライアントサイド翻訳（`static/locale/{locale}.json`） |
+| | エラーメッセージ翻訳 | サービス層は英語キー、`app_error_handler` で境界層翻訳 |
 
 ---
 
@@ -115,6 +137,7 @@
   - Tasks (`/tasks`)
   - Reports (`/reports`)
   - Summary (`/summary`)
+  - Calendar (`/calendar`)
   - Logs (`/logs`)
   - Alerts (`/alerts`) ※未確認アラート件数バッジ付き
   - Users (`/users`)
@@ -127,265 +150,25 @@
 - レスポンシブデザイン（Bootstrap 5のグリッドシステムを使用）。
 - テンプレートファイル: `templates/base.html`
 
-### 2.2 ログイン画面 (`/login`)
+### 2.2 画面別仕様
 
-`base.html` を継承しない独立ページ。
+各画面の詳細仕様は個別ファイルを参照してください。
 
-- 中央配置のカード型ログインフォーム
-- 入力フィールド: Email、Password
-- ログインボタン押下で `POST /api/auth/login` を呼び出し
-- 成功時: `/` にリダイレクト
-- 失敗時: フォーム上部にエラーアラート表示
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/login.html` |
-| ルーター | `app/routers/pages.py` (`GET /login`) |
-| API | `app/routers/api_auth.py` |
-
-### 2.3 Dashboard画面 (`/`)
-
-各機能のサマリーをカード形式で表示する。
-
-- **Todoカード**: 未完了件数 / 全件数
-- **Attendanceカード**: 現在の出勤状態（Clocked In / Not Clocked In）
-- **Tasksカード**: 作業中タスク数 / 全タスク数
-- **Logsカード**: 直近のログ件数
-- **Recent Logs**: 直近5件のログをリスト表示（重要度バッジ付き）
-- **Incomplete Todos**: 未完了のTodo上位5件をリスト表示（優先度バッジ付き）
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/index.html` |
-| ルーター | `app/routers/pages.py` (`GET /`) |
-
-### 2.4 Todo画面 (`/todos`)
-
-#### 表示機能
-- Todo一覧をカード形式で表示
-- フィルターボタン: All / Active / Completed
-- 各Todoに完了チェックボックス、編集ボタン、削除ボタンを配置
-- 優先度バッジ: High（黄色）、Urgent（赤色）
-- 期日の表示（カレンダーアイコン付き）
-- 完了済みTodoは取り消し線スタイルで表示
-
-#### 操作機能
-- **新規作成**: モーダルダイアログで入力（タイトル、説明、優先度、期日）
-- **編集**: モーダルダイアログで既存データを修正
-- **削除**: 確認ダイアログ後に削除
-- **完了トグル**: チェックボックスで完了状態を切り替え
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/todos.html` |
-| JavaScript | `static/js/todos.js` |
-| ルーター | `app/routers/pages.py` (`GET /todos`) |
-| API | `app/routers/api_todos.py` |
-
-### 2.5 Attendance画面 (`/attendance`)
-
-#### 表示機能
-- 現在の出勤状態をカード形式で表示
-- 出勤中の場合、経過時間をリアルタイムでカウントアップ表示（HH:MM:SS形式）
-- 出勤履歴をテーブル形式で表示（日付、出勤時刻、退勤時刻、勤務時間、メモ）
-- 月別フィルタで表示期間を絞り込み
-- 退勤未済の場合は「Active」バッジを表示
-
-#### 操作機能
-- **Clock In**: 出勤ボタン（出勤中は無効化）
-- **Clock Out**: 退勤ボタン（未出勤時は無効化）
-- **Default Set**: プリセットから当日の勤怠を一括設定
-- **手動入力**: モーダルダイアログで勤怠記録を手動作成・編集
-- **Excelエクスポート**: 月別の勤怠データをダウンロード
-- メモの入力欄（任意）
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/attendance.html` |
-| JavaScript | `static/js/attendance.js` |
-| ルーター | `app/routers/pages.py` (`GET /attendance`) |
-| API | `app/routers/api_attendances.py` |
-
-### 2.6 Presence画面 (`/presence`)
-
-#### 表示機能
-- 全ユーザーの在籍状態をカード形式で一覧表示
-- 各ユーザーの表示名、ステータスバッジ、ステータスメッセージを表示
-- 作業中タスクのBacklogチケットをリンク付きで表示
-
-#### 操作機能
-- **ステータス変更**: ドロップダウンで自分のステータスを変更
-- **メッセージ入力**: ステータスメッセージの設定
-- WebSocket経由で他ユーザーの状態変更をリアルタイム反映
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/presence.html` |
-| JavaScript | `static/js/presence.js` |
-| ルーター | `app/routers/pages.py` (`GET /presence`) |
-| API | `app/routers/api_presence.py` |
-| WebSocket | `main.py` (`WS /ws/presence`) |
-
-### 2.7 Tasks画面 (`/tasks`)
-
-#### 表示機能
-- タスクをカード形式でグリッド表示（MD: 2列、LG: 3列）
-- 各タスクカードに以下を表示:
-  - タイトルとステータスバッジ（pending=グレー、in_progress=青）
-  - 説明文
-  - タイマー表示（HH:MM:SS形式、等幅フォント）
-  - Start/Stopボタン
-  - Edit/Deleteボタン
-
-#### 操作機能
-- **新規作成**: モーダルダイアログで入力（タイトル、説明、タスク分類、Backlogチケット番号）
-- **編集**: モーダルダイアログで修正（タイトル、説明、ステータス、タスク分類、Backlogチケット番号）。ステータス選択は編集時のみ表示。
-- **削除**: 確認ダイアログ後に削除
-- **タイマー開始**: Startボタンでタイマー開始。タイマー中はリアルタイムでカウントアップ表示。
-- **タイマー停止**: Stopボタンでタイマー停止。経過時間が累計に加算される。
-- **Done**: タスクを完了（report=true時は日報自動作成）。
-- **Batch-Done**: Overdueタスクの一括完了モーダル。
-- アクティブなタイマーがある場合、ページロード時に自動検出してカウントアップを再開する。
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/tasks.html` |
-| JavaScript | `static/js/tasks.js` |
-| ルーター | `app/routers/pages.py` (`GET /tasks`) |
-| API | `app/routers/api_tasks.py` |
-
-### 2.8 Reports画面 (`/reports`)
-
-#### 表示機能
-- 自分の日報一覧をテーブル形式で表示
-- 全ユーザーの日報一覧の切り替え表示
-
-#### 操作機能
-- **新規作成**: モーダルダイアログで入力（対象日、タスク分類、タスク名、作業時間、業務内容等）
-- **詳細表示**: 日報詳細画面への遷移
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/reports.html` |
-| JavaScript | `static/js/reports.js` |
-| ルーター | `app/routers/pages.py` (`GET /reports`) |
-| API | `app/routers/api_reports.py` |
-
-### 2.9 Report Detail画面 (`/reports/{id}`)
-
-- 日報の全フィールドを詳細表示
-- 所有者のみ編集・削除が可能
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/report_detail.html` |
-| JavaScript | `static/js/report_detail.js` |
-| ルーター | `app/routers/pages.py` (`GET /reports/{report_id}`) |
-
-### 2.10 Summary画面 (`/summary`)
-
-- 期間（日次/週次/月次）の切り替え
-- 日報件数、ユーザー別提出状況、カテゴリ別集計を表示
-- 課題・問題の集約表示
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/summary.html` |
-| JavaScript | `static/js/summary.js` |
-| ルーター | `app/routers/pages.py` (`GET /summary`) |
-| API | `app/routers/api_summary.py` |
-
-### 2.11 Logs画面 (`/logs`)
-
-#### 表示機能
-- ログをテーブル形式で表示（受信日時、重要度、システム名、ログ種別、メッセージ）
-- 重要度に応じた行の背景色:
-  - ERROR / CRITICAL: 赤系背景
-  - WARNING: 黄系背景
-- 重要度バッジの色分け:
-  - ERROR / CRITICAL: 赤
-  - WARNING: 黄
-  - DEBUG: グレー
-  - INFO: 水色
-- WebSocket接続状態バッジ（Connected: 緑、Disconnected: 赤）
-- フィルターボタン: All / Important（WARNING以上のみ）
-
-#### リアルタイム更新
-- WebSocket経由で新しいログを自動受信しリストの先頭に追加
-- クライアント側のログ保持件数は最大200件
-- WebSocket切断時は3秒後に自動再接続
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/logs.html` |
-| JavaScript | `static/js/logs.js` |
-| ルーター | `app/routers/pages.py` (`GET /logs`) |
-| API | `app/routers/api_logs.py` |
-| WebSocket | `main.py` (`WS /ws/logs`) |
-
-### 2.12 Alerts画面 (`/alerts`)
-
-#### 表示機能
-- アラートを一覧表示（重要度バッジ、ソース、作成日時）
-- アクティブ/全件のフィルタ切り替え
-- 確認済み/未確認のステータス表示
-
-#### 操作機能
-- **確認**: アラートを確認済みにマーク
-- **非活性化**: アラートを非アクティブに変更
-- **削除**: 管理者のみ削除可能
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/alerts.html` |
-| JavaScript | `static/js/alerts.js` |
-| ルーター | `app/routers/pages.py` (`GET /alerts`) |
-| API | `app/routers/api_alerts.py` |
-| WebSocket | `main.py` (`WS /ws/alerts`) |
-
-### 2.13 Users画面 (`/users`)
-
-#### 表示機能
-- ユーザー一覧をテーブル形式で表示（メール、表示名、ロール、有効フラグ）
-
-#### 操作機能
-- **ユーザー作成**: 管理者のみモーダルダイアログで作成
-- **ユーザー編集**: 管理者は全フィールド、一般ユーザーは自分の表示名のみ
-- **ユーザー削除**: 管理者のみ（自分自身は削除不可）
-- **パスワードリセット**: 管理者が他ユーザーのパスワードを強制リセット
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/users.html` |
-| JavaScript | `static/js/users.js` |
-| ルーター | `app/routers/pages.py` (`GET /users`) |
-| API | `app/routers/api_users.py` |
-
-### 2.14 Task List画面 (`/task-list`)
-
-#### 表示機能
-- タブ切替構成:「My Items」（自分の担当、デフォルト）/「All Items」（全体）
-- アイテムをテーブル形式で表示（`table-responsive` + `table.table-hover`）
-- テーブルカラム: ステータス、タイトル、分類、予定日、作業時間、Backlog、担当者（全体タブのみ）、操作
-- ステータスバッジ: open=グレー、in_progress=青、done=緑
-- テーブル初期非表示 → データロード後に表示
-- 担当者カラム: All Itemsタブのみ表示（userMap でユーザー名解決）
-
-#### 操作機能
-- **新規作成**: モーダルダイアログで入力（タイトル、説明、予定日、カテゴリ、Backlogチケット）
-- **編集**: モーダルダイアログで既存データを修正
-- **削除**: 確認ダイアログ後に削除
-- **Assign**: 未割当アイテムを自分に割り当て（All Itemsタブで操作）
-- **Unassign**: 割り当て解除（自分の担当のみ操作可能）
-- **Start**: アイテムをTasksページにコピー（新しいTaskを作成）、アイテムのステータスをin_progressに変更
-- **Done**: アイテムのステータスをdoneに変更
-
-| 項目 | ファイル |
-|------|---------|
-| テンプレート | `templates/task_list.html` |
-| JavaScript | `static/js/task_list.js` |
-| ルーター | `app/routers/pages.py` (`GET /task-list`) |
-| API | `app/routers/api_task_list.py` |
+| 画面 | パス | 仕様書 |
+|------|------|--------|
+| ログイン | `/login` | [screens/login.md](./screens/login.md) |
+| Dashboard | `/` | [screens/dashboard.md](./screens/dashboard.md) |
+| Todo | `/todos` | [screens/todos.md](./screens/todos.md) |
+| Attendance | `/attendance` | [screens/attendance.md](./screens/attendance.md) |
+| Presence | `/presence` | [screens/presence.md](./screens/presence.md) |
+| Tasks | `/tasks` | [screens/tasks.md](./screens/tasks.md) |
+| Reports | `/reports`, `/reports/{id}` | [screens/reports.md](./screens/reports.md) |
+| Summary | `/summary` | [screens/summary.md](./screens/summary.md) |
+| Logs | `/logs` | [screens/logs.md](./screens/logs.md) |
+| Alerts | `/alerts` | [screens/alerts.md](./screens/alerts.md) |
+| Users | `/users` | [screens/users.md](./screens/users.md) |
+| Task List | `/task-list` | [screens/task_list.md](./screens/task_list.md) |
+| Calendar | `/calendar` | [screens/calendar.md](./screens/calendar.md) |
 
 ---
 

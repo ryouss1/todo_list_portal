@@ -1,6 +1,7 @@
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.constants import UserRole
 from app.core.exceptions import AuthenticationError, ForbiddenError
 from app.database import get_db
 
@@ -31,6 +32,6 @@ def require_admin(user_id: int = Depends(get_current_user_id), db: Session = Dep
     from app.models.user import User
 
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role != "admin":
+    if not user or user.role != UserRole.ADMIN:
         raise ForbiddenError("Admin access required")
     return user_id

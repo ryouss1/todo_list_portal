@@ -1,18 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Alerts - Todo List Portal{% endblock %}
+{% block title %}{{ _("Alerts") }} - Todo List Portal{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-bell"></i> Alerts</h2>
+    <h2><i class="bi bi-bell"></i> {{ _("Alerts") }}</h2>
     <div>
-        <span class="badge bg-success me-2" id="alert-ws-status">Disconnected</span>
+        <span class="badge bg-success me-2" id="alert-ws-status">{{ _("Disconnected") }}</span>
         <div class="btn-group btn-group-sm me-2">
-            <button class="btn btn-outline-secondary active" onclick="filterAlerts('all', this)">All</button>
-            <button class="btn btn-outline-danger" onclick="filterAlerts('active', this)">Active</button>
+            <button class="btn btn-outline-secondary active" onclick="filterAlerts('all', this)">{{ _("All") }}</button>
+            <button class="btn btn-outline-danger" onclick="filterAlerts('active', this)">{{ _("Active Only") }}</button>
         </div>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#alertModal">
-            <i class="bi bi-plus-lg"></i> Create Alert
+            <i class="bi bi-plus-lg"></i> {{ _("Create Alert") }}
         </button>
     </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3" id="alert-filter-bar">
+    <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-secondary active" data-severity="all" onclick="setSeverityFilter('all', this)">{{ _("All") }}</button>
+        <button class="btn btn-outline-info" data-severity="info" onclick="setSeverityFilter('info', this)">{{ _("Info") }}</button>
+        <button class="btn btn-outline-warning" data-severity="warning" onclick="setSeverityFilter('warning', this)">{{ _("Warning") }}</button>
+        <button class="btn btn-outline-danger" data-severity="critical" onclick="setSeverityFilter('critical', this)">{{ _("Critical") }}</button>
+    </div>
+    <select class="form-select form-select-sm" id="alert-source-filter" style="width: auto; min-width: 140px;" onchange="setSourceFilter(this.value)">
+        <option value="">{{ _("All Sources") }}</option>
+    </select>
+    <input type="text" class="form-control form-control-sm" id="alert-keyword-filter"
+           placeholder="{{ _('Search title/message...') }}" style="width: 200px;">
 </div>
 
 <div id="alert-list" class="mb-4"></div>
@@ -20,9 +35,9 @@
 <hr class="my-4">
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-gear"></i> Alert Rules</h3>
+    <h3><i class="bi bi-gear"></i> {{ _("Alert Rules") }}</h3>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#ruleModal" onclick="openRuleModal()">
-        <i class="bi bi-plus-lg"></i> Add Rule
+        <i class="bi bi-plus-lg"></i> {{ _("Add Rule") }}
     </button>
 </div>
 
@@ -30,11 +45,11 @@
     <table class="table table-sm table-hover">
         <thead class="table-dark">
             <tr>
-                <th>Name</th>
-                <th>Condition</th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th style="width:140px">Actions</th>
+                <th>{{ _("Name") }}</th>
+                <th>{{ _("Condition") }}</th>
+                <th>{{ _("Severity") }}</th>
+                <th>{{ _("Status") }}</th>
+                <th style="width:140px">{{ _("Actions") }}</th>
             </tr>
         </thead>
         <tbody id="rule-list"></tbody>
@@ -44,38 +59,42 @@
 <!-- Create Alert Modal -->
 <div class="modal fade" id="alertModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content modal-styled">
             <div class="modal-header">
-                <h5 class="modal-title">Create Alert</h5>
+                <h5 class="modal-title"><i class="bi bi-bell-fill"></i> {{ _("Create Alert") }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Title</label>
-                    <input type="text" class="form-control" id="alert-title" required>
+            <div class="modal-body py-2 px-3">
+                <div class="stl-field">
+                    <label class="stl-label"><i class="bi bi-type-bold"></i> {{ _("Title") }}</label>
+                    <input type="text" class="form-control form-control-sm" id="alert-title" required>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Message</label>
-                    <textarea class="form-control" id="alert-message" rows="3" required></textarea>
+                <div class="stl-field">
+                    <label class="stl-label"><i class="bi bi-chat-left-text"></i> {{ _("Message") }}</label>
+                    <textarea class="form-control form-control-sm" id="alert-message" rows="3" required></textarea>
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Severity</label>
-                        <select class="form-select" id="alert-severity">
-                            <option value="info">Info</option>
-                            <option value="warning" selected>Warning</option>
-                            <option value="critical">Critical</option>
-                        </select>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-shield-exclamation"></i> {{ _("Severity") }}</label>
+                            <select class="form-select form-select-sm" id="alert-severity">
+                                <option value="info">{{ _("Info") }}</option>
+                                <option value="warning" selected>{{ _("Warning") }}</option>
+                                <option value="critical">{{ _("Critical") }}</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Source</label>
-                        <input type="text" class="form-control" id="alert-source" placeholder="Optional">
+                    <div class="col-6">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-diagram-3"></i> {{ _("Source") }}</label>
+                            <input type="text" class="form-control form-control-sm" id="alert-source" placeholder="{{ _("Optional") }}">
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="createAlert()">Create</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Cancel") }}</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="createAlert()">{{ _("Create") }}</button>
             </div>
         </div>
     </div>
@@ -83,59 +102,88 @@
 
 <!-- Alert Rule Modal -->
 <div class="modal fade" id="ruleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog">
+        <div class="modal-content modal-styled">
             <div class="modal-header">
-                <h5 class="modal-title" id="ruleModalTitle">Add Alert Rule</h5>
+                <h5 class="modal-title" id="ruleModalTitle"><i class="bi bi-gear-fill"></i> {{ _("Add Alert Rule") }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body py-2 px-3">
                 <input type="hidden" id="rule-id">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Rule Name</label>
-                        <input type="text" class="form-control" id="rule-name" required>
+                <ul class="nav nav-pills nav-fill stl-tabs mb-2">
+                    <li class="nav-item">
+                        <button type="button" class="nav-link active" data-bs-toggle="pill" data-bs-target="#rule-tab-basic">
+                            <i class="bi bi-tag"></i> {{ _("Basic") }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" data-bs-toggle="pill" data-bs-target="#rule-tab-condition">
+                            <i class="bi bi-braces"></i> {{ _("Condition") }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" data-bs-toggle="pill" data-bs-target="#rule-tab-template">
+                            <i class="bi bi-file-text"></i> {{ _("Template") }}
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="rule-tab-basic">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stl-field">
+                                    <label class="stl-label"><i class="bi bi-type-bold"></i> {{ _("Rule Name") }}</label>
+                                    <input type="text" class="form-control form-control-sm" id="rule-name" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stl-field">
+                                    <label class="stl-label"><i class="bi bi-shield-exclamation"></i> {{ _("Alert Severity") }}</label>
+                                    <select class="form-select form-select-sm" id="rule-severity">
+                                        <option value="info">{{ _("Info") }}</option>
+                                        <option value="warning" selected>{{ _("Warning") }}</option>
+                                        <option value="critical">{{ _("Critical") }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stl-field">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="rule-is-enabled" checked>
+                                <label class="form-check-label small" for="rule-is-enabled">{{ _("Enabled") }}</label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Alert Severity</label>
-                        <select class="form-select" id="rule-severity">
-                            <option value="info">Info</option>
-                            <option value="warning" selected>Warning</option>
-                            <option value="critical">Critical</option>
-                        </select>
+                    <div class="tab-pane fade" id="rule-tab-condition">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-braces"></i> {{ _("Condition (JSON)") }}</label>
+                            <textarea class="form-control form-control-sm font-monospace" id="rule-condition" rows="4"
+                                      placeholder='{"severity": "ERROR"}'></textarea>
+                            <small class="text-muted">{{ _("Supports: exact match, {\"$in\": [...]}, {\"$contains\": \"substr\"}") }}</small>
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label">Condition (JSON)</label>
-                        <textarea class="form-control font-monospace" id="rule-condition" rows="3"
-                                  placeholder='{"severity": "ERROR"}'></textarea>
-                        <small class="text-muted">Supports: exact match, {"$in": [...]}, {"$contains": "substr"}</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Title Template</label>
-                        <input type="text" class="form-control" id="rule-title-template"
-                               placeholder='{severity} in {system_name}'>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Message Template (optional)</label>
-                        <input type="text" class="form-control" id="rule-message-template"
-                               placeholder='{message}'>
-                    </div>
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="rule-is-enabled" checked>
-                            <label class="form-check-label" for="rule-is-enabled">Enabled</label>
+                    <div class="tab-pane fade" id="rule-tab-template">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-type-h1"></i> {{ _("Title Template") }}</label>
+                            <input type="text" class="form-control form-control-sm" id="rule-title-template"
+                                   placeholder='{severity} in {system_name}'>
+                        </div>
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-chat-left-text"></i> {{ _("Message Template (optional)") }}</label>
+                            <input type="text" class="form-control form-control-sm" id="rule-message-template"
+                                   placeholder='{message}'>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveRule()">Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Cancel") }}</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveRule()">{{ _("Save") }}</button>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/alerts.js"></script>
+<script src="/static/js/alerts.js?v=4"></script>
 {% endblock %}

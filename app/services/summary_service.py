@@ -69,14 +69,36 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
     user_map = {u.id: u.display_name for u in users}
     today = date.today()
 
-    # Per-user category counts and minutes
-    user_report_counts = Counter(r.user_id for r in reports)
-    user_has_today = set(r.user_id for r in reports if r.report_date == today)
+    # Single pass through all reports to accumulate all aggregations
+    user_report_counts: Counter = Counter()
+    user_has_today: set = set()
     user_cat_counts: dict = defaultdict(Counter)
     user_cat_minutes: dict = defaultdict(lambda: defaultdict(int))
+    date_counts: Counter = Counter()
+    date_cat_counts: dict = defaultdict(Counter)
+    date_cat_minutes: dict = defaultdict(lambda: defaultdict(int))
+    cat_stats: dict = {}
+    recent_reports_raw: list = []
+    issues = []
+
     for r in reports:
+        user_report_counts[r.user_id] += 1
+        if r.report_date == today:
+            user_has_today.add(r.user_id)
         user_cat_counts[r.user_id][r.category_id] += 1
         user_cat_minutes[r.user_id][r.category_id] += r.time_minutes or 0
+        date_counts[r.report_date] += 1
+        date_cat_counts[r.report_date][r.category_id] += 1
+        date_cat_minutes[r.report_date][r.category_id] += r.time_minutes or 0
+        cid = r.category_id
+        if cid not in cat_stats:
+            cat_stats[cid] = {"count": 0, "minutes": 0}
+        cat_stats[cid]["count"] += 1
+        cat_stats[cid]["minutes"] += r.time_minutes or 0
+        if len(recent_reports_raw) < 10:
+            recent_reports_raw.append(r)
+        if r.issues and r.issues.strip():
+            issues.append(f"[{r.report_date}] {user_map.get(r.user_id, 'Unknown')}: {r.issues.strip()}")
 
     user_report_statuses = [
         UserReportStatus(
@@ -96,14 +118,6 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
         )
         for u in users
     ]
-
-    # Per-date category counts and minutes
-    date_counts = Counter(r.report_date for r in reports)
-    date_cat_counts: dict = defaultdict(Counter)
-    date_cat_minutes: dict = defaultdict(lambda: defaultdict(int))
-    for r in reports:
-        date_cat_counts[r.report_date][r.category_id] += 1
-        date_cat_minutes[r.report_date][r.category_id] += r.time_minutes or 0
 
     report_trends = sorted(
         [
@@ -125,13 +139,7 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
         ],
         key=lambda x: x.date,
     )
-    cat_stats = {}
-    for r in reports:
-        cid = r.category_id
-        if cid not in cat_stats:
-            cat_stats[cid] = {"count": 0, "minutes": 0}
-        cat_stats[cid]["count"] += 1
-        cat_stats[cid]["minutes"] += r.time_minutes or 0
+
     category_trends = sorted(
         [
             CategoryTrend(
@@ -154,13 +162,8 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
             report_date=r.report_date,
             work_content_preview=r.work_content[:100] if r.work_content else "",
         )
-        for r in reports[:10]
+        for r in recent_reports_raw
     ]
-
-    issues = []
-    for r in reports:
-        if r.issues and r.issues.strip():
-            issues.append(f"[{r.report_date}] {user_map.get(r.user_id, 'Unknown')}: {r.issues.strip()}")
 
     return BusinessSummaryResponse(
         period_start=period_start,

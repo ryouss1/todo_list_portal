@@ -3,7 +3,12 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.attendance import Attendance
+
+_crud = CRUDBase(Attendance)
+
+get_attendance = _crud.get
 
 
 def get_current_attendance(db: Session, user_id: int) -> Optional[Attendance]:
@@ -44,10 +49,6 @@ def get_attendances(
     return q.order_by(Attendance.date.desc(), Attendance.clock_in.desc()).all()
 
 
-def get_attendance(db: Session, attendance_id: int) -> Optional[Attendance]:
-    return db.query(Attendance).filter(Attendance.id == attendance_id).first()
-
-
 def get_attendance_by_date(db: Session, user_id: int, target_date: date) -> Optional[Attendance]:
     return db.query(Attendance).filter(Attendance.user_id == user_id, Attendance.date == target_date).first()
 
@@ -74,13 +75,7 @@ def create_attendance(
 
 
 def update_attendance(db: Session, attendance: Attendance, data: dict) -> Attendance:
-    for key, value in data.items():
-        setattr(attendance, key, value)
-    db.commit()
-    db.refresh(attendance)
-    return attendance
+    return _crud.update(db, attendance, data)
 
 
-def delete_attendance(db: Session, attendance: Attendance) -> None:
-    db.delete(attendance)
-    db.commit()
+delete_attendance = _crud.delete

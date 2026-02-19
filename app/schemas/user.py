@@ -1,14 +1,16 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr
+
+from app.core.constants import UserRoleType
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     display_name: str
     password: str
-    role: str = "user"
+    role: UserRoleType = "user"
 
 
 class UserResponse(BaseModel):
@@ -28,9 +30,10 @@ class UserResponse(BaseModel):
 class UserUpdate(BaseModel):
     display_name: Optional[str] = None
     email: Optional[EmailStr] = None
-    role: Optional[str] = None
+    role: Optional[UserRoleType] = None
     is_active: Optional[bool] = None
     group_id: Optional[int] = None
+    preferred_locale: Optional[Literal["ja", "en"]] = None
 
 
 class PasswordChange(BaseModel):

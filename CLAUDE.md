@@ -5,37 +5,27 @@
 機能追加、修正の際、ドキュメントに計画を記載し開発を行って下さい。
 UNITテストを実施してください。
 
-機能に不明点がある場合 @docs/QUESTION1.mdから順次記載して確認してください。
-課題などが発覚した場合も docs/ISSUE1.mdから順次記載してください。
+機能に不明点がある場合 @docs/QUESTIONx.mdを作成してください。xは最大の番号となります。
+課題などが発覚した場合も docs/ISSUEx.mdを作成してください。
 
 開発の際には、拡張性、モジュールの再利用性を重視して開発してください。
 SQLの単体テストも将来行えるようにしてください。
-
-技術的負債は必ず資料に記載してください。技術的負債は可能な限り減らして
-以下の資料が各機能概要の資料となります。機能追加の際にはこの資料を更新してください
+技術的負債は必ず資料に記載してください。技術的負債は可能な限り減らしてください。
 
 # 基本ルール
 - Python は ruff でフォーマット
-- テストは pytest、`make test` で実行
+- テストは pytest（`pytest tests/ -q`）
 - コミットメッセージは conventional commits
 
 # 詳細ドキュメント（必要時に参照）
-- 設計書 : @docs/spec.md
+- 設計書: @docs/spec.md
 - API設計: @docs/api-design.md
-- API設計: @docs/api-design-endpoint.md
+- エンドポイント一覧: @docs/api-design-endpoint.md
 - DB設計: @docs/db-schema.md
+- 機能仕様: @docs/spec_function.md
+- 非機能要件: @docs/spec_nonfunction.md
 - デプロイ手順: @docs/deploy.md
-@docs/spec_function.md
-@docs/spec_nonfunction.md
-
-開発時には、@docs/api/[endpoint]/*.md のファイルを参照して開発してください。
-
-各画面仕様
-
-各画面の仕様は api_endpoint毎にフォルダを作成しそこに設計書を作成する。
-
-@docs/api/[api_endpoint]/
-@docs/ws/[websoket_endpoint]/
+- 画面別設計: @docs/api/[api_endpoint]/ , @docs/ws/[websocket_endpoint]/
 
 ## Quick Commands
 
@@ -65,28 +55,9 @@ alembic upgrade head
 
 ### Models
 
-| Model | Table | Key Fields |
-|-------|-------|------------|
-| `User` | `users` | email, display_name, password_hash, role (admin/user) |
-| `Todo` | `todos` | user_id, title, priority, is_completed, visibility (private/public) |
-| `Attendance` | `attendances` | user_id, date, clock_in, clock_out, input_type |
-| `AttendanceBreak` | `attendance_breaks` | attendance_id (FK CASCADE), break_start, break_end |
-| `Task` | `tasks` | user_id, title, status, category_id (FK), time_entries, backlog_ticket_id, source_item_id (FK) |
-| `TaskListItem` | `task_list_items` | title, assignee_id, created_by, parent_id (CASCADE), status, total_seconds, category_id |
-| `Log` | `logs` | level, message, source |
-| `PresenceStatus` | `presence_statuses` | user_id (UNIQUE), status, message |
-| `PresenceLog` | `presence_logs` | user_id, status, message, changed_at |
-| `TaskCategory` | `task_categories` | name (master data for report categories) |
-| `DailyReport` | `daily_reports` | user_id, report_date, category_id (FK), task_name, time_minutes, work_content |
-| `LogSource` | `log_sources` | name, file_path, system_name, parser_pattern, polling_interval_sec |
-| `AlertRule` | `alert_rules` | name, condition (JSON), alert_title_template, severity |
-| `Alert` | `alerts` | title, message, severity, rule_id (FK), acknowledged, acknowledged_by |
+全モデル定義は [db-schema.md](docs/db-schema.md) を参照。主要テーブル:
 
-### Services
-
-| Service | Purpose |
-|---------|---------|
-| `log_service` | System log queries + alert rule evaluation on create |
+`users`, `todos`, `attendances`, `attendance_breaks`, `tasks`, `task_time_entries`, `task_list_items`, `task_categories`, `daily_reports`, `logs`, `log_sources`, `presence_statuses`, `presence_logs`, `alerts`, `alert_rules`, `calendar_events`, `calendar_rooms`, `groups`, `oauth_providers`, `user_oauth_accounts`, `password_reset_tokens`
 
 ## Auth
 
@@ -111,6 +82,6 @@ alembic upgrade head
 
 ## Alembic
 
-- Current head: `f65f9288d390` (add groups and user.group_id)
-- Migration chain: initial(`53797f9c29e5`) → ... → add_task_list_items(`72671cad997f`) → remove_parent_id(`4f88001d4f7c`) → calendar_tables(`fe250895e6da`) → calendar_rooms(`3b21411eef32`) → groups(`f65f9288d390`)
+- Current head: `6ddf43a20423` (add_unique_constraint_attendances_user_date)
+- Migration chain: initial(`53797f9c29e5`) → ... → groups(`f65f9288d390`) → auth_security(`01ac57c0d3d4`) → oauth(`460b1c6d8e8f`) → password_reset(`a943bf44ce3b`) → preferred_locale(`a5dceaeb239f`) → log_v2(`3c7419e092cb`) → log_source_paths(`b8f2a1c3d4e5`) → alert_on_change(`0d0894c74444`) → group_id(`c1a2b3d4e5f6`) → daily_report_backlog(`2509bc83417f`) → attendance_unique(`6ddf43a20423`)
 - `env.py` reads `DATABASE_URL` from `app.config` and imports `app.models`

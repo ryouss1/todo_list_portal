@@ -34,8 +34,8 @@ def clock_out(data: ClockOutRequest, db: Session = Depends(get_db), user_id: int
 def get_status(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     status = svc_att.get_status(db, user_id)
     return AttendanceStatus(
-        is_clocked_in=status["is_clocked_in"],
-        current_attendance=status["current_attendance"],
+        is_clocked_in=status.is_clocked_in,
+        current_attendance=status.current_attendance,
     )
 
 

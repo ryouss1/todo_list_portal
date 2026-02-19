@@ -16,7 +16,8 @@
 | GET | `/api/auth/oauth/providers` | 有効OAuthプロバイダ一覧 | 200 | 不要 |
 | GET | `/api/auth/oauth/{provider}/authorize` | OAuth認証開始（リダイレクト） | 302 | 不要 |
 | GET | `/api/auth/oauth/{provider}/callback` | OAuthコールバック処理 | 302 / 400 | 不要 |
-| DELETE | `/api/auth/oauth/{provider}/unlink` | OAuthアカウントリンク解除 | 204 / 404 | 必要 |
+| POST | `/api/auth/oauth/{provider}/link` | OAuthアカウントリンク | 200 / 400 | 必要 |
+| DELETE | `/api/auth/oauth/{provider}/unlink` | OAuthアカウントリンク解除 | 200 / 400 / 404 | 必要 |
 | GET | `/api/auth/oauth/my-links` | 自分のOAuthリンク一覧 | 200 | 必要 |
 
 #### Todo (`/api/todos`)
@@ -70,16 +71,15 @@
 | メソッド | パス | 説明 | ステータスコード | 認証 |
 |---------|------|------|----------------|------|
 | GET | `/api/task-list/unassigned` | 未割当アイテム一覧 | 200 | 必要 |
-| GET | `/api/task-list/mine` | 自分の担当アイテム一覧 | 200 | 必要 |
-| GET | `/api/task-list/all` | 全アイテム一覧（ユーザー/未割当フィルタ対応） | 200 | 必要 |
+| GET | `/api/task-list/mine` | 自分の担当アイテム一覧（statusフィルタ対応） | 200 | 必要 |
+| GET | `/api/task-list/all` | 全アイテム一覧（担当者/statusフィルタ対応） | 200 | 必要 |
 | POST | `/api/task-list/` | アイテム作成 | 201 | 必要 |
 | GET | `/api/task-list/{id}` | アイテム取得 | 200 / 404 | 必要 |
 | PUT | `/api/task-list/{id}` | アイテム更新 | 200 / 403 / 404 | 必要 |
 | DELETE | `/api/task-list/{id}` | アイテム削除 | 204 / 403 / 404 | 必要 |
-| GET | `/api/task-list/{id}/children` | 子アイテム一覧 | 200 / 404 | 必要 |
 | POST | `/api/task-list/{id}/assign` | 担当割り当て | 200 / 403 / 404 | 必要 |
 | POST | `/api/task-list/{id}/unassign` | 担当解除 | 200 / 403 / 404 | 必要 |
-| POST | `/api/task-list/{id}/start` | タスク開始 | 200 / 403 / 404 | 必要 |
+| POST | `/api/task-list/{id}/start` | タスク開始 | 200 / 400 / 404 | 必要 |
 
 #### タスク分類 (`/api/task-categories`)
 
@@ -156,6 +156,10 @@
 | GET | `/api/log-sources/{id}` | ログソース取得 | 200 / 404 | 必要 |
 | PUT | `/api/log-sources/{id}` | ログソース更新 | 200 / 404 | 必要（admin） |
 | DELETE | `/api/log-sources/{id}` | ログソース削除 | 204 / 404 | 必要（admin） |
+| POST | `/api/log-sources/{id}/test` | 接続テスト | 200 | 必要（admin） |
+| POST | `/api/log-sources/{id}/scan` | ソーススキャン実行 | 200 / 404 | 必要（admin） |
+| POST | `/api/log-sources/{id}/re-read` | コンテンツ再読込 | 200 / 404 | 必要（admin） |
+| GET | `/api/log-sources/{id}/files` | ファイル一覧 | 200 / 404 | 必要 |
 
 #### アラート (`/api/alerts`)
 
@@ -205,15 +209,15 @@
 | メソッド | パス | 説明 | ステータスコード | 認証 |
 |---------|------|------|----------------|------|
 | POST | `/api/calendar/events/{id}/attendees` | 参加者追加 | 200 | 必要 |
-| DELETE | `/api/calendar/events/{id}/attendees/{user_id}` | 参加者削除 | 200 | 必要 |
+| DELETE | `/api/calendar/events/{id}/attendees/{user_id}` | 参加者削除 | 204 | 必要 |
 | PATCH | `/api/calendar/events/{id}/respond` | イベント応答（accept/decline/tentative） | 200 / 404 | 必要 |
 
 #### カレンダー — リマインダー・設定
 
 | メソッド | パス | 説明 | ステータスコード | 認証 |
 |---------|------|------|----------------|------|
-| PUT | `/api/calendar/events/{id}/reminder` | リマインダー設定 | 200 / 404 | 必要 |
-| DELETE | `/api/calendar/events/{id}/reminder` | リマインダー削除 | 200 / 404 | 必要 |
+| PUT | `/api/calendar/events/{id}/reminder` | リマインダー設定 | 204 / 404 | 必要 |
+| DELETE | `/api/calendar/events/{id}/reminder` | リマインダー削除 | 204 / 404 | 必要 |
 | GET | `/api/calendar/settings` | カレンダー設定取得 | 200 | 必要 |
 | PUT | `/api/calendar/settings` | カレンダー設定更新 | 200 | 必要 |
 

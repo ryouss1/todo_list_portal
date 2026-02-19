@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth.audit import log_auth_event
 from app.core.auth.password_policy import validate_password
+from app.core.constants import UserRole
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.core.security import hash_password, verify_password
 from app.crud import group as crud_group
@@ -71,7 +72,7 @@ def create_user(db: Session, data: UserCreate) -> User:
 
 def update_user(db: Session, user_id: int, data: UserUpdate, current_user_id: int) -> UserResponse:
     current_user = crud_user.get_user(db, current_user_id)
-    is_admin = current_user and current_user.role == "admin"
+    is_admin = current_user and current_user.role == UserRole.ADMIN
     is_self = user_id == current_user_id
 
     update_data = data.model_dump(exclude_unset=True)
@@ -81,8 +82,8 @@ def update_user(db: Session, user_id: int, data: UserUpdate, current_user_id: in
     if not is_admin:
         if not is_self:
             raise ForbiddenError("Cannot edit other users")
-        # Non-admin: only display_name allowed
-        update_data = {k: v for k, v in update_data.items() if k in {"display_name"}}
+        # Non-admin: only display_name and preferred_locale allowed
+        update_data = {k: v for k, v in update_data.items() if k in {"display_name", "preferred_locale"}}
         if not update_data:
             raise ForbiddenError("Cannot change these fields")
     else:

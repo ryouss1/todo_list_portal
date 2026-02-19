@@ -124,6 +124,22 @@ class TestAlertSeverityValidation:
             assert res.status_code == 201, f"Severity '{sev}' should be valid"
 
 
+class TestAlertFilterPage:
+    """Test alerts page has filter bar elements."""
+
+    def test_alerts_page_has_filter_bar(self, client):
+        res = client.get("/alerts")
+        assert res.status_code == 200
+        html = res.text
+        assert 'id="alert-filter-bar"' in html
+        assert 'id="alert-source-filter"' in html
+        assert 'id="alert-keyword-filter"' in html
+        assert 'data-severity="all"' in html
+        assert 'data-severity="info"' in html
+        assert 'data-severity="warning"' in html
+        assert 'data-severity="critical"' in html
+
+
 class TestAlertRBAC:
     """ISSUE-033: Non-admin users cannot delete alerts."""
 

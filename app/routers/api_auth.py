@@ -48,11 +48,13 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     request.session["user_id"] = user.id
     request.session["display_name"] = user.display_name
     request.session["session_version"] = user.session_version
+    request.session["locale"] = user.preferred_locale or "ja"
     return LoginResponse(
         user_id=user.id,
         email=user.email,
         display_name=user.display_name,
         role=user.role,
+        preferred_locale=user.preferred_locale or "ja",
     )
 
 
@@ -80,6 +82,7 @@ def me(request: Request, db: Session = Depends(get_db)):
         email=user.email,
         display_name=user.display_name,
         role=user.role,
+        preferred_locale=user.preferred_locale or "ja",
     )
 
 

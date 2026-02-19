@@ -6,7 +6,7 @@
 }
 
 .calendar-sidebar {
-    width: 220px;
+    width: 170px;
     flex-shrink: 0;
     overflow-y: auto;
 }
@@ -105,6 +105,97 @@
     height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
+}
+
+/* ===== Event modal ===== */
+
+/* Modal header / footer compact */
+#eventModal .modal-header {
+    padding: 10px 16px;
+    background: #2c3e6b;
+    color: #fff;
+}
+#eventModal .modal-header .btn-close {
+    filter: invert(1);
+}
+#eventModal .modal-footer {
+    padding: 6px 16px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Tab pills */
+#eventModal .evt-tabs {
+    gap: 4px;
+}
+#eventModal .evt-tabs .nav-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #495057;
+    background: #edf0f3;
+    border-radius: 6px;
+    padding: 5px 0;
+    transition: background 0.15s, color 0.15s;
+}
+#eventModal .evt-tabs .nav-link:hover {
+    background: #dde2e7;
+    color: #212529;
+}
+#eventModal .evt-tabs .nav-link.active {
+    background: #0d6efd;
+    color: #fff;
+}
+#eventModal .evt-tabs .nav-link i {
+    margin-right: 2px;
+}
+
+/* Tab pane area */
+#eventModal .tab-content {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 8px 10px 4px;
+}
+
+/* Field group — left accent bar + tight spacing */
+#eventModal .evt-field {
+    margin-bottom: 6px;
+    padding-left: 8px;
+    border-left: 3px solid #0d6efd;
+}
+
+/* Field label — bold, small, icon-colored */
+#eventModal .evt-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0d6efd;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 1px;
+    line-height: 1.4;
+}
+#eventModal .evt-label i {
+    font-size: 0.7rem;
+    margin-right: 2px;
+}
+
+/* Smaller inputs inside modal */
+#eventModal .form-control-sm,
+#eventModal .form-select-sm {
+    font-size: 0.82rem;
+    padding: 3px 8px;
+}
+
+/* Date/time inputs — compact widths */
+#eventModal .evt-date {
+    max-width: 130px;
+    min-width: 0;
+}
+#eventModal .evt-time {
+    max-width: 90px;
+    min-width: 0;
+}
+#eventModal .evt-time.d-none {
+    display: none !important;
 }
 
 /* Responsive */

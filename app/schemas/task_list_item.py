@@ -1,7 +1,9 @@
 from datetime import date, datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel
+
+from app.core.constants import ItemStatusType
 
 
 class TaskListItemCreate(BaseModel):
@@ -19,7 +21,8 @@ class TaskListItemUpdate(BaseModel):
     scheduled_date: Optional[date] = None
     category_id: Optional[int] = None
     backlog_ticket_id: Optional[str] = None
-    status: Optional[Literal["open", "in_progress", "done"]] = None
+    assignee_id: Optional[int] = None
+    status: Optional[ItemStatusType] = None
 
 
 class TaskListItemResponse(BaseModel):

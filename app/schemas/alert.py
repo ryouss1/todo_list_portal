@@ -1,10 +1,12 @@
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
+from app.core.constants import AlertSeverityType
+
 ALERT_SEVERITIES = ("info", "warning", "critical")
-AlertSeverity = Literal["info", "warning", "critical"]
+AlertSeverity = AlertSeverityType
 
 # --- Alert Rules ---
 

@@ -16,5 +16,6 @@ class User(Base):
     group_id = Column(Integer, ForeignKey("groups.id", ondelete="SET NULL"), nullable=True, index=True)
     locked_until = Column(DateTime(timezone=True), nullable=True)
     session_version = Column(Integer, nullable=False, server_default="1")
+    preferred_locale = Column(String(10), nullable=False, server_default="ja")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

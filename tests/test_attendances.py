@@ -1,6 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 from app.models.attendance import Attendance
+from app.models.attendance_break import AttendanceBreak
 
 
 class TestAttendanceAPI:
@@ -39,16 +40,31 @@ class TestAttendanceAPI:
         assert resp.status_code == 400
         assert "Already clocked in" in resp.json()["detail"]
 
-    def test_clock_in_after_clock_out_same_day_rejected(self, client):
+    def test_clock_in_after_clock_out_same_day_rejected(self, client, db_session):
         """After clocking out, re-clocking in on the same day is rejected."""
-        client.post("/api/attendances/clock-in", json={})
-        client.post("/api/attendances/clock-out", json={})
+        now = datetime.now(timezone.utc)
+        today = now.date()
+        att = Attendance(
+            user_id=1,
+            date=today,
+            clock_in=now - timedelta(hours=8),
+            clock_out=now - timedelta(minutes=5),
+        )
+        db_session.add(att)
+        db_session.flush()
         resp = client.post("/api/attendances/clock-in", json={})
         assert resp.status_code == 400
         assert "Already clocked in today" in resp.json()["detail"]
 
-    def test_clock_out(self, client):
-        client.post("/api/attendances/clock-in", json={})
+    def test_clock_out(self, client, db_session):
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=1),
+        )
+        db_session.add(att)
+        db_session.flush()
         resp = client.post("/api/attendances/clock-out", json={"note": "Leaving"})
         assert resp.status_code == 200
         data = resp.json()
@@ -228,37 +244,72 @@ class TestAttendanceBreaks:
         assert data["breaks"][0]["break_start"] is not None
         assert data["breaks"][0]["break_end"] is None
 
-    def test_end_break(self, client):
+    def test_end_break(self, client, db_session):
         """End an active break."""
-        resp = client.post("/api/attendances/clock-in", json={})
-        att_id = resp.json()["id"]
-        client.post(f"/api/attendances/{att_id}/break-start")
-        resp = client.post(f"/api/attendances/{att_id}/break-end")
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=3),
+        )
+        db_session.add(att)
+        db_session.flush()
+        brk = AttendanceBreak(
+            attendance_id=att.id,
+            break_start=now - timedelta(minutes=30),
+        )
+        db_session.add(brk)
+        db_session.flush()
+        resp = client.post(f"/api/attendances/{att.id}/break-end")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["breaks"]) == 1
         assert data["breaks"][0]["break_end"] is not None
 
-    def test_multiple_breaks(self, client):
+    def test_multiple_breaks(self, client, db_session):
         """Can take up to 3 breaks."""
-        resp = client.post("/api/attendances/clock-in", json={})
-        att_id = resp.json()["id"]
-        for _ in range(3):
-            resp = client.post(f"/api/attendances/{att_id}/break-start")
-            assert resp.status_code == 200
-            resp = client.post(f"/api/attendances/{att_id}/break-end")
-            assert resp.status_code == 200
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=6),
+        )
+        db_session.add(att)
+        db_session.flush()
+        # Create 3 completed breaks via DB
+        for i in range(3):
+            brk = AttendanceBreak(
+                attendance_id=att.id,
+                break_start=now - timedelta(hours=5 - i, minutes=30),
+                break_end=now - timedelta(hours=5 - i),
+            )
+            db_session.add(brk)
+        db_session.flush()
+        resp = client.get(f"/api/attendances/{att.id}")
+        assert resp.status_code == 200
         data = resp.json()
         assert len(data["breaks"]) == 3
 
-    def test_fourth_break_rejected(self, client):
+    def test_fourth_break_rejected(self, client, db_session):
         """4th break is rejected."""
-        resp = client.post("/api/attendances/clock-in", json={})
-        att_id = resp.json()["id"]
-        for _ in range(3):
-            client.post(f"/api/attendances/{att_id}/break-start")
-            client.post(f"/api/attendances/{att_id}/break-end")
-        resp = client.post(f"/api/attendances/{att_id}/break-start")
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=6),
+        )
+        db_session.add(att)
+        db_session.flush()
+        # Create 3 completed breaks via DB
+        for i in range(3):
+            brk = AttendanceBreak(
+                attendance_id=att.id,
+                break_start=now - timedelta(hours=5 - i, minutes=30),
+                break_end=now - timedelta(hours=5 - i),
+            )
+            db_session.add(brk)
+        db_session.flush()
+        resp = client.post(f"/api/attendances/{att.id}/break-start")
         assert resp.status_code == 400
         assert "Maximum 3 breaks" in resp.json()["detail"]
 
@@ -284,12 +335,18 @@ class TestAttendanceBreaks:
         assert resp.status_code == 400
         assert "No active break" in resp.json()["detail"]
 
-    def test_break_after_clock_out(self, client):
+    def test_break_after_clock_out(self, client, db_session):
         """Cannot start break after clocking out."""
-        resp = client.post("/api/attendances/clock-in", json={})
-        att_id = resp.json()["id"]
-        client.post("/api/attendances/clock-out", json={})
-        resp = client.post(f"/api/attendances/{att_id}/break-start")
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=8),
+            clock_out=now - timedelta(minutes=5),
+        )
+        db_session.add(att)
+        db_session.flush()
+        resp = client.post(f"/api/attendances/{att.id}/break-start")
         assert resp.status_code == 400
         assert "Already clocked out" in resp.json()["detail"]
 
@@ -630,3 +687,136 @@ class TestAttendanceMonthFilter:
         assert resp.status_code == 200
         assert resp.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         assert len(resp.content) > 0
+
+
+class TestAttendanceMinDuration:
+    """Tests for 1-minute minimum duration validation."""
+
+    def test_create_attendance_short_duration_rejected(self, client):
+        """Manual create with clock_in/clock_out < 1 minute apart is rejected."""
+        resp = client.post(
+            "/api/attendances/",
+            json={"date": "2025-09-01", "clock_in": "09:00", "clock_out": "09:00"},
+        )
+        assert resp.status_code == 400
+        assert "勤務時間" in resp.json()["detail"]
+        assert "1分以上" in resp.json()["detail"]
+
+    def test_create_attendance_exactly_one_minute_ok(self, client):
+        """Manual create with exactly 1 minute duration is allowed."""
+        resp = client.post(
+            "/api/attendances/",
+            json={"date": "2025-09-02", "clock_in": "09:00", "clock_out": "09:01"},
+        )
+        assert resp.status_code == 201
+
+    def test_create_attendance_short_break_rejected(self, client):
+        """Manual create with break < 1 minute is rejected."""
+        resp = client.post(
+            "/api/attendances/",
+            json={
+                "date": "2025-09-03",
+                "clock_in": "09:00",
+                "clock_out": "18:00",
+                "breaks": [{"start": "12:00", "end": "12:00"}],
+            },
+        )
+        assert resp.status_code == 400
+        assert "休憩時間" in resp.json()["detail"]
+        assert "1分以上" in resp.json()["detail"]
+
+    def test_create_attendance_break_one_minute_ok(self, client):
+        """Manual create with exactly 1 minute break is allowed."""
+        resp = client.post(
+            "/api/attendances/",
+            json={
+                "date": "2025-09-04",
+                "clock_in": "09:00",
+                "clock_out": "18:00",
+                "breaks": [{"start": "12:00", "end": "12:01"}],
+            },
+        )
+        assert resp.status_code == 201
+
+    def test_update_attendance_short_duration_rejected(self, client):
+        """Updating clock_out to make duration < 1 minute is rejected."""
+        create_resp = client.post(
+            "/api/attendances/",
+            json={"date": "2025-09-05", "clock_in": "09:00", "clock_out": "18:00"},
+        )
+        att_id = create_resp.json()["id"]
+        resp = client.put(
+            f"/api/attendances/{att_id}",
+            json={"clock_out": "09:00"},
+        )
+        assert resp.status_code == 400
+        assert "勤務時間" in resp.json()["detail"]
+
+    def test_update_attendance_short_break_rejected(self, client):
+        """Updating breaks with duration < 1 minute is rejected."""
+        create_resp = client.post(
+            "/api/attendances/",
+            json={"date": "2025-09-06", "clock_in": "09:00", "clock_out": "18:00"},
+        )
+        att_id = create_resp.json()["id"]
+        resp = client.put(
+            f"/api/attendances/{att_id}",
+            json={"breaks": [{"start": "12:00", "end": "12:00"}]},
+        )
+        assert resp.status_code == 400
+        assert "休憩時間" in resp.json()["detail"]
+
+    def test_clock_out_too_soon_rejected(self, client, db_session):
+        """Real-time clock out within 1 minute of clock in is rejected."""
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(seconds=30),  # 30 seconds ago
+        )
+        db_session.add(att)
+        db_session.flush()
+        resp = client.post("/api/attendances/clock-out", json={})
+        assert resp.status_code == 400
+        assert "勤務時間" in resp.json()["detail"]
+
+    def test_end_break_too_soon_rejected(self, client, db_session):
+        """Real-time break end within 1 minute of break start is rejected."""
+        now = datetime.now(timezone.utc)
+        att = Attendance(
+            user_id=1,
+            date=now.date(),
+            clock_in=now - timedelta(hours=1),
+        )
+        db_session.add(att)
+        db_session.flush()
+        brk = AttendanceBreak(
+            attendance_id=att.id,
+            break_start=now - timedelta(seconds=30),  # 30 seconds ago
+        )
+        db_session.add(brk)
+        db_session.flush()
+        resp = client.post(f"/api/attendances/{att.id}/break-end")
+        assert resp.status_code == 400
+        assert "休憩時間" in resp.json()["detail"]
+
+    def test_create_no_clock_out_skips_duration_check(self, client):
+        """Manual create without clock_out does not validate duration."""
+        resp = client.post(
+            "/api/attendances/",
+            json={"date": "2025-09-07", "clock_in": "09:00"},
+        )
+        assert resp.status_code == 201
+
+    def test_break_without_end_skips_duration_check(self, client):
+        """Break without end time does not validate duration."""
+        resp = client.post(
+            "/api/attendances/",
+            json={
+                "date": "2025-09-08",
+                "clock_in": "09:00",
+                "clock_out": "18:00",
+                "breaks": [{"start": "12:00"}],
+            },
+        )
+        assert resp.status_code == 201

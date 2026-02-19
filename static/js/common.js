@@ -13,10 +13,18 @@ function formatTime(totalSeconds) {
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
+// カテゴリキャッシュ
+let _categoryCache = null;
+
+async function getCategories() {
+    if (!_categoryCache) {
+        _categoryCache = await api.get('/api/task-categories/');
+    }
+    return _categoryCache;
+}
+
 // トースト通知
 function showToast(message, type = 'info') {
-    console.log(`[${type}] ${message}`);
-
     // Create toast container if not exists
     let container = document.getElementById('toast-container');
     if (!container) {

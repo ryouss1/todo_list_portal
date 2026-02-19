@@ -104,6 +104,43 @@ class TestReportAPI:
         assert resp.status_code == 201
         assert resp.json()["time_minutes"] == 120
 
+    def test_create_report_with_backlog_ticket(self, client, db_session):
+        _ensure_category(db_session)
+        resp = client.post(
+            "/api/reports/",
+            json={
+                "report_date": "2026-02-10",
+                "category_id": 7,
+                "task_name": "Ticket task",
+                "work_content": "Work with ticket",
+                "backlog_ticket_id": "WHT-123",
+            },
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["backlog_ticket_id"] == "WHT-123"
+
+    def test_update_report_backlog_ticket(self, client, db_session):
+        _ensure_category(db_session)
+        create_resp = client.post(
+            "/api/reports/",
+            json={
+                "report_date": "2026-02-10",
+                "category_id": 7,
+                "task_name": "Task",
+                "work_content": "Work",
+            },
+        )
+        report_id = create_resp.json()["id"]
+        assert create_resp.json()["backlog_ticket_id"] is None
+
+        resp = client.put(
+            f"/api/reports/{report_id}",
+            json={"backlog_ticket_id": "WHT-456"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["backlog_ticket_id"] == "WHT-456"
+
     def test_create_multiple_reports_same_date(self, client, db_session):
         _ensure_category(db_session)
         resp1 = client.post(
@@ -225,6 +262,23 @@ class TestReportAPI:
         resp = client.get("/api/reports/all")
         assert resp.status_code == 200
         assert len(resp.json()) >= 2
+
+    def test_done_task_inherits_backlog_ticket(self, client, db_session):
+        _ensure_category(db_session)
+        create_resp = client.post(
+            "/api/tasks/",
+            json={
+                "title": "Ticket task",
+                "report": True,
+                "backlog_ticket_id": "WHT-789",
+            },
+        )
+        task_id = create_resp.json()["id"]
+
+        resp = client.post(f"/api/tasks/{task_id}/done")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["backlog_ticket_id"] == "WHT-789"
 
 
 class TestReportAuthorization:

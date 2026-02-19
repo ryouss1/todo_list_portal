@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
-PRESENCE_STATUSES = Literal["available", "away", "out", "break", "offline", "meeting", "remote"]
+from app.core.constants import PresenceStatusType
+
+PRESENCE_STATUSES = PresenceStatusType
 
 
 class PresenceUpdateRequest(BaseModel):

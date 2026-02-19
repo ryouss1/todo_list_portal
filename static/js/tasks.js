@@ -3,10 +3,10 @@ let timerIntervals = {};
 let categoryMap = {};
 
 async function loadCategories() {
-    const cats = await api.get('/api/task-categories/');
+    const cats = await getCategories();
     categoryMap = {};
     const sel = document.getElementById('task-category');
-    sel.innerHTML = '<option value="">-- None --</option>';
+    sel.innerHTML = `<option value="">${i18n.t('-- None --')}</option>`;
     cats.forEach(c => {
         categoryMap[c.id] = c.name;
         sel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
@@ -22,7 +22,7 @@ async function loadTasks() {
 function renderTasks() {
     const el = document.getElementById('task-list');
     if (allTasks.length === 0) {
-        el.innerHTML = '<div class="col-12 text-muted text-center py-4">No tasks yet</div>';
+        el.innerHTML = `<div class="col-12 text-muted text-center py-4">${i18n.t('No tasks yet')}</div>`;
         return;
     }
     el.innerHTML = allTasks.map(t => `
@@ -41,26 +41,26 @@ function renderTasks() {
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" id="report-${t.id}"
                             ${t.report ? 'checked' : ''} onchange="toggleReport(${t.id}, this.checked)">
-                        <label class="form-check-label small" for="report-${t.id}">Report</label>
+                        <label class="form-check-label small" for="report-${t.id}">${i18n.t('Report')}</label>
                     </div>
                     <div class="timer-display text-center my-3" id="timer-${t.id}">
                         ${formatTime(t.total_seconds)}
                     </div>
                     <div class="d-flex justify-content-center gap-2">
                         <button class="btn btn-success btn-sm" id="btn-start-${t.id}" onclick="startTimer(${t.id})">
-                            <i class="bi bi-play-fill"></i> Start
+                            <i class="bi bi-play-fill"></i> ${i18n.t('Start')}
                         </button>
                         <button class="btn btn-warning btn-sm" id="btn-stop-${t.id}" onclick="stopTimer(${t.id})" disabled>
-                            <i class="bi bi-stop-fill"></i> Stop
+                            <i class="bi bi-stop-fill"></i> ${i18n.t('Stop')}
                         </button>
                         <button class="btn btn-info btn-sm" onclick="doneTask(${t.id})">
-                            <i class="bi bi-check-lg"></i> Done
+                            <i class="bi bi-check-lg"></i> ${i18n.t('Done')}
                         </button>
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
                     <button class="btn btn-outline-primary btn-sm" onclick="openEditTask(${t.id})">
-                        <i class="bi bi-pencil"></i> Edit
+                        <i class="bi bi-pencil"></i> ${i18n.t('Edit')}
                     </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="deleteTask(${t.id})">
                         <i class="bi bi-trash"></i>
@@ -116,14 +116,14 @@ async function toggleReport(taskId, checked) {
 }
 
 async function doneTask(taskId) {
-    if (!confirm('Complete this task?')) return;
+    if (!confirm(i18n.t('Complete this task?'))) return;
     await api.post(`/api/tasks/${taskId}/done`);
     if (timerIntervals[taskId]) { clearInterval(timerIntervals[taskId]); delete timerIntervals[taskId]; }
     loadTasks();
 }
 
 function openNewTask() {
-    document.getElementById('taskModalTitle').textContent = 'New Task';
+    document.getElementById('taskModalTitle').textContent = i18n.t('New Task');
     document.getElementById('task-id').value = '';
     document.getElementById('task-title').value = '';
     document.getElementById('task-description').value = '';
@@ -134,7 +134,7 @@ function openNewTask() {
 function openEditTask(id) {
     const t = allTasks.find(x => x.id === id);
     if (!t) return;
-    document.getElementById('taskModalTitle').textContent = 'Edit Task';
+    document.getElementById('taskModalTitle').textContent = i18n.t('Edit Task');
     document.getElementById('task-id').value = t.id;
     document.getElementById('task-title').value = t.title;
     document.getElementById('task-description').value = t.description || '';
@@ -152,7 +152,7 @@ async function saveTask() {
         category_id: catVal ? parseInt(catVal) : null,
         backlog_ticket_id: document.getElementById('task-backlog-ticket').value || null,
     };
-    if (!data.title) return alert('Title is required');
+    if (!data.title) return alert(i18n.t('Title is required'));
 
     if (id) {
         await api.put(`/api/tasks/${id}`, data);
@@ -164,7 +164,7 @@ async function saveTask() {
 }
 
 async function deleteTask(id) {
-    if (!confirm('Delete this task?')) return;
+    if (!confirm(i18n.t('Delete this task?'))) return;
     await api.del(`/api/tasks/${id}`);
     if (timerIntervals[id]) { clearInterval(timerIntervals[id]); delete timerIntervals[id]; }
     loadTasks();
@@ -197,7 +197,7 @@ function checkOverdueTasks() {
                     <strong>${escapeHtml(t.title)}</strong>
                     <small class="text-muted">${dateStr}</small>
                 </div>
-                <label class="form-label small mb-1">End time:</label>
+                <label class="form-label small mb-1">${i18n.t('End time:')}</label>
                 <input type="time" class="form-control form-control-sm overdue-time" data-task-id="${t.id}" value="18:00">
             </div>
         `;

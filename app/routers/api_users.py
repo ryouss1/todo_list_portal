@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_id, require_admin
@@ -36,9 +36,17 @@ def get_user(user_id: int, db: Session = Depends(get_db), _user_id: int = Depend
 
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: int, data: UserUpdate, db: Session = Depends(get_db), current_user_id: int = Depends(get_current_user_id)
+    user_id: int,
+    data: UserUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id),
 ):
-    return svc_user.update_user(db, user_id, data, current_user_id)
+    result = svc_user.update_user(db, user_id, data, current_user_id)
+    # Sync session locale when user changes their own preferred_locale
+    if data.preferred_locale and user_id == current_user_id:
+        request.session["locale"] = data.preferred_locale
+    return result
 
 
 @router.delete("/{user_id}", status_code=204)

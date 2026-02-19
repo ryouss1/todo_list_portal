@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Public Todos - Todo List Portal{% endblock %}
+{% block title %}{{ _("Public Todos") }} - Todo List Portal{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-globe"></i> Public Todos</h2>
+    <h2><i class="bi bi-globe"></i> {{ _("Public Todos") }}</h2>
     <a href="/todos" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> My Todos
+        <i class="bi bi-arrow-left"></i> {{ _("My Todos") }}
     </a>
 </div>
 
 <div id="public-todo-list">
-    <div class="text-muted text-center py-4">Loading...</div>
+    <div class="text-muted text-center py-4">{{ _("Loading...") }}</div>
 </div>
 {% endblock %}
 {% block scripts %}

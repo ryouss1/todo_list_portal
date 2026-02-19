@@ -43,7 +43,7 @@ async function loadSummary() {
 function renderUserStatus(data, colorMap) {
     const userTable = document.getElementById('user-status-table');
     if (data.user_report_statuses.length === 0) {
-        userTable.innerHTML = '<tr><td colspan="4" class="text-muted">No users</td></tr>';
+        userTable.innerHTML = `<tr><td colspan="4" class="text-muted">${i18n.t('No users')}</td></tr>`;
         return;
     }
     userTable.innerHTML = data.user_report_statuses.map((u, idx) => {
@@ -74,7 +74,7 @@ function renderUserStatus(data, colorMap) {
             const h = Math.floor((b.total_minutes || 0) / 60);
             const m = (b.total_minutes || 0) % 60;
             const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
-            return `<span class="badge me-1 mb-1" style="background-color:${color}">${escapeHtml(b.category_name)}: ${b.count}件 (${timeStr})</span>`;
+            return `<span class="badge me-1 mb-1" style="background-color:${color}">${escapeHtml(b.category_name)}: ${b.count}${i18n.t('items')} (${timeStr})</span>`;
         }).join('');
         let row = `<tr class="cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${detailId}">`;
         row += `<td>${escapeHtml(u.display_name)}</td>`;
@@ -106,7 +106,7 @@ function renderTrends(data, colorMap) {
 
     const trendEl = document.getElementById('trend-chart');
     if (data.report_trends.length === 0) {
-        trendEl.innerHTML = '<div class="text-muted text-center">No data</div>';
+        trendEl.innerHTML = `<div class="text-muted text-center">${i18n.t('No data')}</div>`;
     } else {
         const maxCount = Math.max(...data.report_trends.map(t => t.count));
         trendEl.innerHTML = data.report_trends.map(t => {
@@ -137,7 +137,7 @@ function renderSummary(data) {
     document.getElementById('period-label').textContent =
         `${data.period_start} ~ ${data.period_end}`;
     document.getElementById('total-reports').textContent =
-        `Total: ${data.total_reports} reports`;
+        i18n.t('Total: {count} reports', {count: data.total_reports});
 
     const colorMap = buildColorMap(data.categories || []);
 
@@ -146,7 +146,7 @@ function renderSummary(data) {
 
     const recentEl = document.getElementById('recent-reports');
     if (data.recent_reports.length === 0) {
-        recentEl.innerHTML = '<div class="list-group-item text-muted">No reports</div>';
+        recentEl.innerHTML = `<div class="list-group-item text-muted">${i18n.t('No reports')}</div>`;
     } else {
         recentEl.innerHTML = data.recent_reports.map(r => `
             <a href="/reports/${r.id}" class="list-group-item list-group-item-action">
@@ -161,7 +161,7 @@ function renderSummary(data) {
 
     const catTable = document.getElementById('category-table');
     if (data.category_trends.length === 0) {
-        catTable.innerHTML = '<tr><td colspan="3" class="text-muted">No data</td></tr>';
+        catTable.innerHTML = `<tr><td colspan="3" class="text-muted">${i18n.t('No data')}</td></tr>`;
     } else {
         catTable.innerHTML = data.category_trends.map(c => {
             const h = Math.floor(c.total_minutes / 60);
@@ -179,7 +179,7 @@ function renderSummary(data) {
 
     const issuesEl = document.getElementById('issues-list');
     if (data.issues.length === 0) {
-        issuesEl.innerHTML = '<div class="list-group-item text-muted">No issues reported</div>';
+        issuesEl.innerHTML = `<div class="list-group-item text-muted">${i18n.t('No issues reported')}</div>`;
     } else {
         issuesEl.innerHTML = data.issues.map(i => `
             <div class="list-group-item">

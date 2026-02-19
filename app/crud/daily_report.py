@@ -3,12 +3,13 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.daily_report import DailyReport
 from app.schemas.daily_report import DailyReportCreate, DailyReportUpdate
 
+_crud = CRUDBase(DailyReport)
 
-def get_report(db: Session, report_id: int) -> Optional[DailyReport]:
-    return db.query(DailyReport).filter(DailyReport.id == report_id).first()
+get_report = _crud.get
 
 
 def get_reports_by_user(db: Session, user_id: int, report_date: Optional[date] = None) -> List[DailyReport]:
@@ -30,25 +31,14 @@ def get_report_by_user_and_date(db: Session, user_id: int, report_date: date) ->
 
 
 def create_report(db: Session, user_id: int, data: DailyReportCreate) -> DailyReport:
-    report = DailyReport(user_id=user_id, **data.model_dump())
-    db.add(report)
-    db.commit()
-    db.refresh(report)
-    return report
+    return _crud.create(db, data, user_id=user_id)
 
 
 def update_report(db: Session, report: DailyReport, data: DailyReportUpdate) -> DailyReport:
-    update_data = data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(report, key, value)
-    db.commit()
-    db.refresh(report)
-    return report
+    return _crud.update(db, report, data)
 
 
-def delete_report(db: Session, report: DailyReport) -> None:
-    db.delete(report)
-    db.commit()
+delete_report = _crud.delete
 
 
 def get_reports_by_date_range(db: Session, start_date: date, end_date: date) -> List[DailyReport]:

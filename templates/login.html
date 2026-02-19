@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Todo List Portal</title>
+    <title>{{ _("Login") }} - Todo List Portal</title>
     <link href="{{ bootstrap_css_url }}" rel="stylesheet">
     <link href="{{ bootstrap_icons_url }}" rel="stylesheet">
     <style>
@@ -21,23 +21,23 @@
                 <div id="alert-container"></div>
                 <form id="login-form">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
+                        <label for="email" class="form-label">{{ _("Email") }}</label>
                         <input type="email" class="form-control" id="email" name="email" required autofocus>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label">{{ _("Password") }}</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100" id="login-btn">
-                        <i class="bi bi-box-arrow-in-right"></i> Login
+                        <i class="bi bi-box-arrow-in-right"></i> {{ _("Login") }}
                     </button>
                 </form>
                 <div class="text-center mt-2">
-                    <a href="/forgot-password" class="text-muted small">Forgot your password?</a>
+                    <a href="/forgot-password" class="text-muted small">{{ _("Forgot your password?") }}</a>
                 </div>
                 <div id="oauth-providers" class="mt-3" style="display:none;">
                     <hr>
-                    <p class="text-center text-muted mb-2">Or sign in with</p>
+                    <p class="text-center text-muted mb-2">{{ _("Or sign in with") }}</p>
                     <div id="oauth-buttons" class="d-grid gap-2"></div>
                 </div>
             </div>

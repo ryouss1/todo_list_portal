@@ -7,33 +7,13 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import RedirectResponse
 
-from app.config import SECRET_KEY
+from app.config import DEFAULT_LOCALE, SECRET_KEY
 from app.core.exception_handlers import app_error_handler
 from app.core.exceptions import AppError
 from app.core.logging_config import LOGGING_CONFIG
 from app.init_db import seed_default_categories, seed_default_presets, seed_default_user
-from app.routers import (
-    api_alert_rules,
-    api_alerts,
-    api_attendance_presets,
-    api_attendances,
-    api_auth,
-    api_calendar,
-    api_groups,
-    api_log_sources,
-    api_logs,
-    api_oauth,
-    api_presence,
-    api_reports,
-    api_summary,
-    api_task_categories,
-    api_task_list,
-    api_tasks,
-    api_todos,
-    api_users,
-    pages,
-)
-from app.services.log_collector import start_collector, stop_collector
+from app.routers import all_routers
+from app.services.log_scanner import start_scanner, stop_scanner
 from app.services.websocket_manager import alert_ws_manager, log_ws_manager, presence_ws_manager
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -46,14 +26,23 @@ async def lifespan(app: FastAPI):
     seed_default_user()
     seed_default_presets()
     seed_default_categories()
-    await start_collector(app)
+    await start_scanner(app)
     logger.info("Application startup complete.")
     yield
-    await stop_collector(app)
+    await stop_scanner(app)
 
 
 app = FastAPI(title="Todo List Portal", lifespan=lifespan)
 app.add_exception_handler(AppError, app_error_handler)
+
+
+@app.middleware("http")
+async def locale_middleware(request: Request, call_next):
+    """Set locale on request.state from session."""
+    locale = request.session.get("locale", DEFAULT_LOCALE)
+    request.state.locale = locale
+    response = await call_next(request)
+    return response
 
 
 @app.middleware("http")
@@ -99,26 +88,8 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.include_router(pages.router)
-app.include_router(api_todos.router)
-app.include_router(api_attendances.router)
-app.include_router(api_attendance_presets.router)
-app.include_router(api_tasks.router)
-app.include_router(api_logs.router)
-app.include_router(api_users.router)
-app.include_router(api_presence.router)
-app.include_router(api_reports.router)
-app.include_router(api_summary.router)
-app.include_router(api_auth.router)
-app.include_router(api_log_sources.router)
-app.include_router(api_alerts.router)
-app.include_router(api_task_categories.router)
-app.include_router(api_alert_rules.router)
-app.include_router(api_task_list.router)
-app.include_router(api_calendar.router)
-app.include_router(api_groups.router)
-app.include_router(api_oauth.router)
-app.include_router(api_oauth.admin_router)
+for _router in all_routers:
+    app.include_router(_router)
 
 
 def _ws_get_user_id(websocket: WebSocket) -> int:
@@ -129,52 +100,35 @@ def _ws_get_user_id(websocket: WebSocket) -> int:
         return 0
 
 
-@app.websocket("/ws/logs")
-async def websocket_logs(websocket: WebSocket):
-    await log_ws_manager.connect(websocket)
+async def _ws_handler(websocket: WebSocket, manager, name: str) -> None:
+    """Common WebSocket handler: authenticate, receive loop, disconnect."""
+    await manager.connect(websocket)
     if not _ws_get_user_id(websocket):
         await websocket.close(code=4401, reason="Not authenticated")
-        log_ws_manager.disconnect(websocket)
+        manager.disconnect(websocket)
         return
-    logger.info("WebSocket client connected: %s", websocket.client)
+    logger.info("%s WebSocket client connected: %s", name, websocket.client)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        log_ws_manager.disconnect(websocket)
-        logger.info("WebSocket client disconnected: %s", websocket.client)
+        manager.disconnect(websocket)
+        logger.info("%s WebSocket client disconnected: %s", name, websocket.client)
+
+
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    await _ws_handler(websocket, log_ws_manager, "Logs")
 
 
 @app.websocket("/ws/alerts")
 async def websocket_alerts(websocket: WebSocket):
-    await alert_ws_manager.connect(websocket)
-    if not _ws_get_user_id(websocket):
-        await websocket.close(code=4401, reason="Not authenticated")
-        alert_ws_manager.disconnect(websocket)
-        return
-    logger.info("Alerts WebSocket client connected: %s", websocket.client)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        alert_ws_manager.disconnect(websocket)
-        logger.info("Alerts WebSocket client disconnected: %s", websocket.client)
+    await _ws_handler(websocket, alert_ws_manager, "Alerts")
 
 
 @app.websocket("/ws/presence")
 async def websocket_presence(websocket: WebSocket):
-    await presence_ws_manager.connect(websocket)
-    if not _ws_get_user_id(websocket):
-        await websocket.close(code=4401, reason="Not authenticated")
-        presence_ws_manager.disconnect(websocket)
-        return
-    logger.info("Presence WebSocket client connected: %s", websocket.client)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        presence_ws_manager.disconnect(websocket)
-        logger.info("Presence WebSocket client disconnected: %s", websocket.client)
+    await _ws_handler(websocket, presence_ws_manager, "Presence")
 
 
 if __name__ == "__main__":

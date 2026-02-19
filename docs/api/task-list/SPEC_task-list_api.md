@@ -1,12 +1,30 @@
 ## 15. Task List API (`/api/task-list`)
 
 ### GET /api/task-list/unassigned
-担当者なし（未割当）のトップレベルアイテム一覧を取得する。予定日昇順（NULL末尾）、作成日時昇順でソート。
+担当者なし（未割当）のアイテム一覧を取得する。予定日昇順（NULL末尾）、作成日時昇順でソート。
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
 ### GET /api/task-list/mine
-自分が担当のトップレベルアイテム一覧を取得する。
+自分が担当のアイテム一覧を取得する。
+
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| status | List[string] | null | ステータスフィルタ（複数指定可） |
+
+- **レスポンス**: `200 OK` - `TaskListItemResponse[]`
+
+### GET /api/task-list/all
+全アイテム一覧を取得する（担当者/ステータスフィルタ対応）。
+
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| assignee_id | integer | null | 担当者IDフィルタ（0=未割当） |
+| status | List[string] | null | ステータスフィルタ（複数指定可） |
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
@@ -68,10 +86,10 @@
 - **エラー**: `404 Not Found` / `403 Forbidden`
 
 ### POST /api/task-list/{id}/start
-アイテムをTasksにコピーして作業を開始する。新しいTaskを作成し、アイテムのステータスを `in_progress` に変更する。何度でも実行可能（同一アイテムから複数Task作成可）。
+アイテムをTasksにコピーして作業を開始する。新しいTaskを作成し、アイテムのステータスを `in_progress` に変更する。同一アイテムからリンクされた Task が既に存在する場合はブロックされる。
 
 - **レスポンス**: `200 OK` - `TaskResponse`（作成されたTask）
-- **エラー**: `404 Not Found`
+- **エラー**: `400 Bad Request` - 重複（同一アイテムの Task が存在） / `404 Not Found`
 
 ### TaskListItemResponse スキーマ
 

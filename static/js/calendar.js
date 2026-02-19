@@ -7,21 +7,23 @@ let selectedUserIds = new Set();
 let allRooms = [];
 
 async function init() {
-    const [me, users, settingsData, rooms] = await Promise.all([
+    const [me, users, settingsData, rooms, groups] = await Promise.all([
         api.get('/api/auth/me'),
         api.get('/api/users/'),
         api.get('/api/calendar/settings'),
         api.get('/api/calendar/rooms'),
+        api.get('/api/groups/'),
     ]);
     currentUserId = me.user_id;
     settings = settingsData;
     allRooms = rooms;
 
     users.forEach(u => {
-        allUsers[u.id] = u.display_name || u.email;
+        allUsers[u.id] = { name: u.display_name || u.email, group_id: u.group_id };
         selectedUserIds.add(u.id);
     });
 
+    buildGroupFilter(groups);
     buildUserFilters(users);
     buildAttendeeOptions(users);
     buildRoomOptions(rooms);
@@ -35,7 +37,7 @@ function buildRoomOptions(rooms) {
     rooms.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.id;
-        opt.textContent = r.name + (r.capacity ? ` (${r.capacity}名)` : '');
+        opt.textContent = r.name + (r.capacity ? ` (${i18n.t('{count} people', {count: r.capacity})})` : '');
         sel.appendChild(opt);
     });
 }
@@ -44,6 +46,42 @@ function toggleLocationType() {
     const isRoom = document.getElementById('loc-type-room').checked;
     document.getElementById('evt-room').classList.toggle('d-none', !isRoom);
     document.getElementById('evt-location').classList.toggle('d-none', isRoom);
+}
+
+function buildGroupFilter(groups) {
+    const sel = document.getElementById('group-filter');
+    groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        sel.appendChild(opt);
+    });
+}
+
+function filterByGroup() {
+    const sel = document.getElementById('group-filter');
+    const groupId = sel.value ? parseInt(sel.value) : null;
+    const container = document.getElementById('user-filters');
+    const labels = container.querySelectorAll('label.user-filter-item');
+
+    selectedUserIds.clear();
+
+    labels.forEach(label => {
+        const checkbox = label.querySelector('input[type="checkbox"]');
+        const userId = parseInt(checkbox.dataset.userId);
+        const userGroupId = allUsers[userId] ? allUsers[userId].group_id : null;
+
+        if (groupId === null || userGroupId === groupId) {
+            label.classList.remove('d-none');
+            checkbox.checked = true;
+            selectedUserIds.add(userId);
+        } else {
+            label.classList.add('d-none');
+            checkbox.checked = false;
+        }
+    });
+
+    reloadEvents();
 }
 
 function buildUserFilters(users) {
@@ -64,7 +102,7 @@ function buildUserFilters(users) {
         label.innerHTML = `
             <input type="checkbox" data-user-id="${u.id}" checked onchange="toggleUser(${u.id}, this.checked)">
             <span class="user-color-dot" style="background:${color}"></span>
-            ${escapeHtml(allUsers[u.id])}${isSelf ? ' (me)' : ''}
+            ${escapeHtml(allUsers[u.id].name)}${isSelf ? ` (${i18n.t('me')})` : ''}
         `;
         container.appendChild(label);
     });
@@ -76,7 +114,7 @@ function buildAttendeeOptions(users) {
         if (u.id === currentUserId) return;
         const opt = document.createElement('option');
         opt.value = u.id;
-        opt.textContent = allUsers[u.id];
+        opt.textContent = allUsers[u.id].name;
         sel.appendChild(opt);
     });
 }
@@ -102,14 +140,14 @@ function initCalendar() {
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
         },
         buttonText: {
-            today: 'Today',
-            month: 'Month',
-            week: 'Week',
-            day: 'Day',
-            list: 'List'
+            today: i18n.t('Today'),
+            month: i18n.t('Month'),
+            week: i18n.t('Week'),
+            day: i18n.t('Day'),
+            list: i18n.t('List')
         },
         height: '100%',
-        dayMaxEvents: 3,
+        dayMaxEvents: 5,
         nowIndicator: true,
         selectable: true,
         editable: true,
@@ -125,6 +163,17 @@ function initCalendar() {
 
         events: function(info, successCallback, failureCallback) {
             fetchEvents(info.start, info.end).then(events => {
+                // Source filter based on checkbox state
+                const showTaskList = document.getElementById('chk-task-list')?.checked ?? false;
+                const showReports = document.getElementById('chk-reports')?.checked ?? false;
+                events = events.filter(e => {
+                    const st = e.extendedProps?.source_type;
+                    if (!st) return true;  // normal events always show
+                    if (st === 'task_list') return showTaskList;
+                    if (st === 'report') return showReports;
+                    return true;
+                });
+                // Location suffix
                 events.forEach(e => {
                     const loc = e.extendedProps?.location;
                     if (loc) {
@@ -143,7 +192,7 @@ function initCalendar() {
         eventClick: function(info) {
             const props = info.event.extendedProps;
             if (props.read_only) {
-                showToast('This is a linked event (read-only)', 'info');
+                showToast(i18n.t('This is a linked event (read-only)'), 'info');
                 return;
             }
             openEditModal(info.event);
@@ -194,7 +243,7 @@ async function fetchEvents(start, end) {
 
 function openCreateModal(start, end, allDay) {
     document.getElementById('evt-id').value = '';
-    document.getElementById('eventModalTitle').textContent = 'New Event';
+    document.getElementById('eventModalTitle').textContent = i18n.t('New Event');
     document.getElementById('evt-title').value = '';
     document.getElementById('evt-type').value = 'event';
     document.getElementById('evt-description').value = '';
@@ -252,6 +301,10 @@ function openCreateModal(start, end, allDay) {
         document.getElementById('evt-end-time').value = formatTimeInput(new Date(now.getTime() + 3600000));
     }
 
+    // Reset to first tab
+    const firstTab = document.querySelector('#eventTabs .nav-link');
+    if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+
     new bootstrap.Modal(document.getElementById('eventModal')).show();
     setTimeout(() => document.getElementById('evt-title').focus(), 300);
 }
@@ -259,7 +312,7 @@ function openCreateModal(start, end, allDay) {
 function openEditModal(fcEvent) {
     const props = fcEvent.extendedProps;
     document.getElementById('evt-id').value = fcEvent.id;
-    document.getElementById('eventModalTitle').textContent = 'Edit Event';
+    document.getElementById('eventModalTitle').textContent = i18n.t('Edit Event');
     document.getElementById('evt-title').value = props.original_title || fcEvent.title;
     document.getElementById('evt-type').value = props.event_type || 'event';
     document.getElementById('evt-description').value = props.description || '';
@@ -312,6 +365,10 @@ function openEditModal(fcEvent) {
     document.getElementById('evt-color').value = evtColor;
     document.getElementById('evt-color-default').checked = !fcEvent.backgroundColor;
     document.getElementById('evt-color').disabled = !fcEvent.backgroundColor;
+
+    // Reset to first tab
+    const firstTab = document.querySelector('#eventTabs .nav-link');
+    if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
 
     new bootstrap.Modal(document.getElementById('eventModal')).show();
 
@@ -400,7 +457,7 @@ async function saveEvent() {
         }
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
         reloadEvents();
-        showToast(eventId ? 'Event updated' : 'Event created', 'success');
+        showToast(eventId ? i18n.t('Event updated') : i18n.t('Event created'), 'success');
     } catch (e) {
         showToast(e.message, 'danger');
     } finally {
@@ -411,13 +468,13 @@ async function saveEvent() {
 async function deleteEvent() {
     const eventId = document.getElementById('evt-id').value;
     if (!eventId) return;
-    if (!confirm('Delete this event?')) return;
+    if (!confirm(i18n.t('Delete this event?'))) return;
 
     try {
         await api.del(`/api/calendar/events/${eventId}`);
         bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
         reloadEvents();
-        showToast('Event deleted', 'success');
+        showToast(i18n.t('Event deleted'), 'success');
     } catch (e) {
         showToast(e.message, 'danger');
     }
@@ -427,7 +484,7 @@ async function handleEventMove(info) {
     const props = info.event.extendedProps;
     if (props.read_only || props.creator_id !== currentUserId) {
         info.revert();
-        showToast('Cannot move this event', 'warning');
+        showToast(i18n.t('Cannot move this event'), 'warning');
         return;
     }
 
@@ -468,7 +525,7 @@ async function saveSettings() {
     try {
         settings = await api.put('/api/calendar/settings', data);
         bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
-        showToast('Settings saved', 'success');
+        showToast(i18n.t('Settings saved'), 'success');
         // Reload page to apply new settings
         location.reload();
     } catch (e) {
@@ -480,8 +537,8 @@ async function saveSettings() {
 
 function toggleAllDay() {
     const allDay = document.getElementById('evt-allday').checked;
-    document.getElementById('start-time-col').style.display = allDay ? 'none' : '';
-    document.getElementById('end-time-col').style.display = allDay ? 'none' : '';
+    document.getElementById('evt-start-time').classList.toggle('d-none', allDay);
+    document.getElementById('evt-end-time').classList.toggle('d-none', allDay);
 }
 
 function toggleColorPicker() {
@@ -516,7 +573,7 @@ function connectCalendarWebSocket() {
         const data = JSON.parse(event.data);
         if (data.type === 'calendar_reminder' && data.user_id === currentUserId) {
             showDesktopNotification(data);
-            showToast(`${data.title} — ${data.minutes_before} min`, 'info');
+            showToast(i18n.t('{title} — {minutes} min', {title: data.title, minutes: data.minutes_before}), 'info');
         }
         // Refresh on any calendar change
         reloadEvents();
@@ -536,7 +593,7 @@ function requestNotificationPermission() {
 function showDesktopNotification(data) {
     if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(data.title, {
-            body: `Starts in ${data.minutes_before} minutes` + (data.location ? ` | ${data.location}` : ''),
+            body: i18n.t('Starts in {minutes} minutes', {minutes: data.minutes_before}) + (data.location ? ` | ${data.location}` : ''),
             tag: `event-${data.event_id}`,
         });
     }

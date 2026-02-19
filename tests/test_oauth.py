@@ -356,7 +356,10 @@ class TestOAuthLinking:
 
         from fastapi.testclient import TestClient
 
-        with TestClient(app) as c:
+        from tests.conftest import _make_session_cookie
+
+        session_data = {"user_id": 70, "session_version": 1, "locale": "en"}
+        with TestClient(app, cookies={"session": _make_session_cookie(session_data)}) as c:
             resp = c.delete("/api/auth/oauth/sole_provider/unlink")
         app.dependency_overrides.clear()
 

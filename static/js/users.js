@@ -33,7 +33,7 @@ async function loadGroups() {
 
 function buildGroupOptions() {
     const sel = document.getElementById('edit-group-id');
-    sel.innerHTML = '<option value="">-- None --</option>';
+    sel.innerHTML = `<option value="">-- ${i18n.t('None')} --</option>`;
     allGroups.forEach(g => {
         const opt = document.createElement('option');
         opt.value = g.id;
@@ -54,8 +54,8 @@ async function loadUsers() {
                 ? '<span class="badge bg-danger">admin</span>'
                 : '<span class="badge bg-secondary">user</span>';
             const statusBadge = u.is_active
-                ? '<span class="badge bg-success">Active</span>'
-                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                ? `<span class="badge bg-success">${i18n.t('Active')}</span>`
+                : `<span class="badge bg-warning text-dark">${i18n.t('Inactive')}</span>`;
             let actions = '';
             if (currentUserRole === 'admin') {
                 actions = `
@@ -87,7 +87,7 @@ async function loadUsers() {
             </tr>`;
         }).join('');
     } catch (e) {
-        showToast('Failed to load users: ' + e.message, 'error');
+        showToast(i18n.t('Failed to load users: {message}', {message: e.message}), 'error');
     }
 }
 
@@ -109,10 +109,10 @@ async function createUser() {
         document.getElementById('create-display-name').value = '';
         document.getElementById('create-password').value = '';
         document.getElementById('create-role').value = 'user';
-        showToast('User created', 'success');
+        showToast(i18n.t('User created'), 'success');
         await loadUsers();
     } catch (e) {
-        showToast('Failed to create user: ' + e.message, 'error');
+        showToast(i18n.t('Failed to create user: {message}', {message: e.message}), 'error');
     }
 }
 
@@ -164,10 +164,10 @@ async function updateUser() {
     try {
         await api.put(`/api/users/${id}`, data);
         bootstrap.Modal.getInstance(document.getElementById('userEditModal')).hide();
-        showToast('User updated', 'success');
+        showToast(i18n.t('User updated'), 'success');
         await loadUsers();
     } catch (e) {
-        showToast('Failed to update user: ' + e.message, 'error');
+        showToast(i18n.t('Failed to update user: {message}', {message: e.message}), 'error');
     }
 }
 
@@ -185,9 +185,9 @@ async function resetPassword() {
     try {
         await api.put(`/api/users/${id}/password`, { new_password: newPassword });
         bootstrap.Modal.getInstance(document.getElementById('passwordResetModal')).hide();
-        showToast('Password reset', 'success');
+        showToast(i18n.t('Password reset'), 'success');
     } catch (e) {
-        showToast('Failed to reset password: ' + e.message, 'error');
+        showToast(i18n.t('Failed to reset password: {message}', {message: e.message}), 'error');
     }
 }
 
@@ -202,10 +202,10 @@ async function deleteUser() {
     try {
         await api.del(`/api/users/${id}`);
         bootstrap.Modal.getInstance(document.getElementById('userDeleteModal')).hide();
-        showToast('User deleted', 'success');
+        showToast(i18n.t('User deleted'), 'success');
         await loadUsers();
     } catch (e) {
-        showToast('Failed to delete user: ' + e.message, 'error');
+        showToast(i18n.t('Failed to delete user: {message}', {message: e.message}), 'error');
     }
 }
 
@@ -225,7 +225,7 @@ function renderGroups() {
             <td>${g.sort_order}</td>
             <td>
                 <button class="btn btn-outline-primary btn-sm" onclick="startEditGroup(${g.id})"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteGroup(${g.id})" title="Delete"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteGroup(${g.id})" title="${i18n.t('Delete')}"><i class="bi bi-trash"></i></button>
             </td>
         </tr>`;
     }).join('');
@@ -242,8 +242,8 @@ function renderGroupEditRow(g) {
     const desc = isNew ? '' : (g.description || '');
     const order = isNew ? 0 : g.sort_order;
     return `<tr class="table-warning">
-        <td><input type="text" class="form-control form-control-sm" id="grp-name-${id}" value="${escapeHtml(name)}" placeholder="Group name *"></td>
-        <td><input type="text" class="form-control form-control-sm" id="grp-desc-${id}" value="${escapeHtml(desc)}" placeholder="Description"></td>
+        <td><input type="text" class="form-control form-control-sm" id="grp-name-${id}" value="${escapeHtml(name)}" placeholder="${i18n.t('Group name')} *"></td>
+        <td><input type="text" class="form-control form-control-sm" id="grp-desc-${id}" value="${escapeHtml(desc)}" placeholder="${i18n.t('Description')}"></td>
         <td>${isNew ? '' : '<span class="badge bg-primary">' + g.member_count + '</span>'}</td>
         <td><input type="number" class="form-control form-control-sm" id="grp-order-${id}" value="${order}" style="width:70px"></td>
         <td>
@@ -286,10 +286,10 @@ async function saveGroup(id) {
     try {
         if (id === 'new') {
             await api.post('/api/groups/', data);
-            showToast('Group created', 'success');
+            showToast(i18n.t('Group created'), 'success');
         } else {
             await api.put(`/api/groups/${id}`, data);
-            showToast('Group updated', 'success');
+            showToast(i18n.t('Group updated'), 'success');
         }
         editingGroupId = null;
         await loadGroups();
@@ -300,10 +300,10 @@ async function saveGroup(id) {
 }
 
 async function deleteGroup(id) {
-    if (!confirm('Delete this group? Members will be unassigned.')) return;
+    if (!confirm(i18n.t('Delete this group? Members will be unassigned.'))) return;
     try {
         await api.del(`/api/groups/${id}`);
-        showToast('Group deleted', 'success');
+        showToast(i18n.t('Group deleted'), 'success');
         await loadGroups();
         await loadUsers();
     } catch (e) {

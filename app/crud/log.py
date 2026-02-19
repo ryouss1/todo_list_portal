@@ -2,16 +2,15 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from app.crud.base import CRUDBase
 from app.models.log import Log
 from app.schemas.log import LogCreate
 
+_crud = CRUDBase(Log)
+
 
 def create_log(db: Session, data: LogCreate) -> Log:
-    log = Log(**data.model_dump())
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-    return log
+    return _crud.create(db, data)
 
 
 def get_logs(db: Session, limit: int = 100) -> List[Log]:

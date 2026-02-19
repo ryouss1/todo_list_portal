@@ -13,21 +13,21 @@ router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
 
 @router.get("/", response_model=List[AlertResponse])
-async def list_alerts(
+def list_alerts(
     active_only: bool = Query(False),
     limit: int = Query(API_ALERT_LIMIT),
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.list_alerts(db, active_only=active_only, limit=limit)
+    return svc.list_alerts(db, active_only=active_only, limit=limit)
 
 
 @router.get("/count", response_model=AlertCountResponse)
-async def unacknowledged_count(
+def unacknowledged_count(
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return AlertCountResponse(count=await svc.count_unacknowledged(db))
+    return AlertCountResponse(count=svc.count_unacknowledged(db))
 
 
 @router.post("/", response_model=AlertResponse, status_code=201)
@@ -40,36 +40,36 @@ async def create_alert(
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)
-async def get_alert(
+def get_alert(
     alert_id: int,
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.get_alert(db, alert_id)
+    return svc.get_alert(db, alert_id)
 
 
 @router.patch("/{alert_id}/acknowledge", response_model=AlertResponse)
-async def acknowledge_alert(
+def acknowledge_alert(
     alert_id: int,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.acknowledge_alert(db, alert_id, user_id)
+    return svc.acknowledge_alert(db, alert_id, user_id)
 
 
 @router.patch("/{alert_id}/deactivate", response_model=AlertResponse)
-async def deactivate_alert(
+def deactivate_alert(
     alert_id: int,
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return await svc.deactivate_alert(db, alert_id)
+    return svc.deactivate_alert(db, alert_id)
 
 
 @router.delete("/{alert_id}", status_code=204)
-async def delete_alert(
+def delete_alert(
     alert_id: int,
     db: Session = Depends(get_db),
     _user_id: int = Depends(require_admin),
 ):
-    await svc.delete_alert(db, alert_id)
+    svc.delete_alert(db, alert_id)

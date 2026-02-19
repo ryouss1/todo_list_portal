@@ -160,11 +160,19 @@ OAuthコールバックを処理する。認証コードをトークンに交換
 - **レスポンス**: `302 Found` - `/` にリダイレクト（成功時）
 - **エラー**: `400 Bad Request` - 無効なstate / ユーザー不明
 
+### POST /api/auth/oauth/{provider}/link
+OAuthアカウントを現在のユーザーにリンクする。OAuth認証フローで取得したcodeとstateを使用する。
+
+- **権限**: 認証必要
+- **クエリパラメータ**: `code` (string, 必須), `state` (string, 必須)
+- **レスポンス**: `200 OK` - `{"detail": "Linked {provider} account"}`
+- **エラー**: `400 Bad Request` - 無効なstate / リンク失敗
+
 ### DELETE /api/auth/oauth/{provider}/unlink
 OAuthアカウントのリンクを解除する。最後の認証手段の場合は拒否される。
 
 - **権限**: 認証必要
-- **レスポンス**: `204 No Content`
+- **レスポンス**: `200 OK` - `{"detail": "Unlinked {provider} account"}`
 - **エラー**: `400 Bad Request` - 最後の認証手段 / `404 Not Found` - リンクなし
 
 ### GET /api/auth/oauth/my-links
@@ -553,23 +561,30 @@ Todoの完了状態をトグルする。
 ## 5. Task List API (`/api/task-list`)
 
 ### GET /api/task-list/unassigned
-担当者なし（未割当）のトップレベルアイテム一覧を取得する。
+担当者なし（未割当）のアイテム一覧を取得する。
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
 ### GET /api/task-list/mine
-自分が担当のトップレベルアイテム一覧を取得する。
+自分が担当のアイテム一覧を取得する。
+
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| status | List[string] | null | ステータスフィルタ（複数指定可。例: `?status=open&status=in_progress`） |
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
 ### GET /api/task-list/all
-全アイテム一覧を取得する（ユーザー/未割当フィルタ対応）。
+全アイテム一覧を取得する（担当者/ステータスフィルタ対応）。
 
 - **クエリパラメータ**:
 
 | パラメータ | 型 | デフォルト | 説明 |
 |------------|-----|-----------|------|
 | assignee_id | integer | null | 担当者IDフィルタ（0=未割当） |
+| status | List[string] | null | ステータスフィルタ（複数指定可。例: `?status=open&status=in_progress`） |
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
@@ -607,12 +622,6 @@ Todoの完了状態をトグルする。
 
 - **レスポンス**: `204 No Content`
 - **エラー**: `403 Forbidden` / `404 Not Found`
-
-### GET /api/task-list/{id}/children
-子アイテム一覧を取得する。
-
-- **レスポンス**: `200 OK` - `TaskListItemResponse[]`
-- **エラー**: `404 Not Found`
 
 ### POST /api/task-list/{id}/assign
 アイテムを自分に担当割り当てする。
@@ -781,6 +790,8 @@ Todoの完了状態をトグルする。
 | email | string (EmailStr) | No | メールアドレス（admin のみ） |
 | role | string | No | ロール（admin のみ） |
 | is_active | boolean | No | 有効フラグ（admin のみ） |
+| group_id | integer | No | 所属グループID（admin のみ） |
+| preferred_locale | string | No | 優先ロケール（"ja"/"en"、全ユーザー変更可） |
 
 - **レスポンス**: `200 OK` - `UserResponse`
 - **エラー**: `403 Forbidden` / `404 Not Found`
@@ -826,6 +837,8 @@ Todoの完了状態をトグルする。
 | display_name | string | 表示名 |
 | role | string | ロール (admin/user) |
 | is_active | boolean | 有効フラグ |
+| group_id | integer \| null | 所属グループID |
+| group_name | string \| null | 所属グループ名 |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime \| null | 更新日時 |
 
@@ -913,6 +926,7 @@ Todoの完了状態をトグルする。
 | report_date | date | Yes | 対象日 |
 | category_id | integer | Yes | タスク分類ID |
 | task_name | string | Yes | タスク名 |
+| backlog_ticket_id | string | No | Backlogチケット番号（例: WHT-488） |
 | time_minutes | integer | No (default 0) | 作業時間（分） |
 | work_content | string | Yes | 業務内容 |
 | achievements | string | No | 成果・進捗 |
@@ -931,7 +945,7 @@ Todoの完了状態をトグルする。
 ### PUT /api/reports/{report_id}
 日報を更新する（所有者のみ）。
 
-- **リクエストボディ**: `DailyReportUpdate`（全フィールド任意、category_id/task_name/time_minutes含む）
+- **リクエストボディ**: `DailyReportUpdate`（全フィールド任意、category_id/task_name/backlog_ticket_id/time_minutes含む）
 - **レスポンス**: `200 OK` - `DailyReportResponse`
 - **エラー**: `404 Not Found`
 
@@ -950,6 +964,7 @@ Todoの完了状態をトグルする。
 | report_date | date | 対象日 |
 | category_id | integer | タスク分類ID |
 | task_name | string | タスク名 |
+| backlog_ticket_id | string \| null | Backlogチケット番号 |
 | time_minutes | integer | 作業時間（分） |
 | work_content | string | 業務内容 |
 | achievements | string \| null | 成果・進捗 |
@@ -1010,7 +1025,7 @@ Todoの完了状態をトグルする。
 - **レスポンス**: `200 OK` - `LogSourceResponse[]`
 
 ### GET /api/log-sources/status
-ログソースのステータス一覧を取得する（軽量レスポンス）。
+ログソースのステータス一覧を取得する（ダッシュボードカード用軽量レスポンス）。
 
 - **レスポンス**: `200 OK` - `LogSourceStatusResponse[]`
 
@@ -1023,17 +1038,26 @@ Todoの完了状態をトグルする。
 | フィールド | 型 | 必須 | デフォルト | 説明 |
 |------------|-----|------|-----------|------|
 | name | string | Yes | - | ソース名 |
-| file_path | string | Yes | - | 監視対象ファイルパス |
-| system_name | string | Yes | - | logs.system_name に設定する値 |
-| log_type | string | Yes | - | logs.log_type に設定する値 |
+| group_id | integer | Yes | - | グループID |
+| access_method | string | Yes | - | 接続方式（"ftp" または "smb"） |
+| host | string | Yes | - | 接続先ホスト名/IP |
+| port | integer | No | null | ポート番号（未指定時はプロトコルデフォルト） |
+| username | string | Yes | - | 接続ユーザー名 |
+| password | string | Yes | - | 接続パスワード |
+| domain | string | No | null | ドメイン名（SMB のみ） |
+| paths | LogSourcePathCreate[] | Yes | - | 監視パスリスト（1件以上必須） |
+| encoding | string | No | "utf-8" | ファイルエンコーディング |
+| source_type | string | No | "OTHER" | ソース種別（WEB/HT/BATCH/OTHER） |
+| polling_interval_sec | integer | No | 60 | ポーリング間隔（秒、60〜3600） |
+| collection_mode | string | No | "metadata_only" | 収集モード（metadata_only/full_import） |
 | parser_pattern | string | No | null | 正規表現（名前付きグループ） |
 | severity_field | string | No | null | severity を抽出するグループ名 |
 | default_severity | string | No | "INFO" | severity 未抽出時のデフォルト |
-| polling_interval_sec | integer | No | 30 | ポーリング間隔（秒、最小5） |
 | is_enabled | boolean | No | true | 有効/無効 |
+| alert_on_change | boolean | No | false | ファイル変更時アラートフラグ |
 
 - **レスポンス**: `201 Created` - `LogSourceResponse`
-- **エラー**: `422 Unprocessable Entity` - 不正な正規表現 / polling_interval_sec < 5
+- **エラー**: `422 Unprocessable Entity` - 不正な正規表現 / polling_interval_sec 範囲外 / 不正な access_method / 不正な source_type / 不正な collection_mode
 
 ### GET /api/log-sources/{id}
 ログソースを取得する。
@@ -1045,7 +1069,7 @@ Todoの完了状態をトグルする。
 ログソースを更新する。指定されたフィールドのみ更新。
 
 - **権限**: admin のみ
-- **リクエストボディ**: `LogSourceUpdate`（全フィールド任意）
+- **リクエストボディ**: `LogSourceUpdate`（全フィールド任意、alert_on_change含む）
 - **レスポンス**: `200 OK` - `LogSourceResponse`
 - **エラー**: `404 Not Found`
 
@@ -1056,24 +1080,179 @@ Todoの完了状態をトグルする。
 - **レスポンス**: `204 No Content`
 - **エラー**: `404 Not Found`
 
+### POST /api/log-sources/{id}/test
+ログソースへの接続テストを実行する。リモートサーバーに接続し、各パスの配下のファイル一覧取得を試みる。パスごとの結果を返却する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `ConnectionTestResponse`
+- **エラー**: `404 Not Found`
+
+### GET /api/log-sources/{id}/files
+ログソースに紐づくファイル一覧を取得する。
+
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| status | string | null | ステータスフィルタ（任意） |
+
+- **レスポンス**: `200 OK` - `LogFileResponse[]`
+- **エラー**: `404 Not Found`
+
+### POST /api/log-sources/{id}/scan
+ログソースのスキャンを実行する。リモートサーバーに接続し、当日（file_modified_at が今日）のファイルのみ登録/更新。各ファイルのタイムスタンプ変更を検出し、変更があったファイル名とフォルダパスをレスポンスに含める。alert_on_change=true の場合、変更ファイル名・フォルダパスを含むアラートを自動生成。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `ScanResultResponse`
+- **エラー**: `404 Not Found`
+
+### POST /api/log-sources/{id}/re-read
+ログソースのコンテンツを再読込する。既存の `log_entries` を全削除し、`last_read_line` を 0 にリセットした後、スキャンを再実行する。エンコーディング変更後などにコンテンツを正しく再取得する際に使用する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `ScanResultResponse`
+- **エラー**: `404 Not Found`
+
+### ScanResultResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| file_count | integer | 対象ファイル数 |
+| new_count | integer | 新規ファイル数 |
+| updated_count | integer | 更新ファイル数 |
+| alerts_created | integer | 作成されたアラート数 |
+| message | string | 結果メッセージ |
+| changed_paths | ChangedPathInfo[] | 変更があったパスごとの詳細（フォルダリンク・変更ファイル名含む） |
+| content_read_files | integer | コンテンツ読み込みを行ったファイル数（alert_on_change時のみ） |
+
+### ChangedPathInfo スキーマ
+
+変更が検出されたパスの詳細情報。フォルダリンクと変更ファイル名を含む。
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| path_id | integer | パスID |
+| base_path | string | ベースディレクトリパス |
+| folder_link | string | フォルダリンクURL（SMB: `file://///host/path/`、FTP: `ftp://host:port/path/`） |
+| copy_path | string | クリップボードコピー用パス（SMB: `\\host\share\path\`、FTP: `ftp://host:port/path/`） |
+| new_files | string[] | 新規検出ファイル名リスト |
+| updated_files | string[] | タイムスタンプ更新ファイル名リスト |
+
+### LogSourcePathCreate スキーマ
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| base_path | string | Yes | - | ベースディレクトリパス |
+| file_pattern | string | No | "*.log" | ファイル名パターン（glob形式） |
+| is_enabled | boolean | No | true | 有効/無効 |
+
+### LogSourcePathUpdate スキーマ
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| id | integer | No | パスID（指定時: 更新、未指定: 新規作成） |
+| base_path | string | Yes | ベースディレクトリパス |
+| file_pattern | string | No | ファイル名パターン（glob形式） |
+| is_enabled | boolean | No | 有効/無効 |
+
+### LogSourcePathResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | パスID |
+| source_id | integer | ソースID |
+| base_path | string | ベースディレクトリパス |
+| file_pattern | string | ファイル名パターン |
+| is_enabled | boolean | 有効フラグ |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime | 更新日時 |
+
 ### LogSourceResponse スキーマ
 
 | フィールド | 型 | 説明 |
 |------------|-----|------|
 | id | integer | ソースID |
 | name | string | ソース名 |
-| file_path | string | 監視対象ファイルパス |
-| system_name | string | システム名 |
-| log_type | string | ログ種別 |
+| group_id | integer | グループID |
+| group_name | string | グループ名 |
+| access_method | string | 接続方式（ftp/smb） |
+| host | string | 接続先ホスト名/IP |
+| port | integer \| null | ポート番号 |
+| username_masked | string | マスク済みユーザー名（表示用） |
+| domain | string \| null | ドメイン名（SMB のみ） |
+| paths | LogSourcePathResponse[] | 監視パスリスト |
+| encoding | string | ファイルエンコーディング |
+| source_type | string | ソース種別（WEB/HT/BATCH/OTHER） |
+| polling_interval_sec | integer | ポーリング間隔（秒） |
+| collection_mode | string | 収集モード（metadata_only/full_import） |
 | parser_pattern | string \| null | 正規表現パターン |
 | severity_field | string \| null | severity グループ名 |
 | default_severity | string | デフォルト severity |
-| polling_interval_sec | integer | ポーリング間隔（秒） |
 | is_enabled | boolean | 有効フラグ |
-| last_read_position | integer | ファイル読取位置 |
-| last_file_size | integer | 前回ファイルサイズ |
-| last_collected_at | datetime \| null | 最終収集日時 |
+| alert_on_change | boolean | ファイル変更時アラートフラグ |
+| consecutive_errors | integer | 連続エラー回数 |
+| last_checked_at | datetime \| null | 最終チェック日時 |
 | last_error | string \| null | 最終エラー |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime | 更新日時 |
+
+### LogSourceStatusResponse スキーマ
+
+ダッシュボードテーブル表示用レスポンス。`has_alert=true` の場合、変更ファイルの詳細とフォルダリンクを `changed_paths` に含める。
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | ソースID |
+| name | string | ソース名 |
+| group_id | integer | グループID |
+| group_name | string | グループ名 |
+| access_method | string | 接続方式（ftp/smb） |
+| host | string | 接続先ホスト名/IP |
+| source_type | string | ソース種別 |
+| collection_mode | string | 収集モード |
+| is_enabled | boolean | 有効フラグ |
+| alert_on_change | boolean | ファイル変更通知フラグ |
+| consecutive_errors | integer | 連続エラー回数 |
+| last_checked_at | datetime \| null | 最終チェック日時 |
+| last_error | string \| null | 最終エラー |
+| path_count | integer | 監視パス数 |
+| file_count | integer | 管理対象ファイル数 |
+| new_file_count | integer | 新規ファイル数 |
+| updated_file_count | integer | 更新ファイル数 |
+| has_alert | boolean | アラート状態（alert_on_change AND is_enabled AND 変更ファイルあり） |
+| changed_paths | ChangedPathInfo[] | 変更があったパスの詳細（has_alert=true時のみ値あり、false時は空配列） |
+
+### PathTestResult スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| base_path | string | テスト対象パス |
+| file_pattern | string | ファイルパターン |
+| status | string | テスト結果（"ok" または "error"） |
+| file_count | integer | 検出ファイル数 |
+| message | string | 結果メッセージ |
+
+### ConnectionTestResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| status | string | テスト結果（"ok" または "error"） |
+| file_count | integer | 検出ファイル数（全パス合計） |
+| message | string | 結果メッセージ |
+| path_results | PathTestResult[] | パスごとのテスト結果 |
+
+### LogFileResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | ファイルID |
+| source_id | integer | ソースID |
+| path_id | integer | パスID |
+| file_name | string | ファイル名 |
+| file_size | integer | ファイルサイズ（バイト） |
+| file_modified_at | datetime \| null | ファイル更新日時 |
+| last_read_line | integer | 最終読取行番号 |
+| status | string | ステータス |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime | 更新日時 |
 
