@@ -318,3 +318,55 @@ class TestScanInThread:
         mock_scan.assert_called_once_with(mock_db, 5)
         mock_db.close.assert_called_once()
         assert result == scan_result
+
+
+# ---------------------------------------------------------------------------
+# Watchdog tests
+# ---------------------------------------------------------------------------
+
+
+def test_watchdog_step_exists():
+    """_watchdog_step must be importable from log_scanner."""
+    from app.services import log_scanner
+
+    assert hasattr(log_scanner, "_watchdog_step"), "_watchdog_step not found in log_scanner"
+    assert asyncio.iscoroutinefunction(log_scanner._watchdog_step)
+
+
+async def test_watchdog_restarts_completed_scanner_task(db_session):
+    """Watchdog must restart the scanner if the background task has completed."""
+    from app.services import log_scanner
+
+    class MockApp:
+        class state:
+            log_scanner_task = None
+            log_scanner_watchdog = None
+
+    app = MockApp()
+
+    # Simulate a completed (crashed) task
+    app.state.log_scanner_task = asyncio.create_task(asyncio.sleep(0))
+    await asyncio.sleep(0.05)  # Let it complete
+    assert app.state.log_scanner_task.done()
+
+    # Run one watchdog step — should restart
+    await log_scanner._watchdog_step(app)
+
+    assert app.state.log_scanner_task is not None
+    assert not app.state.log_scanner_task.done(), "Task should be running after watchdog restart"
+
+    # Cleanup
+    app.state.log_scanner_task.cancel()
+    try:
+        await app.state.log_scanner_task
+    except asyncio.CancelledError:
+        pass
+
+
+def test_scanner_stale_config_exists():
+    """LOG_SCANNER_STALE_MINUTES must be defined in config."""
+    from app import config
+
+    assert hasattr(config, "LOG_SCANNER_STALE_MINUTES")
+    assert isinstance(config.LOG_SCANNER_STALE_MINUTES, int)
+    assert config.LOG_SCANNER_STALE_MINUTES > 0

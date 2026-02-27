@@ -7,14 +7,17 @@ Follows the same pattern as reminder_checker.py (asyncio.create_task + SessionLo
 import asyncio
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
-from app.config import LOG_SCANNER_ENABLED, LOG_SCANNER_LOOP_INTERVAL
+from app.config import LOG_SCANNER_ENABLED, LOG_SCANNER_LOOP_INTERVAL, LOG_SCANNER_STALE_MINUTES
 from app.crud import log_source as crud_log_source
 from app.database import SessionLocal
 from app.services import log_source_service
 from app.services.websocket_manager import alert_ws_manager
 
 logger = logging.getLogger("app.services.log_scanner")
+
+_last_scan_at: Optional[datetime] = None
 
 
 def _scan_in_thread(source_id: int) -> dict:
@@ -70,29 +73,72 @@ async def _scan_due_sources() -> None:
 
 
 async def _scanner_loop() -> None:
-    """Main scanner loop."""
+    """Main scanner loop — updates _last_scan_at on every iteration."""
+    global _last_scan_at
     logger.info("Log scanner started (loop_interval=%ds)", LOG_SCANNER_LOOP_INTERVAL)
     while True:
+        _last_scan_at = datetime.now(timezone.utc)
         await _scan_due_sources()
         await asyncio.sleep(LOG_SCANNER_LOOP_INTERVAL)
 
 
+async def _watchdog_step(app) -> None:
+    """Single watchdog check: restart scanner task if done or stale."""
+    global _last_scan_at
+    task = getattr(app.state, "log_scanner_task", None)
+    now = datetime.now(timezone.utc)
+
+    need_restart = False
+
+    if task is None or task.done():
+        logger.warning("Scanner task is done or missing — restarting")
+        need_restart = True
+    elif _last_scan_at is not None:
+        age_minutes = (now - _last_scan_at).total_seconds() / 60
+        if age_minutes > LOG_SCANNER_STALE_MINUTES:
+            logger.warning(
+                "Scanner loop stale (%.1f min > %d) — restarting",
+                age_minutes,
+                LOG_SCANNER_STALE_MINUTES,
+            )
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, RuntimeError):
+                pass
+            need_restart = True
+
+    if need_restart:
+        _last_scan_at = None
+        app.state.log_scanner_task = asyncio.create_task(_scanner_loop())
+
+
+async def _watchdog_loop(app) -> None:
+    """Watchdog loop: checks scanner health every 60 seconds."""
+    logger.info("Log scanner watchdog started")
+    while True:
+        await asyncio.sleep(60)
+        await _watchdog_step(app)
+
+
 async def start_scanner(app) -> None:
-    """Start the log scanner background task."""
+    """Start the log scanner background task and watchdog."""
     if not LOG_SCANNER_ENABLED:
         logger.info("Log scanner disabled")
         return
     app.state.log_scanner_task = asyncio.create_task(_scanner_loop())
-    logger.info("Log scanner task created")
+    app.state.log_scanner_watchdog = asyncio.create_task(_watchdog_loop(app))
+    logger.info("Log scanner task and watchdog created")
 
 
 async def stop_scanner(app) -> None:
-    """Stop the log scanner background task."""
-    task = getattr(app.state, "log_scanner_task", None)
-    if task:
-        task.cancel()
-        try:
-            await task
-        except (asyncio.CancelledError, RuntimeError):
-            pass
-        logger.info("Log scanner stopped")
+    """Stop the log scanner background task and watchdog."""
+    for attr in ("log_scanner_watchdog", "log_scanner_task"):
+        task = getattr(app.state, attr, None)
+        if task:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, RuntimeError):
+                pass
+    logger.info("Log scanner stopped")

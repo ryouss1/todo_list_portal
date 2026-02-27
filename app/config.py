@@ -46,12 +46,14 @@ class AppConfig(CoreConfig):
     LOG_SCANNER_ENABLED: bool = os.environ.get("LOG_SCANNER_ENABLED", "false").lower() == "true"
     LOG_SCANNER_LOOP_INTERVAL: int = int(os.environ.get("LOG_SCANNER_LOOP_INTERVAL", "30"))
     LOG_SOURCE_MAX_CONSECUTIVE_FAILURES: int = int(os.environ.get("LOG_SOURCE_MAX_CONSECUTIVE_FAILURES", "5"))
+    LOG_SCANNER_STALE_MINUTES: int = int(os.environ.get("LOG_SCANNER_STALE_MINUTES", "10"))
 
     # Site checker (background)
     SITE_CHECKER_ENABLED: bool = os.environ.get("SITE_CHECKER_ENABLED", "false").lower() == "true"
     SITE_CHECKER_LOOP_INTERVAL: int = int(os.environ.get("SITE_CHECKER_LOOP_INTERVAL", "60"))
     SITE_CHECK_MAX_REDIRECTS: int = int(os.environ.get("SITE_CHECK_MAX_REDIRECTS", "5"))
     SITE_MAX_CONSECUTIVE_FAILURES: int = int(os.environ.get("SITE_MAX_CONSECUTIVE_FAILURES", "5"))
+    SITE_CHECKER_STALE_MINUTES: int = int(os.environ.get("SITE_CHECKER_STALE_MINUTES", "10"))
 
     # Log alert content reading
     LOG_ALERT_CONTENT_MAX_LINES: int = int(os.environ.get("LOG_ALERT_CONTENT_MAX_LINES", "200"))
