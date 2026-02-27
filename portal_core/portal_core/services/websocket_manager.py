@@ -4,7 +4,7 @@ from typing import List
 
 from fastapi import WebSocket
 
-logger = logging.getLogger("app.services.websocket")
+logger = logging.getLogger("portal_core.services.websocket")
 
 
 class WebSocketManager:
