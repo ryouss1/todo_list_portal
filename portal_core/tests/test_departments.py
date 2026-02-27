@@ -204,3 +204,79 @@ def test_department_service_not_found(db_session):
 
     with pytest.raises(NotFoundError):
         get_department_svc(db_session, 99999)
+
+
+def test_service_get_departments_returns_list(db_session):
+    from portal_core.schemas.department import DepartmentCreate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        get_departments_svc,
+    )
+
+    create_department_svc(db_session, DepartmentCreate(name="SvcListDept"))
+    result = get_departments_svc(db_session)
+    assert isinstance(result, list)
+    assert any(d.name == "SvcListDept" for d in result)
+
+
+def test_service_get_department_by_id(db_session):
+    from portal_core.schemas.department import DepartmentCreate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        get_department_svc,
+    )
+
+    dept = create_department_svc(db_session, DepartmentCreate(name="SvcGetDept"))
+    fetched = get_department_svc(db_session, dept.id)
+    assert fetched.id == dept.id
+    assert fetched.name == "SvcGetDept"
+
+
+def test_service_update_department_name(db_session):
+    from portal_core.schemas.department import DepartmentCreate, DepartmentUpdate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        get_department_svc,
+        update_department_svc,
+    )
+
+    dept = create_department_svc(db_session, DepartmentCreate(name="OldSvcName"))
+    updated = update_department_svc(db_session, dept.id, DepartmentUpdate(name="NewSvcName"))
+    assert updated.name == "NewSvcName"
+
+    refetched = get_department_svc(db_session, dept.id)
+    assert refetched.name == "NewSvcName"
+
+
+def test_service_update_department_name_conflict(db_session):
+    import pytest
+
+    from portal_core.core.exceptions import ConflictError
+    from portal_core.schemas.department import DepartmentCreate, DepartmentUpdate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        update_department_svc,
+    )
+
+    create_department_svc(db_session, DepartmentCreate(name="ConflictTarget"))
+    dept2 = create_department_svc(db_session, DepartmentCreate(name="ConflictSource"))
+    with pytest.raises(ConflictError):
+        update_department_svc(db_session, dept2.id, DepartmentUpdate(name="ConflictTarget"))
+
+
+def test_service_delete_department(db_session):
+    import pytest
+
+    from portal_core.core.exceptions import NotFoundError
+    from portal_core.schemas.department import DepartmentCreate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        delete_department_svc,
+        get_department_svc,
+    )
+
+    dept = create_department_svc(db_session, DepartmentCreate(name="SvcDeleteDept"))
+    dept_id = dept.id
+    delete_department_svc(db_session, dept_id)
+    with pytest.raises(NotFoundError):
+        get_department_svc(db_session, dept_id)
