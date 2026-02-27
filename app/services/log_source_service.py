@@ -193,7 +193,7 @@ def create_source(db: Session, data: LogSourceCreate) -> dict:
     source = crud_log_source.create_log_source(
         db,
         name=data.name,
-        group_id=data.group_id,
+        department_id=data.department_id,
         access_method=data.access_method,
         host=data.host,
         port=data.port,
@@ -230,10 +230,12 @@ def list_sources(db: Session) -> List[dict]:
     sources = crud_log_source.get_log_sources(db)
     if not sources:
         return []
-    group_map = _build_group_map(db)
+    department_map = _build_department_map(db)
     source_ids = [s.id for s in sources]
     paths_map = crud_path.get_paths_by_source_ids(db, source_ids)
-    return [_to_response_dict(db, s, group_map=group_map, paths_list=paths_map.get(s.id, [])) for s in sources]
+    return [
+        _to_response_dict(db, s, department_map=department_map, paths_list=paths_map.get(s.id, [])) for s in sources
+    ]
 
 
 def get_source(db: Session, source_id: int) -> dict:
@@ -369,12 +371,12 @@ def test_connection(db: Session, source_id: int) -> dict:
     }
 
 
-def _build_group_map(db: Session) -> dict:
-    """Build a dict mapping group_id -> group_name."""
-    from app.crud import group as crud_group
+def _build_department_map(db: Session) -> dict:
+    """Build a dict mapping department_id -> department_name."""
+    from portal_core.crud.department import get_departments
 
-    groups = crud_group.get_groups(db)
-    return {g.id: g.name for g in groups}
+    departments = get_departments(db)
+    return {d.id: d.name for d in departments}
 
 
 _EMPTY_FILE_COUNTS: Dict[str, int] = {
@@ -394,7 +396,7 @@ def list_source_statuses(db: Session) -> List[dict]:
         return []
 
     source_ids = [s.id for s in sources]
-    group_map = _build_group_map(db)
+    department_map = _build_department_map(db)
 
     # Batch-fetch file counts, paths, and changed files in 3 queries total
     counts_map: Dict[int, dict] = crud_log_file.count_files_all_sources(db, source_ids)
@@ -442,8 +444,8 @@ def list_source_statuses(db: Session) -> List[dict]:
             {
                 "id": source.id,
                 "name": source.name,
-                "group_id": source.group_id,
-                "group_name": group_map.get(source.group_id, ""),
+                "department_id": source.department_id,
+                "department_name": department_map.get(source.department_id, ""),
                 "access_method": source.access_method,
                 "host": source.host,
                 "source_type": source.source_type,
@@ -798,7 +800,7 @@ def _reconcile_paths(db: Session, source_id: int, paths_data: list) -> None:
 def _to_response_dict(
     db: Session,
     source: LogSource,
-    group_map: Optional[Dict] = None,
+    department_map: Optional[Dict] = None,
     paths_list: Optional[list] = None,
 ) -> dict:
     """Convert source model to response dict with masked username and paths."""
@@ -824,14 +826,14 @@ def _to_response_dict(
         for p in paths_list
     ]
 
-    if group_map is None:
-        group_map = _build_group_map(db)
+    if department_map is None:
+        department_map = _build_department_map(db)
 
     return {
         "id": source.id,
         "name": source.name,
-        "group_id": source.group_id,
-        "group_name": group_map.get(source.group_id, ""),
+        "department_id": source.department_id,
+        "department_name": department_map.get(source.department_id, ""),
         "access_method": source.access_method,
         "host": source.host,
         "port": source.port,

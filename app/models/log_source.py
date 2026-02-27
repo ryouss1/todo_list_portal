@@ -8,7 +8,7 @@ class LogSource(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(200), nullable=False)  # Display name
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
     access_method = Column(String(10), nullable=False)  # "ftp" or "smb"
     host = Column(String(255), nullable=False)  # Host/IP
     port = Column(Integer, nullable=True)  # NULL = default (FTP=21, SMB=445)

@@ -8,9 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import DATABASE_URL, SECRET_KEY
-from app.core.security import hash_password
-from app.database import get_db
 from main import app
+from portal_core.core.security import hash_password
+from portal_core.database import get_db
 
 # Use the same DB but with transaction rollback for test isolation
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -38,7 +38,7 @@ def db_session():
     session = TestSessionLocal(bind=connection)
 
     # Ensure default user exists in the session
-    from app.models.user import User
+    from portal_core.models.user import User
 
     user = session.query(User).filter(User.id == 1).first()
     if not user:
@@ -69,7 +69,7 @@ def db_session():
 
 @pytest.fixture()
 def test_user(db_session):
-    from app.models.user import User
+    from portal_core.models.user import User
 
     return db_session.query(User).filter(User.id == 1).first()
 
@@ -84,12 +84,22 @@ def client(db_session):
         finally:
             pass
 
-    from app.core.deps import get_current_user_id
+    from fastapi_csrf_protect import CsrfProtect
+
+    from portal_core.core.deps import get_current_user_id
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user_id] = lambda: 1
+
+    csrf_protect = CsrfProtect()
+    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+
     session_data = {"user_id": 1, "session_version": 1, "locale": "en"}
-    with TestClient(app, cookies={"session": _make_session_cookie(session_data)}) as c:
+    cookies = {
+        "session": _make_session_cookie(session_data),
+        "fastapi-csrf-token": signed_token,
+    }
+    with TestClient(app, cookies=cookies, headers={"X-CSRF-Token": csrf_token}) as c:
         yield c
     app.dependency_overrides.clear()
 
@@ -111,9 +121,25 @@ def raw_client(db_session):
 
 
 @pytest.fixture()
+def department(db_session):
+    """Create a department for tests that need a valid department_id."""
+    from portal_core.models.department import Department
+
+    dept = Department(
+        name="Test Department",
+        description="Department for testing",
+        sort_order=0,
+        is_active=True,
+    )
+    db_session.add(dept)
+    db_session.flush()
+    return dept
+
+
+@pytest.fixture()
 def other_user(db_session):
     """Create a second user (user_id=2) for authorization tests."""
-    from app.models.user import User
+    from portal_core.models.user import User
 
     user = User(
         id=2,
@@ -137,11 +163,21 @@ def client_user2(db_session, other_user):
         finally:
             pass
 
-    from app.core.deps import get_current_user_id
+    from fastapi_csrf_protect import CsrfProtect
+
+    from portal_core.core.deps import get_current_user_id
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user_id] = lambda: 2
+
+    csrf_protect = CsrfProtect()
+    csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
+
     session_data = {"user_id": 2, "session_version": 1, "locale": "en"}
-    with TestClient(app, cookies={"session": _make_session_cookie(session_data)}) as c:
+    cookies = {
+        "session": _make_session_cookie(session_data),
+        "fastapi-csrf-token": signed_token,
+    }
+    with TestClient(app, cookies=cookies, headers={"X-CSRF-Token": csrf_token}) as c:
         yield c
     app.dependency_overrides.clear()

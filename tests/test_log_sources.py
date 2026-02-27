@@ -11,6 +11,24 @@ from app.models.log_source import LogSource
 from app.models.log_source_path import LogSourcePath
 from app.services.remote_connector import RemoteFileInfo
 
+# Module-level variable to hold the test department ID.
+# Set by the _setup_test_department autouse fixture.
+_test_dept_id: int = 1
+
+
+@pytest.fixture(autouse=True)
+def _setup_test_department(db_session):
+    """Create a department in the test transaction and expose its ID module-wide."""
+    global _test_dept_id
+    from portal_core.models.department import Department
+
+    dept = Department(name="Log Source Test Dept", sort_order=0, is_active=True)
+    db_session.add(dept)
+    db_session.flush()
+    _test_dept_id = dept.id
+    yield
+    # No teardown needed — transaction rolls back after each test
+
 
 @pytest.fixture(autouse=True)
 def _set_encryption_key(monkeypatch):
@@ -26,7 +44,7 @@ def _valid_create_payload(**overrides) -> dict:
     """Return a valid log source create payload with optional overrides."""
     data = {
         "name": "App Log",
-        "group_id": 1,
+        "department_id": _test_dept_id,
         "access_method": "ftp",
         "host": "192.168.1.100",
         "username": "loguser",
@@ -45,7 +63,7 @@ def _create_source_in_db(db_session, **overrides) -> LogSource:
 
     defaults = {
         "name": "DB Source",
-        "group_id": 1,
+        "department_id": _test_dept_id,
         "access_method": "ftp",
         "host": "10.0.0.1",
         "username": encrypt_value("dbuser"),
@@ -92,8 +110,8 @@ def _create_source_in_db(db_session, **overrides) -> LogSource:
 EXPECTED_RESPONSE_FIELDS = {
     "id",
     "name",
-    "group_id",
-    "group_name",
+    "department_id",
+    "department_name",
     "access_method",
     "host",
     "port",
@@ -125,7 +143,7 @@ class TestLogSourceCRUD:
         assert res.status_code == 201
         data = res.json()
         assert data["name"] == "App Log"
-        assert data["group_id"] == 1
+        assert data["department_id"] == _test_dept_id
         assert data["access_method"] == "ftp"
         assert data["host"] == "192.168.1.100"
         assert data["source_type"] == "WEB"
@@ -384,8 +402,8 @@ class TestLogSourceCRUD:
         entry = data[-1]
         assert "id" in entry
         assert "name" in entry
-        assert "group_id" in entry
-        assert "group_name" in entry
+        assert "department_id" in entry
+        assert "department_name" in entry
         assert "source_type" in entry
         assert "collection_mode" in entry
         assert "consecutive_errors" in entry
@@ -1785,7 +1803,7 @@ def test_circuit_breaker_auto_disables_after_max_failures(client, db_session):
         "/api/log-sources/",
         json={
             "name": "Circuit Breaker Test",
-            "group_id": 1,
+            "department_id": _test_dept_id,
             "access_method": "ftp",
             "host": "localhost",
             "username": "user",
@@ -1819,7 +1837,7 @@ def test_circuit_breaker_does_not_disable_on_success(client, db_session):
         "/api/log-sources/",
         json={
             "name": "CB Success Reset Test",
-            "group_id": 1,
+            "department_id": _test_dept_id,
             "access_method": "ftp",
             "host": "localhost",
             "username": "user",
@@ -1850,7 +1868,7 @@ def test_circuit_breaker_via_scan_endpoint_disables_source(client):
         "/api/log-sources/",
         json={
             "name": "CB Service Integration Test",
-            "group_id": 1,
+            "department_id": _test_dept_id,
             "access_method": "ftp",
             "host": "localhost",
             "username": "user",

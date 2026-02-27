@@ -4,19 +4,22 @@ from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
 
-from app.config import LOG_SOURCE_MAX_POLLING_SEC, LOG_SOURCE_MIN_POLLING_SEC, LOG_SOURCE_TYPES
+from app.config import LOG_SOURCE_MAX_POLLING_SEC, LOG_SOURCE_MIN_POLLING_SEC
+from app.constants import DEFAULT_LOG_FILE_PATTERN, LogSourceType
+
+_VALID_SOURCE_TYPES = (LogSourceType.WEB, LogSourceType.HT, LogSourceType.BATCH, LogSourceType.OTHER)
 
 
 class LogSourcePathCreate(BaseModel):
     base_path: str
-    file_pattern: str = "*.log"
+    file_pattern: str = DEFAULT_LOG_FILE_PATTERN
     is_enabled: bool = True
 
 
 class LogSourcePathUpdate(BaseModel):
     id: Optional[int] = None  # None = new path, int = existing path to update
     base_path: str
-    file_pattern: str = "*.log"
+    file_pattern: str = DEFAULT_LOG_FILE_PATTERN
     is_enabled: bool = True
 
 
@@ -34,7 +37,7 @@ class LogSourcePathResponse(BaseModel):
 
 class LogSourceCreate(BaseModel):
     name: str
-    group_id: int
+    department_id: int
     access_method: str  # "ftp" or "smb"
     host: str
     port: Optional[int] = None
@@ -69,8 +72,8 @@ class LogSourceCreate(BaseModel):
     @field_validator("source_type")
     @classmethod
     def validate_source_type(cls, v: str) -> str:
-        if v not in LOG_SOURCE_TYPES:
-            raise ValueError(f"source_type must be one of: {', '.join(LOG_SOURCE_TYPES)}")
+        if v not in _VALID_SOURCE_TYPES:
+            raise ValueError(f"source_type must be one of: {', '.join(_VALID_SOURCE_TYPES)}")
         return v
 
     @field_validator("parser_pattern")
@@ -102,7 +105,7 @@ class LogSourceCreate(BaseModel):
 
 class LogSourceUpdate(BaseModel):
     name: Optional[str] = None
-    group_id: Optional[int] = None
+    department_id: Optional[int] = None
     access_method: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
@@ -137,8 +140,8 @@ class LogSourceUpdate(BaseModel):
     @field_validator("source_type")
     @classmethod
     def validate_source_type(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and v not in LOG_SOURCE_TYPES:
-            raise ValueError(f"source_type must be one of: {', '.join(LOG_SOURCE_TYPES)}")
+        if v is not None and v not in _VALID_SOURCE_TYPES:
+            raise ValueError(f"source_type must be one of: {', '.join(_VALID_SOURCE_TYPES)}")
         return v
 
     @field_validator("parser_pattern")
@@ -172,8 +175,8 @@ class LogSourceUpdate(BaseModel):
 class LogSourceResponse(BaseModel):
     id: int
     name: str
-    group_id: int
-    group_name: str
+    department_id: int
+    department_name: str
     access_method: str
     host: str
     port: Optional[int] = None
@@ -214,8 +217,8 @@ class LogSourceStatusResponse(BaseModel):
 
     id: int
     name: str
-    group_id: int
-    group_name: str
+    department_id: int
+    department_name: str
     access_method: str
     host: str
     source_type: str
