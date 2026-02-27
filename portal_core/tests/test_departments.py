@@ -166,3 +166,41 @@ def test_department_update_schema():
     data = DepartmentUpdate()
     assert data.name is None
     assert data.is_active is None
+
+
+def test_department_service_create(db_session):
+    from portal_core.schemas.department import DepartmentCreate
+    from portal_core.services.department_service import (
+        create_department_svc,
+        get_departments_svc,
+    )
+
+    data = DepartmentCreate(name="Sales")
+    dept = create_department_svc(db_session, data)
+    assert dept.id is not None
+
+    all_depts = get_departments_svc(db_session)
+    assert any(d.name == "Sales" for d in all_depts)
+
+
+def test_department_service_conflict(db_session):
+    import pytest
+
+    from portal_core.core.exceptions import ConflictError
+    from portal_core.schemas.department import DepartmentCreate
+    from portal_core.services.department_service import create_department_svc
+
+    data = DepartmentCreate(name="UniqueTest")
+    create_department_svc(db_session, data)
+    with pytest.raises(ConflictError):
+        create_department_svc(db_session, DepartmentCreate(name="UniqueTest"))
+
+
+def test_department_service_not_found(db_session):
+    import pytest
+
+    from portal_core.core.exceptions import NotFoundError
+    from portal_core.services.department_service import get_department_svc
+
+    with pytest.raises(NotFoundError):
+        get_department_svc(db_session, 99999)
