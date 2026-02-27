@@ -280,3 +280,43 @@ def test_service_delete_department(db_session):
     delete_department_svc(db_session, dept_id)
     with pytest.raises(NotFoundError):
         get_department_svc(db_session, dept_id)
+
+
+def test_get_departments_api(client):
+    resp = client.get("/api/departments/")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+def test_create_department_api_admin(client):
+    resp = client.post("/api/departments/", json={"name": "Engineering", "sort_order": 0})
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["name"] == "Engineering"
+    assert "id" in data
+
+
+def test_create_department_api_requires_admin(client_user2):
+    resp = client_user2.post("/api/departments/", json={"name": "Test"})
+    assert resp.status_code == 403
+
+
+def test_update_department_api(client):
+    create_resp = client.post("/api/departments/", json={"name": "OldName"})
+    dept_id = create_resp.json()["id"]
+    resp = client.put(f"/api/departments/{dept_id}", json={"name": "NewName"})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "NewName"
+
+
+def test_delete_department_api(client):
+    create_resp = client.post("/api/departments/", json={"name": "ToDelete"})
+    dept_id = create_resp.json()["id"]
+    resp = client.delete(f"/api/departments/{dept_id}")
+    assert resp.status_code == 204
+
+
+def test_get_departments_tree_api(client):
+    resp = client.get("/api/departments/tree")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
