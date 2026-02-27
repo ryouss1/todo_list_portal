@@ -333,7 +333,8 @@ def test_watchdog_step_exists():
     assert asyncio.iscoroutinefunction(log_scanner._watchdog_step)
 
 
-async def test_watchdog_restarts_completed_scanner_task(db_session):
+@pytest.mark.asyncio
+async def test_watchdog_restarts_completed_scanner_task():
     """Watchdog must restart the scanner if the background task has completed."""
     from app.services import log_scanner
 

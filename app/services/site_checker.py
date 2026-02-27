@@ -133,7 +133,7 @@ async def _watchdog_step(app) -> None:
                 pass
             need_restart = True
     if need_restart:
-        _last_check_at = None
+        _last_check_at = None  # Reset before create_task so stale-check skips "not yet started" state
         app.state.site_checker_task = asyncio.create_task(_checker_loop())
 
 
