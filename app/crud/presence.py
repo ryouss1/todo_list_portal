@@ -9,8 +9,8 @@ def get_presence_status(db: Session, user_id: int) -> Optional[PresenceStatus]:
     return db.query(PresenceStatus).filter(PresenceStatus.user_id == user_id).first()
 
 
-def get_all_presence_statuses(db: Session, limit: int = 500, offset: int = 0) -> List[PresenceStatus]:
-    return db.query(PresenceStatus).limit(limit).offset(offset).all()
+def get_all_presence_statuses(db: Session) -> List[PresenceStatus]:
+    return db.query(PresenceStatus).all()
 
 
 def upsert_presence_status(db: Session, user_id: int, status: str, message: Optional[str] = None) -> PresenceStatus:
