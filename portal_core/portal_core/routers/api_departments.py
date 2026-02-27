@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from portal_core.core.deps import get_current_user_id, require_admin
-from portal_core.crud import department as crud_dept
 from portal_core.database import get_db
 from portal_core.schemas.department import DepartmentCreate, DepartmentResponse, DepartmentUpdate
 from portal_core.services.department_service import (
     create_department_svc,
     delete_department_svc,
+    get_departments_active_svc,
     get_departments_svc,
     update_department_svc,
 )
@@ -34,7 +34,7 @@ def _to_response(dept) -> DepartmentResponse:
 
 @router.get("/tree", response_model=List[DepartmentResponse])
 def get_departments_tree(db: Session = Depends(get_db), _user_id: int = Depends(get_current_user_id)):
-    depts = crud_dept.get_departments_active(db)
+    depts = get_departments_active_svc(db)
     return [_to_response(d) for d in depts]
 
 

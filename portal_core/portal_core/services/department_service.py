@@ -15,6 +15,10 @@ def get_departments_svc(db: Session) -> List:
     return crud_dept.get_departments(db)
 
 
+def get_departments_active_svc(db: Session) -> List:
+    return crud_dept.get_departments_active(db)
+
+
 def get_department_svc(db: Session, dept_id: int):
     dept = crud_dept.get_department(db, dept_id)
     if not dept:
