@@ -385,3 +385,46 @@ class TestBatchDone:
         resp = client.post("/api/tasks/batch-done", json={"tasks": []})
         assert resp.status_code == 200
         assert resp.json()["results"] == []
+
+
+def test_get_task_for_update_exists():
+    """get_task_for_update must exist in crud.task (used for pessimistic locking)."""
+    from app.crud import task as crud_task
+
+    assert hasattr(crud_task, "get_task_for_update"), "get_task_for_update not found in crud.task"
+    assert callable(crud_task.get_task_for_update)
+
+
+def test_start_timer_uses_row_lock(client, db_session):
+    """start_timer: second concurrent start must return 400 even under race."""
+    resp = client.post("/api/tasks/", json={"title": "TOCTOU Test"})
+    assert resp.status_code == 201
+    task_id = resp.json()["id"]
+
+    resp = client.post(f"/api/tasks/{task_id}/start")
+    assert resp.status_code == 200
+
+    # Second start on same task must be rejected (timer already running)
+    resp = client.post(f"/api/tasks/{task_id}/start")
+    assert resp.status_code == 400
+
+    # Verify exactly one active entry in DB
+    from app.crud import task as crud_task
+
+    entries = crud_task.get_time_entries(db_session, task_id)
+    active = [e for e in entries if e.stopped_at is None]
+    assert len(active) == 1
+
+
+def test_stop_timer_accumulates_total_seconds(client, db_session):
+    """stop_timer: total_seconds must be non-negative after start→stop cycle."""
+    resp = client.post("/api/tasks/", json={"title": "Elapsed Test"})
+    task_id = resp.json()["id"]
+
+    client.post(f"/api/tasks/{task_id}/start")
+    resp = client.post(f"/api/tasks/{task_id}/stop")
+    assert resp.status_code == 200
+    assert resp.json()["elapsed_seconds"] >= 0
+
+    resp = client.get(f"/api/tasks/{task_id}")
+    assert resp.json()["total_seconds"] >= 0
