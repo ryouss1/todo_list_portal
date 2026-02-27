@@ -193,7 +193,7 @@ def start_as_task(db, item_id, user_id):
 **影響:** データ量増加に伴いメモリ枯渇・応答時間悪化。大規模運用でOOMリスク。
 
 **対応内容（2026-02-27）:**
-`GET /api/task-list/all`、`GET /api/task-list/unassigned`、`GET /api/task-list/mine`、`GET /api/reports/all`、`GET /api/wiki/pages/` の5エンドポイントに `limit`（デフォルト 200）・`offset`（デフォルト 0）クエリパラメータを追加。CRUD 層の対応関数にも同パラメータを追加し、後方互換を維持しつつ大規模データでのページ分割取得が可能になった。`GET /api/tasks/`、`GET /api/alert-rules/`、`GET /api/presence/statuses` は今回の対象外（将来課題）。
+`GET /api/tasks/`、`GET /api/task-list/all`、`GET /api/alert-rules/`、`GET /api/wiki/pages/`、`GET /api/presence/statuses` の5エンドポイントに `limit`（デフォルト 200）・`offset`（デフォルト 0）クエリパラメータを追加。CRUD 層の対応関数にも同パラメータを追加し、後方互換を維持しつつ大規模データでのページ分割取得が可能になった。`GET /api/task-list/unassigned`、`GET /api/task-list/mine`、`GET /api/reports/all` は今回の対象外（将来課題）。
 
 ---
 
@@ -305,7 +305,7 @@ Excel ファイル生成時にファイル全体を `BytesIO` でメモリに保
 | **HIGH** | 1-4 | FTP/SMB サーキットブレーカー不在 | ✅ 対応済み（部分: 自動無効化のみ、バックオフは将来課題） |
 | **HIGH** | 1-5 | バックグラウンドタスク無音失敗 | ✅ 対応済み（ウォッチドッグパターン追加） |
 | **MEDIUM** | 2-1 | タスクリスト start 競合 | ✅ 対応済み（`SELECT FOR UPDATE` + `get_item_for_update()` 追加） |
-| **MEDIUM** | 2-2 | ページネーション不在 | ✅ 対応済み（task-list・reports・wiki 5エンドポイントに limit/offset 追加） |
+| **MEDIUM** | 2-2 | ページネーション不在 | ✅ 対応済み（tasks・task-list/all・alert-rules・wiki・presence 5エンドポイントに limit/offset 追加） |
 | **MEDIUM** | 2-3 | DB 接続プール設定 | ✅ 対応済み（部分: `get_db()` 明示的ロールバック追加。pool_size は将来課題） |
 | **MEDIUM** | 2-4 | ログイン時セッション競合 | ✅ 対応済み（`session.update()` による一括設定） |
 | **MEDIUM** | 2-5 | バッチ完了の楽観ロック不在 | ✅ 対応済み（`SELECT FOR UPDATE` + `get_tasks_by_ids_for_update()` 追加） |

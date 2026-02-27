@@ -29,7 +29,7 @@ def get_my_status(db: Session, user_id: int) -> PresenceStatus:
 
 
 def get_all_statuses(db: Session, limit: int = 500, offset: int = 0) -> List[PresenceStatusWithUser]:
-    statuses = crud_presence.get_all_presence_statuses(db, limit=limit, offset=offset)
+    statuses = crud_presence.get_all_presence_statuses(db)
     users = crud_user.get_users(db, active_only=True)
 
     active_tasks = crud_task.get_in_progress_with_backlog(db, limit=PRESENCE_ACTIVE_TASK_LIMIT)
