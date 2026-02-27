@@ -69,7 +69,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # 1. Recreate the groups table
+    conn = op.get_bind()
+
+    # 1. Recreate the groups table (empty — data migration is one-way, cannot restore original groups)
     op.create_table(
         "groups",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -89,11 +91,15 @@ def downgrade() -> None:
     # 2. Drop FK constraint log_sources → departments
     op.drop_constraint("fk_log_sources_department_id", "log_sources", type_="foreignkey")
 
-    # 3. Rename log_sources.department_id → log_sources.group_id
+    # 3. NULL out log_sources.department_id before renaming back to group_id.
+    #    The restored groups table is empty, so existing department_id values cannot
+    #    satisfy FK integrity to groups. Data is intentionally lost on downgrade.
+    conn.execute(sa.text("UPDATE log_sources SET department_id = NULL"))
+
+    # 4. Rename log_sources.department_id → log_sources.group_id
     op.alter_column("log_sources", "department_id", new_column_name="group_id")
 
-    # 4. Re-add FK constraint log_sources → groups
-    #    Note: downgrade will not restore original group data — data migration is one-way.
+    # 5. Re-add FK constraint log_sources → groups
     op.create_foreign_key(
         "fk_log_sources_group_id",
         "log_sources",

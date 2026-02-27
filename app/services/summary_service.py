@@ -6,8 +6,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.crud import daily_report as crud_report
+from app.crud import task_category as crud_task_category
 from app.crud import user as crud_user
-from app.models.task_category import TaskCategory
 from app.schemas.summary import (
     BusinessSummaryResponse,
     CategoryCount,
@@ -50,19 +50,16 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
     else:
         period_start, period_end = get_month_range(ref_date)
 
-    all_reports = crud_report.get_reports_by_date_range(db, period_start, period_end)
-    users = crud_user.get_users(db)
-
-    # Filter by group if specified
     if group_id is not None:
-        users = [u for u in users if u.group_id == group_id]
-        target_user_ids = {u.id for u in users}
-        reports = [r for r in all_reports if r.user_id in target_user_ids]
+        users = crud_user.get_users_in_department(db, group_id, active_only=True)
+        user_ids = [u.id for u in users]
+        reports = crud_report.get_reports_by_date_range(db, period_start, period_end, user_ids=user_ids)
     else:
-        reports = all_reports
+        users = crud_user.get_users(db, active_only=True)
+        reports = crud_report.get_reports_by_date_range(db, period_start, period_end)
 
     # Build categories list (used by user_report_statuses, report_trends, and response)
-    all_categories = db.query(TaskCategory).order_by(TaskCategory.id).all()
+    all_categories = crud_task_category.get_all_categories(db)
     categories = {c.id: c.name for c in all_categories}
     categories_list = [CategoryInfo(id=c.id, name=c.name) for c in all_categories]
 

@@ -41,6 +41,19 @@ log_source_paths (1) ──── (N) log_files.path_id (CASCADE)
 log_sources (1) ──── (N) log_files.source_id (CASCADE)
 log_files (1) ──── (N) log_entries (CASCADE)
 groups (1) ──── (N) log_sources.group_id
+site_groups (1) ──── (N) site_links.group_id (SET NULL)
+users (1) ──── (N) site_links.created_by (SET NULL)
+wiki_categories (1) ──── (N) wiki_pages.category_id (SET NULL)
+users (1) ──── (N) wiki_pages.author_id (SET NULL)
+users (1) ──── (N) wiki_tags.created_by (SET NULL)
+wiki_pages (1) ──── (N) wiki_pages.parent_id (SET NULL, 自己参照)
+wiki_pages (N) ──── (N) wiki_tags (wiki_page_tags: CASCADE双方向)
+wiki_pages (N) ──── (N) task_list_items (wiki_page_task_items: CASCADE双方向)
+wiki_pages (1) ──── (N) wiki_page_tasks (CASCADE)
+tasks (1) ──── (N) wiki_page_tasks.task_id (SET NULL)
+users (1) ──── (N) wiki_page_task_items.linked_by (SET NULL)
+users (1) ──── (N) wiki_page_tasks.linked_by (SET NULL)
+wiki_pages (1) ──── (N) wiki_attachments (CASCADE)
 logs（独立テーブル）
 login_attempts（独立テーブル）
 oauth_states（独立テーブル）
@@ -49,6 +62,8 @@ oauth_states（独立テーブル）
 ---
 
 ## 2. テーブル定義
+
+> **Note**: コアモデル（users, groups, login_attempts, auth_audit_logs, oauth_providers, user_oauth_accounts, oauth_states, password_reset_tokens）の実装は `portal_core/portal_core/models/` に配置されている。`app/models/` には後方互換用の再エクスポートshimが残されており、既存の `from app.models.xxx import` はそのまま動作する。
 
 ### 2.1 users テーブル
 
@@ -70,7 +85,7 @@ oauth_states（独立テーブル）
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 | updated_at | DateTime(TZ) | DEFAULT now(), ON UPDATE now() | 更新日時 |
 
-- モデルファイル: `app/models/user.py`
+- モデルファイル: `portal_core/portal_core/models/user.py`（`app/models/user.py` は再エクスポートshim）
 - アプリケーション起動時にデフォルトユーザー（id=1, email=`admin@example.com`, role=`admin`）が自動作成される。
 
 ### 2.2 todos テーブル
@@ -478,7 +493,7 @@ Todoアイテムを管理する。
 | sort_order | Integer | NOT NULL, DEFAULT 0 | 表示順 |
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 
-- モデルファイル: `app/models/group.py`
+- モデルファイル: `portal_core/portal_core/models/group.py`（`app/models/group.py` は再エクスポートshim）
 - `users.group_id` から FK 参照（SET NULL）
 
 ### 2.18 calendar_events テーブル
@@ -619,7 +634,7 @@ Todoアイテムを管理する。
 | success | Boolean | NOT NULL | 成否 |
 | attempted_at | DateTime(TZ) | DEFAULT now(), INDEX | 試行日時 |
 
-- モデルファイル: `app/models/login_attempt.py`
+- モデルファイル: `portal_core/portal_core/models/login_attempt.py`（`app/models/login_attempt.py` は再エクスポートshim）
 
 ### 2.25 auth_audit_logs テーブル
 
@@ -636,7 +651,7 @@ Todoアイテムを管理する。
 | details | JSON | NULL許可 | 追加情報 |
 | created_at | DateTime(TZ) | DEFAULT now() | 日時 |
 
-- モデルファイル: `app/models/auth_audit_log.py`
+- モデルファイル: `portal_core/portal_core/models/auth_audit_log.py`（`app/models/auth_audit_log.py` は再エクスポートshim）
 
 **event_type値:**
 
@@ -673,7 +688,7 @@ OAuthプロバイダ設定を管理する。
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 | updated_at | DateTime(TZ) | DEFAULT now(), ON UPDATE now() | 更新日時 |
 
-- モデルファイル: `app/models/oauth_provider.py`
+- モデルファイル: `portal_core/portal_core/models/oauth_provider.py`（`app/models/oauth_provider.py` は再エクスポートshim）
 
 ### 2.27 user_oauth_accounts テーブル
 
@@ -692,7 +707,7 @@ OAuthプロバイダ設定を管理する。
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 | updated_at | DateTime(TZ) | DEFAULT now(), ON UPDATE now() | 更新日時 |
 
-- モデルファイル: `app/models/user_oauth_account.py`
+- モデルファイル: `portal_core/portal_core/models/user_oauth_account.py`（`app/models/user_oauth_account.py` は再エクスポートshim）
 - UNIQUE制約: `(provider_id, provider_user_id)`
 
 ### 2.28 oauth_states テーブル
@@ -708,7 +723,7 @@ OAuthフローのCSRF防止用stateを管理する。
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 | expires_at | DateTime(TZ) | NOT NULL | 有効期限（デフォルト5分） |
 
-- モデルファイル: `app/models/oauth_state.py`
+- モデルファイル: `portal_core/portal_core/models/oauth_state.py`（`app/models/oauth_state.py` は再エクスポートshim）
 
 ### 2.29 password_reset_tokens テーブル
 
@@ -723,7 +738,7 @@ OAuthフローのCSRF防止用stateを管理する。
 | created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
 | expires_at | DateTime(TZ) | NOT NULL | 有効期限 |
 
-- モデルファイル: `app/models/password_reset_token.py`
+- モデルファイル: `portal_core/portal_core/models/password_reset_token.py`（`app/models/password_reset_token.py` は再エクスポートshim）
 - トークンは SHA-256 ハッシュのみ DB に保存（DB漏洩対策）
 - 物理削除ではなくフラグ管理（監査証跡のため）
 
@@ -777,13 +792,198 @@ OAuthフローのCSRF防止用stateを管理する。
 - インデックス: `received_at`
 - ファイル削除時に CASCADE で連動削除
 
+### 2.32 site_groups テーブル
+
+サイトリンクのグループ（カテゴリ）を管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | グループID |
+| name | String(100) | NOT NULL, UNIQUE | グループ名 |
+| description | String(500) | NULL許可 | 説明 |
+| color | String(7) | NOT NULL, server_default '#6c757d' | 表示色（HEX） |
+| icon | String(50) | NULL許可 | アイコンクラス名 |
+| sort_order | Integer | NOT NULL, DEFAULT 0 | 表示順 |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+
+- モデルファイル: `app/models/site_link.py`
+
+### 2.33 site_links テーブル
+
+サイトリンク（URLブックマーク + ヘルスチェック）を管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | リンクID |
+| name | String(200) | NOT NULL | サイト名 |
+| url | String(2000) | NOT NULL | URL |
+| description | String(500) | NULL許可 | 説明 |
+| group_id | Integer | FK(site_groups.id, SET NULL), NULL許可, INDEX | グループID |
+| created_by | Integer | FK(users.id, SET NULL), NULL許可, INDEX | 作成者ID |
+| sort_order | Integer | NOT NULL, DEFAULT 0 | 表示順 |
+| is_enabled | Boolean | NOT NULL, DEFAULT true | 有効フラグ |
+| check_enabled | Boolean | NOT NULL, DEFAULT true | ヘルスチェック有効フラグ |
+| check_interval_sec | Integer | NOT NULL, DEFAULT 300 | チェック間隔（秒、60-3600） |
+| check_timeout_sec | Integer | NOT NULL, DEFAULT 10 | チェックタイムアウト（秒、3-60） |
+| check_ssl_verify | Boolean | NOT NULL, DEFAULT true | SSL証明書検証 |
+| status | String(20) | NOT NULL, server_default 'unknown' | ステータス |
+| response_time_ms | Integer | NULL許可 | レスポンスタイム（ms） |
+| http_status_code | Integer | NULL許可 | HTTPステータスコード |
+| last_checked_at | DateTime(TZ) | NULL許可 | 最終チェック日時 |
+| last_status_changed_at | DateTime(TZ) | NULL許可 | 最終ステータス変更日時 |
+| consecutive_failures | Integer | NOT NULL, DEFAULT 0 | 連続失敗回数 |
+| last_error | Text | NULL許可 | 最終エラー |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+| updated_at | DateTime(TZ) | DEFAULT now(), ON UPDATE now() | 更新日時 |
+
+- モデルファイル: `app/models/site_link.py`
+
+**status値:**
+
+| 値 | 説明 |
+|----|------|
+| `unknown` | 未チェック |
+| `up` | 正常稼働 |
+| `down` | 停止 |
+| `error` | エラー |
+
+### 2.34 wiki_categories テーブル
+
+Wikiページのカテゴリマスタを管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | カテゴリID |
+| name | String(100) | NOT NULL, UNIQUE | カテゴリ名 |
+| description | String(500) | NULL許可 | 説明 |
+| color | String(7) | NOT NULL, DEFAULT '#6c757d' | 表示色（HEX） |
+| sort_order | Integer | NOT NULL, DEFAULT 0 | 表示順 |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+
+- モデルファイル: `app/models/wiki_category.py`
+- UNIQUE インデックス: `idx_wiki_categories_name`
+
+### 2.35 wiki_tags テーブル
+
+Wikiページのタグマスタを管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | タグID |
+| name | String(100) | NOT NULL, UNIQUE | タグ名 |
+| slug | String(100) | NOT NULL, UNIQUE, INDEX | URLスラッグ（自動生成） |
+| color | String(7) | NOT NULL, DEFAULT '#6c757d' | 表示色（HEX） |
+| created_by | Integer | FK(users.id, SET NULL), NULL許可 | 作成者ID |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+
+- モデルファイル: `app/models/wiki_tag.py`
+- UNIQUE インデックス: `idx_wiki_tags_name`, `idx_wiki_tags_slug`
+
+### 2.36 wiki_pages テーブル
+
+Wikiページ本文（階層構造付き）を管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | ページID |
+| title | String(500) | NOT NULL | ページタイトル |
+| slug | String(500) | NOT NULL, UNIQUE, INDEX | URLスラッグ（自動生成、重複時は数字サフィックス付与） |
+| parent_id | Integer | FK(wiki_pages.id, SET NULL), NULL許可, INDEX | 親ページID（自己参照） |
+| content | Text | DEFAULT "" | ページ本文（Markdown形式） |
+| author_id | Integer | FK(users.id, SET NULL), NULL許可, INDEX | 作成者ID |
+| sort_order | Integer | NOT NULL, DEFAULT 0 | 兄弟ページ間の表示順 |
+| visibility | String(20) | NOT NULL, server_default 'local' | 公開範囲 |
+| category_id | Integer | FK(wiki_categories.id, SET NULL), NULL許可, INDEX | カテゴリID |
+| search_vector | TSVECTOR | NULL許可 | PostgreSQL全文検索ベクタ（自動更新） |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+| updated_at | DateTime(TZ) | DEFAULT now(), ON UPDATE now() | 更新日時 |
+
+- モデルファイル: `app/models/wiki_page.py`
+- GIN インデックス: `idx_wiki_pages_search`（search_vector全文検索用）
+- DB トリガー: `wiki_pages_search_update`（title INSERT/UPDATE 時に search_vector を自動更新）
+- 循環参照防止: サービス層で `parent_id` の循環を検出して 400 Bad Request を返す
+
+**visibility値:**
+
+| 値 | 説明 |
+|----|------|
+| `local` | 自部署（同一グループのユーザーのみ）— デフォルト |
+| `public` | 他部署（全ログインユーザー） |
+| `private` | 非公開（作成者のみ） |
+
+### 2.37 wiki_page_tags テーブル（中間テーブル）
+
+Wikiページとタグの多対多関係を管理する。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| page_id | Integer | PK, FK(wiki_pages.id, CASCADE) | ページID |
+| tag_id | Integer | PK, FK(wiki_tags.id, CASCADE) | タグID |
+
+- モデルファイル: `app/models/wiki_page.py`（Association Table）
+- 複合主キー: `(page_id, tag_id)`
+- インデックス: `idx_wiki_page_tags_tag_id`
+- ページ/タグ削除時に CASCADE で連動削除
+
+### 2.38 wiki_page_task_items テーブル（中間テーブル）
+
+Wikiページとタスクリストアイテムの多対多関係を管理する（永続リンク）。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| page_id | Integer | PK, FK(wiki_pages.id, CASCADE) | ページID |
+| task_item_id | Integer | PK, FK(task_list_items.id, CASCADE) | タスクリストアイテムID |
+| linked_by | Integer | FK(users.id, SET NULL), NULL許可 | リンク作成者ID |
+| linked_at | DateTime(TZ) | DEFAULT now() | リンク作成日時 |
+
+- モデルファイル: `app/models/wiki_page_task_item.py`
+- 複合主キー: `(page_id, task_item_id)`
+- ページ/タスクリストアイテム削除時に CASCADE で連動削除
+
+### 2.39 wiki_page_tasks テーブル
+
+Wikiページと進行中タスクのリンクを管理する（タイトルスナップショット付き）。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | リンクID |
+| page_id | Integer | FK(wiki_pages.id, CASCADE), NOT NULL, INDEX | ページID |
+| task_id | Integer | FK(tasks.id, SET NULL), NULL許可, INDEX | タスクID（タスク削除後は NULL） |
+| task_title | String(500) | NOT NULL | タスクタイトルのスナップショット |
+| linked_by | Integer | FK(users.id, SET NULL), NULL許可 | リンク作成者ID |
+| linked_at | DateTime(TZ) | DEFAULT now() | リンク作成日時 |
+
+- モデルファイル: `app/models/wiki_page_task.py`
+- 部分 UNIQUE インデックス: `(page_id, task_id) WHERE task_id IS NOT NULL`
+- ページ削除時に CASCADE で連動削除
+- タスク削除時は `task_id` が SET NULL（スナップショットタイトルは保持）
+
+### 2.40 wiki_attachments テーブル
+
+Wikiページに添付されたファイルのメタデータを管理する。物理ファイルは `uploads/wiki/{page_id}/{stored_filename}` に保存される。
+
+| カラム名 | 型 | 制約 | 説明 |
+|----------|-----|------|------|
+| id | Integer | PK, AUTO_INCREMENT | 添付ファイルID |
+| page_id | Integer | FK(wiki_pages.id, CASCADE), NOT NULL, INDEX | ページID |
+| filename | String(500) | NOT NULL | 表示用ファイル名（元のファイル名） |
+| stored_path | String(1000) | NOT NULL | ディスク上の相対パス |
+| mime_type | String(200) | NULL許可 | MIMEタイプ |
+| file_size | Integer | NOT NULL, server_default 0 | ファイルサイズ（バイト） |
+| created_at | DateTime(TZ) | DEFAULT now() | 作成日時 |
+
+- モデルファイル: `app/models/wiki_attachment.py`
+- インデックス: `idx_wiki_attachments_page_id`
+- ページ削除時に CASCADE で連動削除
+- `after_delete` SQLAlchemy イベントリスナーで物理ファイルも自動削除
+
 ---
 
 ## 3. 初期化処理
 
-デフォルトデータの投入は `app/init_db.py` で管理されている。
+デフォルトデータの投入は `portal_core/portal_core/init_db.py`（共通）と `app/init_db.py`（アプリ固有）で管理されている。
 
-### 3.1 seed_default_user()
+### 3.1 seed_default_user()（portal_core）
 
 - デフォルトユーザー（id=1, email=`admin@example.com`, role=`admin`）が存在しない場合に自動作成。
 - 既存ユーザーの `password_hash` が未設定の場合、`DEFAULT_PASSWORD` のハッシュを設定。
@@ -810,27 +1010,52 @@ OAuthフローのCSRF防止用stateを管理する。
 |------|-----|
 | 設定ファイル | `alembic.ini`, `alembic/env.py` |
 | マイグレーションディレクトリ | `alembic/versions/` |
-| 現在のヘッド | `6ddf43a20423` |
+| 現在のヘッド | `4671c277afb4` |
 
-マイグレーション履歴の詳細は `alembic/versions/` ディレクトリを直接参照してください。
+### マイグレーション全履歴
 
-直近のマイグレーション:
-
-| リビジョン | 説明 | 内容 |
-|-----------|------|------|
-| `f65f9288d390` | add groups and user.group_id | groups テーブル追加、users.group_id 追加 |
-| `01ac57c0d3d4` | auth_security_enhancement | login_attempts, auth_audit_logs テーブル追加 + users 拡張（locked_until, session_version） |
-| `460b1c6d8e8f` | oauth_support | oauth_providers, user_oauth_accounts, oauth_states テーブル追加 |
-| `a943bf44ce3b` | add_password_reset_tokens | password_reset_tokens テーブル追加 |
-| `a5dceaeb239f` | add_user_preferred_locale | users テーブルに preferred_locale カラム追加 |
-| `3c7419e092cb` | log_collection_v2_redesign | log_sources テーブル再設計、log_files・log_entries テーブル追加 |
-| `b8f2a1c3d4e5` | add_log_source_paths | log_source_paths テーブル追加、log_sources から base_path/file_pattern を分離、log_files に path_id 追加 |
-| `0d0894c74444` | add_log_source_alert_on_change | log_sources に alert_on_change カラム追加 |
-| `c1a2b3d4e5f6` | replace_server_name_with_group_id | log_sources の server_name を削除し group_id (FK groups.id) に置換 |
-| `2509bc83417f` | add_backlog_ticket_id_to_daily_reports | daily_reports に backlog_ticket_id カラム追加 |
-| `6ddf43a20423` | add_unique_constraint_attendances_user_date | attendances に UNIQUE(user_id, date) 制約追加 |
-
-```bash
-# 履歴の確認
-alembic history
-```
+| # | リビジョン | 説明 | 主な内容 |
+|---|-----------|------|----------|
+| 1 | `53797f9c29e5` | initial schema | users, todos, attendances, tasks, task_time_entries, logs, presence_statuses, presence_logs テーブル作成 |
+| 2 | `7e3eabbd85e8` | add password_hash to users | users に password_hash カラム追加 |
+| 3 | `86da56d0b359` | add visibility to todos | todos に visibility カラム追加 |
+| 4 | `29148e04951a` | add presence tables | presence 関連テーブル追加 |
+| 5 | `c3790ffa7e38` | add daily_reports table | daily_reports テーブル追加 |
+| 6 | `6ee8442a6984` | add log_sources table | log_sources テーブル追加 |
+| 7 | `82739a6351f7` | add alert_rules and alerts tables | alert_rules, alerts テーブル追加 |
+| 8 | `47696373217f` | add role to users | users に role カラム追加 |
+| 9 | `05d4971bc34d` | add break fields to attendances | attendances に休憩フィールド追加 |
+| 10 | `620335984593` | add attendance_presets and user default_preset_id | attendance_presets テーブル追加、users に default_preset_id 追加 |
+| 11 | `fa32f8e03649` | add input_type to attendances | attendances に input_type カラム追加 |
+| 12 | `a1b2c3d4e5f6` | add attendance_breaks table | attendance_breaks テーブル追加 |
+| 13 | `e3a82a9fcd2f` | remove daily_report unique constraint | daily_reports の UNIQUE 制約削除 |
+| 14 | `d58961695bbb` | add report to tasks | tasks に report フラグ追加 |
+| 15 | `709a8464bb48` | add category_id task_name time_minutes to daily_reports | daily_reports にカテゴリ・タスク名・作業時間追加 |
+| 16 | `b3f1a2c4d5e6` | rename username to email | users の username を email にリネーム |
+| 17 | `c4d5e6f7a8b9` | add backlog_ticket_id to tasks | tasks に backlog_ticket_id 追加 |
+| 18 | `d5e6f7a8b9c0` | add category_id to tasks | tasks に category_id 追加、task_categories テーブル追加 |
+| 19 | `72671cad997f` | add task_list_items and source_item_id | task_list_items テーブル追加、tasks に source_item_id 追加 |
+| 20 | `4f88001d4f7c` | remove parent_id from task_list_items | task_list_items から parent_id 削除 |
+| 21 | `fe250895e6da` | add_calendar_tables | calendar_events, calendar_event_attendees, calendar_event_exceptions, calendar_reminders, user_calendar_settings テーブル追加 |
+| 22 | `3b21411eef32` | add_calendar_rooms_and_room_id | calendar_rooms テーブル追加、calendar_events に room_id 追加 |
+| 23 | `f65f9288d390` | add groups and user.group_id | groups テーブル追加、users に group_id 追加 |
+| 24 | `01ac57c0d3d4` | auth_security_enhancement | login_attempts, auth_audit_logs テーブル追加、users に locked_until, session_version 追加 |
+| 25 | `460b1c6d8e8f` | oauth_support | oauth_providers, user_oauth_accounts, oauth_states テーブル追加 |
+| 26 | `a943bf44ce3b` | add_password_reset_tokens | password_reset_tokens テーブル追加 |
+| 27 | `a5dceaeb239f` | add_user_preferred_locale | users に preferred_locale カラム追加 |
+| 28 | `3c7419e092cb` | log_collection_v2_redesign | log_sources 再設計、log_files, log_entries テーブル追加 |
+| 29 | `b8f2a1c3d4e5` | add_log_source_paths | log_source_paths テーブル追加、log_files に path_id 追加 |
+| 30 | `0d0894c74444` | add_log_source_alert_on_change | log_sources に alert_on_change カラム追加 |
+| 31 | `c1a2b3d4e5f6` | replace_server_name_with_group_id | log_sources の server_name → group_id に置換 |
+| 32 | `2509bc83417f` | add_backlog_ticket_id_to_daily_reports | daily_reports に backlog_ticket_id 追加 |
+| 33 | `6ddf43a20423` | add_unique_constraint_attendances_user_date | attendances に UNIQUE(user_id, date) 制約追加 |
+| 34 | `b3df810d3406` | add_site_links | site_groups, site_links テーブル追加 |
+| 35 | `a1c2d3e4f5b6` | add_wiki_pages | wiki_categories, wiki_tags, wiki_page_tags, wiki_pages テーブル追加 |
+| 36 | `b2c3d4e5f6a7` | add_wiki_task_links | wiki_page_task_items, wiki_page_tasks テーブル追加 |
+| 37 | `c3d4e5f6a7b8` | wiki_content_to_markdown | wiki_pages.content を JSON → TEXT に変換（Tiptap → Markdown）、yjs_state カラム削除 |
+| 38 | `d4e5f6a7b8c9` | add_wiki_attachments | wiki_attachments テーブル追加 |
+| 39 | `f8e8afae33a0` | add_indexes | todos, tasks, task_list_items, daily_reports, presence_logs に user_id/assignee_id/created_by インデックス追加 |
+| 40 | `4671c277afb4` | wiki_visibility_local_public_private | wiki_pages.visibility を local/public/private 体系に変更（server_default: internal → local） |
+| 41 | `8868b471d6cb` | add_departments_table | departments テーブル追加（階層構造: parent_id 自己参照、is_active フラグ） |
+| 42 | `a9b8c7d6e5f4` | users_group_id_to_department_id | users.group_id → users.department_id にリネーム、FK を groups → departments に変更 |
+| 43 | `b7c8d9e0f1a2` | migrate_groups_to_departments | groups データを departments にコピー、log_sources.group_id → department_id にリネーム・FK 付け替え、groups テーブル削除 |
