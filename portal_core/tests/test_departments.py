@@ -49,3 +49,58 @@ def test_department_defaults(db_session):
     assert dept.sort_order == 0
     assert dept.is_active is True
     assert dept.parent_id is None
+
+
+def test_get_departments_empty(db_session):
+    from portal_core.crud.department import get_departments
+
+    result = get_departments(db_session)
+    assert isinstance(result, list)
+
+
+def test_create_and_get_department(db_session):
+    from portal_core.crud.department import create_department, get_department
+
+    dept = create_department(db_session, name="Engineering", sort_order=0)
+    assert dept.id is not None
+    assert dept.name == "Engineering"
+    assert dept.is_active is True
+    assert dept.parent_id is None
+
+    retrieved = get_department(db_session, dept.id)
+    assert retrieved.name == "Engineering"
+
+
+def test_create_department_with_parent(db_session):
+    from portal_core.crud.department import create_department
+
+    parent = create_department(db_session, name="Technology", sort_order=0)
+    child = create_department(db_session, name="Backend", parent_id=parent.id, sort_order=0)
+    assert child.parent_id == parent.id
+
+
+def test_update_department(db_session):
+    from portal_core.crud.department import create_department, update_department
+
+    dept = create_department(db_session, name="OldName")
+    updated = update_department(db_session, dept, {"name": "NewName"})
+    assert updated.name == "NewName"
+
+
+def test_delete_department(db_session):
+    from portal_core.crud.department import create_department, delete_department, get_department
+
+    dept = create_department(db_session, name="ToDelete")
+    dept_id = dept.id
+    delete_department(db_session, dept)
+    assert get_department(db_session, dept_id) is None
+
+
+def test_count_members(db_session):
+    from portal_core.crud.department import count_members, create_department
+
+    dept = create_department(db_session, name="HR", sort_order=0)
+    # User テーブルには department_id がまだない（Task 6 で追加予定）
+    # count が 0 であることだけ確認
+    count = count_members(db_session, dept.id)
+    assert count == 0
