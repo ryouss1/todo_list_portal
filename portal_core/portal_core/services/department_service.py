@@ -6,16 +6,17 @@ from sqlalchemy.orm import Session
 
 from portal_core.core.exceptions import ConflictError, NotFoundError
 from portal_core.crud import department as crud_dept
+from portal_core.models.department import Department
 from portal_core.schemas.department import DepartmentCreate, DepartmentUpdate
 
 logger = logging.getLogger("portal_core.services.department")
 
 
-def get_departments_svc(db: Session) -> List:
+def get_departments_svc(db: Session) -> List[Department]:
     return crud_dept.get_departments(db)
 
 
-def get_departments_active_svc(db: Session) -> List:
+def get_departments_active_svc(db: Session) -> List[Department]:
     return crud_dept.get_departments_active(db)
 
 

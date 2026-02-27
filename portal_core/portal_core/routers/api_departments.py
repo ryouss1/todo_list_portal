@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from portal_core.core.deps import get_current_user_id, require_admin
+from portal_core.crud import department as crud_dept
 from portal_core.database import get_db
 from portal_core.schemas.department import DepartmentCreate, DepartmentResponse, DepartmentUpdate
 from portal_core.services.department_service import (
@@ -17,7 +18,7 @@ from portal_core.services.department_service import (
 router = APIRouter(prefix="/api/departments", tags=["departments"])
 
 
-def _to_response(dept) -> DepartmentResponse:
+def _to_response(dept, db: Session) -> DepartmentResponse:
     return DepartmentResponse(
         id=dept.id,
         name=dept.name,
@@ -26,7 +27,7 @@ def _to_response(dept) -> DepartmentResponse:
         parent_id=dept.parent_id,
         sort_order=dept.sort_order,
         is_active=dept.is_active,
-        member_count=0,
+        member_count=crud_dept.count_members(db, dept.id),
         created_at=dept.created_at,
         updated_at=dept.updated_at,
     )
@@ -35,13 +36,13 @@ def _to_response(dept) -> DepartmentResponse:
 @router.get("/tree", response_model=List[DepartmentResponse])
 def get_departments_tree(db: Session = Depends(get_db), _user_id: int = Depends(get_current_user_id)):
     depts = get_departments_active_svc(db)
-    return [_to_response(d) for d in depts]
+    return [_to_response(d, db) for d in depts]
 
 
 @router.get("/", response_model=List[DepartmentResponse])
 def list_departments(db: Session = Depends(get_db), _user_id: int = Depends(get_current_user_id)):
     depts = get_departments_svc(db)
-    return [_to_response(d) for d in depts]
+    return [_to_response(d, db) for d in depts]
 
 
 @router.post("/", response_model=DepartmentResponse, status_code=201)
@@ -53,7 +54,7 @@ def create_department(
     dept = create_department_svc(db, data)
     db.commit()
     db.refresh(dept)
-    return _to_response(dept)
+    return _to_response(dept, db)
 
 
 @router.put("/{dept_id}", response_model=DepartmentResponse)
@@ -66,7 +67,7 @@ def update_department(
     dept = update_department_svc(db, dept_id, data)
     db.commit()
     db.refresh(dept)
-    return _to_response(dept)
+    return _to_response(dept, db)
 
 
 @router.delete("/{dept_id}", status_code=204)

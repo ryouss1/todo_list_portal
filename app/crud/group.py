@@ -26,6 +26,9 @@ delete_group = _crud.delete
 
 
 def count_members(db: Session, group_id: int) -> int:
-    from portal_core.models.user import User
+    """Return member count for a group.
 
-    return db.query(User).filter(User.department_id == group_id).count()
+    Users no longer have a group_id column (renamed to department_id → departments).
+    Group membership at the user level is no longer tracked.
+    """
+    return 0
