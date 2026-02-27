@@ -16,10 +16,10 @@ router = APIRouter(prefix="/api/summary", tags=["summary"])
 def get_summary(
     period: str = Query("weekly", pattern="^(daily|weekly|monthly)$"),
     ref_date: Optional[date] = None,
-    group_id: Optional[int] = None,
+    department_id: Optional[int] = None,
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
     if ref_date is None:
         ref_date = date.today()
-    return svc_summary.get_summary(db, period, ref_date, group_id=group_id)
+    return svc_summary.get_summary(db, period, ref_date, department_id=department_id)

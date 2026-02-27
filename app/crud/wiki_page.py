@@ -23,7 +23,7 @@ def get_all_pages(
     tag_slug: Optional[str] = None,
     category_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    user_group_id: Optional[int] = None,
+    user_department_id: Optional[int] = None,
     is_admin: bool = False,
     limit: int = 200,
     offset: int = 0,
@@ -37,7 +37,7 @@ def get_all_pages(
     )
     # Visibility filter:
     #   public  → all authenticated users
-    #   local   → same group as author (or the author themselves)
+    #   local   → same department as author (or the author themselves)
     #   private → author only
     if not is_admin:
         if user_id is not None:
@@ -46,13 +46,13 @@ def get_all_pages(
                 WikiPage.visibility == WikiPageVisibility.PRIVATE,
                 WikiPage.author_id == user_id,
             )
-            # local: visible if user is the author OR user is in same group as author
+            # local: visible if user is the author OR user is in same department as author
             local_subconditions = [WikiPage.author_id == user_id]
-            if user_group_id is not None:
+            if user_department_id is not None:
                 from portal_core.models.user import User as UserModel
 
-                same_group_authors = db.query(UserModel.id).filter(UserModel.department_id == user_group_id)
-                local_subconditions.append(WikiPage.author_id.in_(same_group_authors))
+                same_dept_authors = db.query(UserModel.id).filter(UserModel.department_id == user_department_id)
+                local_subconditions.append(WikiPage.author_id.in_(same_dept_authors))
             local_cond = and_(
                 WikiPage.visibility == WikiPageVisibility.LOCAL,
                 or_(*local_subconditions),
@@ -102,7 +102,7 @@ def delete_page(db: Session, page: WikiPage) -> None:
 def get_tree(
     db: Session,
     user_id: int,
-    user_group_id: Optional[int] = None,
+    user_department_id: Optional[int] = None,
     is_admin: bool = False,
 ) -> List[dict]:
     """Return pages as a nested tree using a recursive CTE, filtered by visibility."""
@@ -120,9 +120,9 @@ def get_tree(
                         visibility = 'local' AND (
                             author_id = :user_id
                             OR (
-                                :user_group_id IS NOT NULL
+                                :user_department_id IS NOT NULL
                                 AND author_id IN (
-                                    SELECT id FROM users WHERE department_id = :user_group_id
+                                    SELECT id FROM users WHERE department_id = :user_department_id
                                 )
                             )
                         )
@@ -144,9 +144,9 @@ def get_tree(
                         wp.visibility = 'local' AND (
                             wp.author_id = :user_id
                             OR (
-                                :user_group_id IS NOT NULL
+                                :user_department_id IS NOT NULL
                                 AND wp.author_id IN (
-                                    SELECT id FROM users WHERE department_id = :user_group_id
+                                    SELECT id FROM users WHERE department_id = :user_department_id
                                 )
                             )
                         )
@@ -156,7 +156,7 @@ def get_tree(
             )
             SELECT * FROM tree ORDER BY depth, sort_order, id
         """),
-        {"user_id": user_id, "user_group_id": user_group_id, "is_admin": is_admin},
+        {"user_id": user_id, "user_department_id": user_department_id, "is_admin": is_admin},
     ).fetchall()
     return _build_tree(rows)
 

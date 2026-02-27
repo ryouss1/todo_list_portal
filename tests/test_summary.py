@@ -259,7 +259,7 @@ class TestSummaryAPI:
         assert resp.status_code == 422
 
     def test_summary_group_filter(self, client, db_session, other_user):
-        """group_id指定でそのグループのユーザーのみ集計される."""
+        """department_id指定でその部署のユーザーのみ集計される."""
         _ensure_category(db_session)
         # Create a department and assign user 1 to it
         dept = Department(name="FilterGroup", sort_order=99)
@@ -279,8 +279,8 @@ class TestSummaryAPI:
         )
         db_session.flush()
 
-        # With group filter (group_id maps to department_id): only user1's report
-        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={dept.id}")
+        # With department filter: only user1's report
+        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&department_id={dept.id}")
         data = resp.json()
         assert data["total_reports"] == 1
         user_ids = [u["user_id"] for u in data["user_report_statuses"]]
@@ -294,13 +294,13 @@ class TestSummaryAPI:
         db_session.flush()
 
         ref = date(2020, 5, 4)
-        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={dept.id}")
+        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&department_id={dept.id}")
         data = resp.json()
         assert data["total_reports"] == 0
         assert data["user_report_statuses"] == []
 
     def test_summary_no_group_filter(self, client, db_session, other_user):
-        """group_id未指定で全ユーザー集計（後方互換）."""
+        """department_id未指定で全ユーザー集計."""
         _ensure_category(db_session)
         ref = date(2020, 6, 1)
         db_session.add(

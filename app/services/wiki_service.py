@@ -133,7 +133,7 @@ def _check_write_permission(page: WikiPage, user_id: int, is_admin: bool) -> Non
         raise ForbiddenError("You do not have permission to modify this page")
 
 
-def _get_user_group_id(db: Session, user_id: int) -> Optional[int]:
+def _get_user_department_id(db: Session, user_id: int) -> Optional[int]:
     """Return the department_id for the given user, or None."""
     from portal_core.models.user import User as UserModel
 
@@ -162,8 +162,8 @@ def _check_visibility(page: WikiPage, user_id: int, is_admin: bool, db: Session)
 
             author = db.query(UserModel).filter(UserModel.id == page.author_id).first()
             if author and author.department_id is not None:
-                user_group_id = _get_user_group_id(db, user_id)
-                if user_group_id is not None and user_group_id == author.department_id:
+                user_department_id = _get_user_department_id(db, user_id)
+                if user_department_id is not None and user_department_id == author.department_id:
                     return
         raise ForbiddenError("This page is restricted to your department")
     if page.visibility == WikiPageVisibility.PRIVATE:
@@ -260,8 +260,8 @@ def delete_tag(db: Session, tag_id: int) -> None:
 
 
 def get_page_tree(db: Session, user_id: int, is_admin: bool = False) -> List[WikiPageTreeNode]:
-    user_group_id = _get_user_group_id(db, user_id) if not is_admin else None
-    rows = page_crud.get_tree(db, user_id=user_id, user_group_id=user_group_id, is_admin=is_admin)
+    user_department_id = _get_user_department_id(db, user_id) if not is_admin else None
+    rows = page_crud.get_tree(db, user_id=user_id, user_department_id=user_department_id, is_admin=is_admin)
 
     def _to_node(d: dict) -> WikiPageTreeNode:
         children = [_to_node(c) for c in d.pop("children", [])]
@@ -295,13 +295,13 @@ def list_pages(
     limit: int = 200,
     offset: int = 0,
 ) -> List[WikiPageResponse]:
-    user_group_id = _get_user_group_id(db, user_id) if user_id is not None and not is_admin else None
+    user_department_id = _get_user_department_id(db, user_id) if user_id is not None and not is_admin else None
     pages = page_crud.get_all_pages(
         db,
         tag_slug=tag_slug,
         category_id=category_id,
         user_id=user_id,
-        user_group_id=user_group_id,
+        user_department_id=user_department_id,
         is_admin=is_admin,
         limit=limit,
         offset=offset,

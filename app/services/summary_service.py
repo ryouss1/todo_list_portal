@@ -40,8 +40,10 @@ def get_month_range(ref_date: date):
     return start, end
 
 
-def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int] = None) -> BusinessSummaryResponse:
-    logger.info("Generating %s summary for ref_date=%s, group_id=%s", period, ref_date, group_id)
+def get_summary(
+    db: Session, period: str, ref_date: date, department_id: Optional[int] = None
+) -> BusinessSummaryResponse:
+    logger.info("Generating %s summary for ref_date=%s, department_id=%s", period, ref_date, department_id)
 
     if period == "daily":
         period_start, period_end = get_day_range(ref_date)
@@ -50,8 +52,8 @@ def get_summary(db: Session, period: str, ref_date: date, group_id: Optional[int
     else:
         period_start, period_end = get_month_range(ref_date)
 
-    if group_id is not None:
-        users = crud_user.get_users_in_department(db, group_id, active_only=True)
+    if department_id is not None:
+        users = crud_user.get_users_in_department(db, department_id, active_only=True)
         user_ids = [u.id for u in users]
         reports = crud_report.get_reports_by_date_range(db, period_start, period_end, user_ids=user_ids)
     else:
