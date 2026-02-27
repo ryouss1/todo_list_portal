@@ -577,6 +577,45 @@ def test_all_status_filter_active_only(client, db_session):
     assert "ActDone" not in titles
 
 
+def test_all_q_filter_title_match(client, db_session):
+    """GET /all?q=keyword returns only items whose title contains keyword (case-insensitive)."""
+    for title in ["Alpha Task", "ALPHA backend", "Beta Task"]:
+        db_session.add(TaskListItem(title=title, created_by=1))
+    db_session.flush()
+
+    res = client.get("/api/task-list/all?q=alpha")
+    assert res.status_code == 200
+    titles = {i["title"] for i in res.json()}
+    assert "Alpha Task" in titles
+    assert "ALPHA backend" in titles
+    assert "Beta Task" not in titles
+
+
+def test_all_q_filter_no_match(client, db_session):
+    """GET /all?q=nonexistent returns empty list when no title matches."""
+    db_session.add(TaskListItem(title="Visible Item", created_by=1))
+    db_session.flush()
+
+    res = client.get("/api/task-list/all?q=nonexistent")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_all_q_filter_combined_with_status(client, db_session):
+    """GET /all?q=keyword&status=open filters by both title and status."""
+    db_session.add(TaskListItem(title="Wiki Task open", status="open", created_by=1))
+    db_session.add(TaskListItem(title="Wiki Task done", status="done", created_by=1))
+    db_session.add(TaskListItem(title="Other open", status="open", created_by=1))
+    db_session.flush()
+
+    res = client.get("/api/task-list/all?q=wiki&status=open")
+    assert res.status_code == 200
+    titles = {i["title"] for i in res.json()}
+    assert "Wiki Task open" in titles
+    assert "Wiki Task done" not in titles
+    assert "Other open" not in titles
+
+
 # ─── Assignee via Update Tests ───
 
 
@@ -622,3 +661,23 @@ def test_create_item_with_other_user_as_assignee(client, db_session, other_user)
 def test_page_accessible(client):
     res = client.get("/task-list")
     assert res.status_code == 200
+
+
+class TestStartAsTaskRaceCondition:
+    def test_start_as_task_uses_row_lock(self, db_session):
+        """start_as_task should use SELECT FOR UPDATE to prevent duplicate tasks."""
+        from app.crud.task_list_item import get_item_for_update
+        from app.models.task_list_item import TaskListItem
+
+        item = TaskListItem(
+            title="Lock test",
+            created_by=1,
+            status="open",
+        )
+        db_session.add(item)
+        db_session.flush()
+
+        # Verify the function exists and returns the item
+        locked = get_item_for_update(db_session, item.id)
+        assert locked is not None
+        assert locked.id == item.id

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.core.constants import ItemStatus
+from app.constants import ItemStatus
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.crud import task as crud_task
 from app.crud import task_list_item as crud_tli
@@ -41,8 +41,9 @@ def list_all(
     db: Session,
     assignee_id: Optional[int] = None,
     statuses: Optional[List[str]] = None,
+    q: Optional[str] = None,
 ) -> List[TaskListItem]:
-    return crud_tli.get_all_items(db, assignee_id, statuses)
+    return crud_tli.get_all_items(db, assignee_id, statuses, q)
 
 
 def list_mine(db: Session, user_id: int, statuses: Optional[List[str]] = None) -> List[TaskListItem]:
@@ -93,7 +94,12 @@ def unassign_item(db: Session, item_id: int, user_id: int) -> TaskListItem:
 
 def start_as_task(db: Session, item_id: int, user_id: int) -> Task:
     """Copy a TaskListItem to a new Task, start its timer, and set item status to in_progress."""
-    item = _get_visible_item(db, item_id, user_id)
+    # Lock the row to prevent concurrent start_as_task() calls from creating duplicate tasks.
+    item = crud_tli.get_item_for_update(db, item_id)
+    if not item:
+        raise NotFoundError("Item not found")
+    if item.assignee_id is not None and item.assignee_id != user_id and item.created_by != user_id:
+        raise NotFoundError("Item not found")
     if item.status != ItemStatus.OPEN:
         raise ConflictError("Item is already started")
 

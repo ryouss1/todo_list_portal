@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -24,16 +24,19 @@ def get_all_items(
     db: Session,
     assignee_id: Optional[int] = None,
     statuses: Optional[List[str]] = None,
+    q: Optional[str] = None,
 ) -> List[TaskListItem]:
-    q = db.query(TaskListItem)
+    query = db.query(TaskListItem)
     if assignee_id is not None:
         if assignee_id == 0:
-            q = q.filter(TaskListItem.assignee_id.is_(None))
+            query = query.filter(TaskListItem.assignee_id.is_(None))
         else:
-            q = q.filter(TaskListItem.assignee_id == assignee_id)
+            query = query.filter(TaskListItem.assignee_id == assignee_id)
     if statuses:
-        q = q.filter(TaskListItem.status.in_(statuses))
-    return q.order_by(TaskListItem.scheduled_date.asc().nullslast(), TaskListItem.created_at.asc()).all()
+        query = query.filter(TaskListItem.status.in_(statuses))
+    if q:
+        query = query.filter(TaskListItem.title.ilike(f"%{q}%"))
+    return query.order_by(TaskListItem.scheduled_date.asc().nullslast(), TaskListItem.created_at.asc()).all()
 
 
 def get_assigned_items(db: Session, user_id: int, statuses: Optional[List[str]] = None) -> List[TaskListItem]:
@@ -66,6 +69,19 @@ def unassign_item(db: Session, item: TaskListItem) -> TaskListItem:
 
 
 delete_item = _crud.delete
+
+
+def get_item_for_update(db: Session, item_id: int) -> Optional[TaskListItem]:
+    """Get a task list item with SELECT FOR UPDATE row lock."""
+    return db.query(TaskListItem).filter(TaskListItem.id == item_id).with_for_update().first()
+
+
+def get_items_by_ids(db: Session, item_ids: List[int]) -> Dict[int, TaskListItem]:
+    """Batch-fetch task list items by IDs. Returns {item_id: item}."""
+    if not item_ids:
+        return {}
+    items = db.query(TaskListItem).filter(TaskListItem.id.in_(item_ids)).all()
+    return {item.id: item for item in items}
 
 
 def accumulate_seconds(db: Session, item: TaskListItem, seconds: int) -> TaskListItem:
