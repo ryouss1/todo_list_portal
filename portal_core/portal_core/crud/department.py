@@ -49,7 +49,8 @@ def create_department(
 
 def update_department(db: Session, dept: Department, data: dict) -> Department:
     for key, value in data.items():
-        setattr(dept, key, value)
+        if value is not None:
+            setattr(dept, key, value)
     db.flush()
     return dept
 

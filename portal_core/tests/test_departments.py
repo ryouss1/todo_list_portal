@@ -104,3 +104,15 @@ def test_count_members(db_session):
     # count が 0 であることだけ確認
     count = count_members(db_session, dept.id)
     assert count == 0
+
+
+def test_get_departments_active(db_session):
+    from portal_core.crud.department import create_department, get_departments_active
+
+    _active = create_department(db_session, name="ActiveDept", is_active=True)
+    _inactive = create_department(db_session, name="InactiveDept", is_active=False)
+
+    result = get_departments_active(db_session)
+    names = [d.name for d in result]
+    assert "ActiveDept" in names
+    assert "InactiveDept" not in names
