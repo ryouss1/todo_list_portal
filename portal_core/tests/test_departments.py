@@ -126,3 +126,43 @@ def test_get_departments_active(db_session):
     names = [d.name for d in result]
     assert "ActiveDept" in names
     assert "InactiveDept" not in names
+
+
+def test_department_response_schema():
+    from datetime import datetime
+
+    from portal_core.schemas.department import DepartmentResponse
+
+    resp = DepartmentResponse(
+        id=1,
+        name="Engineering",
+        code=None,
+        description=None,
+        parent_id=None,
+        sort_order=0,
+        is_active=True,
+        member_count=0,
+        created_at=datetime.now(),
+        updated_at=None,
+    )
+    assert resp.name == "Engineering"
+    assert resp.member_count == 0
+
+
+def test_department_create_schema():
+    from portal_core.schemas.department import DepartmentCreate
+
+    data = DepartmentCreate(name="HR")
+    assert data.name == "HR"
+    assert data.parent_id is None
+    assert data.is_active is True
+    assert data.sort_order == 0
+
+
+def test_department_update_schema():
+    from portal_core.schemas.department import DepartmentUpdate
+
+    # 全フィールドが Optional であること
+    data = DepartmentUpdate()
+    assert data.name is None
+    assert data.is_active is None
