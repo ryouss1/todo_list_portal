@@ -3,11 +3,12 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.core.constants import PresenceStatusValue, TaskStatus
+from app.config import API_PRESENCE_LOG_LIMIT, PRESENCE_ACTIVE_TASK_LIMIT
+from app.constants import PresenceStatusValue
 from app.crud import presence as crud_presence
+from app.crud import task as crud_task
 from app.crud import user as crud_user
 from app.models.presence import PresenceStatus
-from app.models.task import Task
 from app.schemas.presence import ActiveTicket, PresenceStatusWithUser
 
 logger = logging.getLogger("app.services.presence")
@@ -29,12 +30,9 @@ def get_my_status(db: Session, user_id: int) -> PresenceStatus:
 
 def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
     statuses = crud_presence.get_all_presence_statuses(db)
-    users = crud_user.get_users(db)
+    users = crud_user.get_users(db, active_only=True)
 
-    # Query in_progress tasks with backlog_ticket_id for all users
-    active_tasks = (
-        db.query(Task).filter(Task.status == TaskStatus.IN_PROGRESS, Task.backlog_ticket_id.isnot(None)).all()
-    )
+    active_tasks = crud_task.get_in_progress_with_backlog(db, limit=PRESENCE_ACTIVE_TASK_LIMIT)
     tickets_by_user = {}
     for task in active_tasks:
         tickets_by_user.setdefault(task.user_id, []).append(
@@ -63,6 +61,4 @@ def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
 
 
 def get_logs(db: Session, user_id: int):
-    from app.config import API_PRESENCE_LOG_LIMIT
-
     return crud_presence.get_presence_logs(db, user_id, API_PRESENCE_LOG_LIMIT)

@@ -78,9 +78,14 @@ def count_by_source_item_id(db: Session, source_item_id: int) -> int:
     return db.query(Task).filter(Task.source_item_id == source_item_id).count()
 
 
-def get_in_progress_with_backlog(db: Session) -> List[Task]:
+def get_in_progress_with_backlog(db: Session, limit: int = 200) -> List[Task]:
     """Get all in-progress tasks that have a backlog ticket ID (for presence display)."""
-    return db.query(Task).filter(Task.status == TaskStatus.IN_PROGRESS, Task.backlog_ticket_id.isnot(None)).all()
+    return (
+        db.query(Task)
+        .filter(Task.status == TaskStatus.IN_PROGRESS, Task.backlog_ticket_id.isnot(None))
+        .limit(limit)
+        .all()
+    )
 
 
 def get_tasks_by_ids(db: Session, task_ids: List[int]) -> List[Task]:

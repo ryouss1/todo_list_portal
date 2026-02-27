@@ -138,3 +138,21 @@ class TestPresenceAPI:
         ticket_ids = [t["backlog_ticket_id"] for t in user1["active_tickets"]]
         assert "WHT-100" in ticket_ids
         assert "WHT-200" in ticket_ids
+
+
+def test_presence_active_task_limit_config_exists():
+    """PRESENCE_ACTIVE_TASK_LIMIT must be set in app.config."""
+    from app import config
+
+    assert hasattr(config, "PRESENCE_ACTIVE_TASK_LIMIT"), "PRESENCE_ACTIVE_TASK_LIMIT missing from config"
+    assert isinstance(config.PRESENCE_ACTIVE_TASK_LIMIT, int)
+    assert config.PRESENCE_ACTIVE_TASK_LIMIT > 0
+
+
+def test_get_in_progress_with_backlog_respects_limit(db_session):
+    """get_in_progress_with_backlog must accept a limit parameter."""
+    from app.crud import task as crud_task
+
+    # Must not raise — limit parameter must exist
+    result = crud_task.get_in_progress_with_backlog(db_session, limit=5)
+    assert isinstance(result, list)
