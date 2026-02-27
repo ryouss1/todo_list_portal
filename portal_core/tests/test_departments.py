@@ -87,6 +87,16 @@ def test_update_department(db_session):
     assert updated.name == "NewName"
 
 
+def test_update_department_ignores_none(db_session):
+    """None 値は無視され、既存の値が保持されること（仕様）"""
+    from portal_core.crud.department import create_department, update_department
+
+    dept = create_department(db_session, name="TestDept", description="original")
+    update_department(db_session, dept, {"name": "Updated", "description": None})
+    assert dept.name == "Updated"
+    assert dept.description == "original"  # None で上書きされない
+
+
 def test_delete_department(db_session):
     from portal_core.crud.department import create_department, delete_department, get_department
 

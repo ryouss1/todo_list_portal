@@ -34,17 +34,17 @@ def create_department(
     sort_order: int = 0,
     is_active: bool = True,
 ) -> Department:
-    dept = Department(
-        name=name,
-        code=code,
-        description=description,
-        parent_id=parent_id,
-        sort_order=sort_order,
-        is_active=is_active,
+    return _crud.create(
+        db,
+        {
+            "name": name,
+            "code": code,
+            "description": description,
+            "parent_id": parent_id,
+            "sort_order": sort_order,
+            "is_active": is_active,
+        },
     )
-    db.add(dept)
-    db.flush()
-    return dept
 
 
 def update_department(db: Session, dept: Department, data: dict) -> Department:
@@ -55,9 +55,7 @@ def update_department(db: Session, dept: Department, data: dict) -> Department:
     return dept
 
 
-def delete_department(db: Session, dept: Department) -> None:
-    db.delete(dept)
-    db.flush()
+delete_department = _crud.delete
 
 
 def count_members(db: Session, department_id: int) -> int:
