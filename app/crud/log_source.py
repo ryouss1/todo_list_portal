@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -5,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.log_source import LogSource
+
+logger = logging.getLogger("app.crud.log_source")
 
 _crud = CRUDBase(LogSource)
 
@@ -34,11 +37,22 @@ def update_scan_state(
     db: Session,
     source: LogSource,
     error: Optional[str] = None,
+    max_failures: Optional[int] = None,
 ) -> None:
+    from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+
     source.last_checked_at = datetime.now(timezone.utc)
     if error:
         source.last_error = error
         source.consecutive_errors = (source.consecutive_errors or 0) + 1
+        threshold = max_failures if max_failures is not None else LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+        if source.consecutive_errors >= threshold:
+            source.is_enabled = False
+            logger.warning(
+                "Auto-disabled log source id=%d after %d consecutive failures",
+                source.id,
+                source.consecutive_errors,
+            )
     else:
         source.last_error = None
         source.consecutive_errors = 0

@@ -1,14 +1,22 @@
 """Log source management service (v2 with remote connections + multi-path)."""
 
+import functools
 import logging
 import re
 import signal
 from contextlib import contextmanager
-from datetime import date, datetime, timezone
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.config import (
+    LOG_ALERT_CONTENT_DISPLAY_LINES,
+    LOG_ALERT_CONTENT_MAX_LINES,
+    LOG_SCAN_PATH_TIMEOUT,
+    LOG_SOURCE_MAX_CONSECUTIVE_FAILURES,
+)
+from app.constants import DEFAULT_LOG_FILE_PATTERN, AccessMethod
 from app.core.encryption import decrypt_value, encrypt_value, is_encryption_available, mask_username
 from app.core.exceptions import ConflictError, NotFoundError
 from app.crud import log_entry as crud_log_entry
@@ -66,7 +74,7 @@ def _generate_folder_link(access_method: str, host: str, port: Optional[int], ba
     # Normalize path separators
     normalized = base_path.replace("\\", "/").strip("/")
 
-    if access_method == "smb":
+    if access_method == AccessMethod.SMB:
         return f"file://///{host}/{normalized}/"
     else:
         # FTP
@@ -80,7 +88,7 @@ def _generate_copy_path(access_method: str, host: str, port: Optional[int], base
     SMB: \\\\host\\share\\path\\  (UNC path for Explorer address bar)
     FTP: ftp://host:port/path/
     """
-    if access_method == "smb":
+    if access_method == AccessMethod.SMB:
         # Build UNC path with backslashes
         normalized = base_path.replace("/", "\\").strip("\\")
         return f"\\\\{host}\\{normalized}\\"
@@ -88,6 +96,12 @@ def _generate_copy_path(access_method: str, host: str, port: Optional[int], base
         normalized = base_path.replace("\\", "/").strip("/")
         port_str = f":{port}" if port and port != 21 else ""
         return f"ftp://{host}{port_str}/{normalized}/"
+
+
+@functools.lru_cache(maxsize=32)
+def _compile_pattern(pattern: str) -> re.Pattern:
+    """Compile a regex pattern with LRU cache to avoid repeated compilation."""
+    return re.compile(pattern)
 
 
 def _parse_log_line(
@@ -100,7 +114,8 @@ def _parse_log_line(
     severity = default_severity
     if parser_pattern and severity_field:
         try:
-            m = re.match(parser_pattern, line)
+            compiled = _compile_pattern(parser_pattern)
+            m = compiled.match(line)
             if m and severity_field in m.groupdict():
                 severity = m.group(severity_field).upper()
         except re.error:
@@ -213,7 +228,12 @@ def create_source(db: Session, data: LogSourceCreate) -> dict:
 
 def list_sources(db: Session) -> List[dict]:
     sources = crud_log_source.get_log_sources(db)
-    return [_to_response_dict(db, s) for s in sources]
+    if not sources:
+        return []
+    group_map = _build_group_map(db)
+    source_ids = [s.id for s in sources]
+    paths_map = crud_path.get_paths_by_source_ids(db, source_ids)
+    return [_to_response_dict(db, s, group_map=group_map, paths_list=paths_map.get(s.id, [])) for s in sources]
 
 
 def get_source(db: Session, source_id: int) -> dict:
@@ -357,24 +377,49 @@ def _build_group_map(db: Session) -> dict:
     return {g.id: g.name for g in groups}
 
 
+_EMPTY_FILE_COUNTS: Dict[str, int] = {
+    "total": 0,
+    "new": 0,
+    "updated": 0,
+    "unchanged": 0,
+    "deleted": 0,
+    "error": 0,
+}
+
+
 def list_source_statuses(db: Session) -> List[dict]:
     """Get source statuses with file counts and changed path details for dashboard table."""
     sources = crud_log_source.get_log_sources(db)
+    if not sources:
+        return []
+
+    source_ids = [s.id for s in sources]
     group_map = _build_group_map(db)
+
+    # Batch-fetch file counts, paths, and changed files in 3 queries total
+    counts_map: Dict[int, dict] = crud_log_file.count_files_all_sources(db, source_ids)
+    paths_map: Dict[int, list] = crud_path.get_paths_by_source_ids(db, source_ids)
+
+    # Collect all path IDs that belong to alert-enabled sources
+    alert_path_ids = []
+    for source in sources:
+        if source.alert_on_change and source.is_enabled:
+            for p in paths_map.get(source.id, []):
+                alert_path_ids.append(p.id)
+    changed_files_map: Dict[int, list] = crud_log_file.get_changed_files_by_path_ids(db, alert_path_ids)
+
     result = []
     for source in sources:
-        counts = crud_log_file.count_files_by_source(db, source.id)
-        paths = crud_path.get_paths_by_source(db, source.id)
-        path_count = len(paths)
+        counts = counts_map.get(source.id, _EMPTY_FILE_COUNTS)
+        paths = paths_map.get(source.id, [])
         new_count = counts["new"]
         updated_count = counts["updated"]
         has_alert = source.alert_on_change and source.is_enabled and (new_count > 0 or updated_count > 0)
 
-        # Build changed_paths with folder links and file names
         changed_paths = []
         if has_alert:
             for p in paths:
-                changed_files = crud_log_file.get_changed_files_by_path(db, p.id)
+                changed_files = changed_files_map.get(p.id, [])
                 if changed_files:
                     path_new = [f.file_name for f in changed_files if f.status == "new"]
                     path_updated = [f.file_name for f in changed_files if f.status == "updated"]
@@ -408,7 +453,7 @@ def list_source_statuses(db: Session) -> List[dict]:
                 "consecutive_errors": source.consecutive_errors,
                 "last_checked_at": source.last_checked_at,
                 "last_error": source.last_error,
-                "path_count": path_count,
+                "path_count": len(paths),
                 "file_count": counts["total"],
                 "new_file_count": new_count,
                 "updated_file_count": updated_count,
@@ -421,15 +466,15 @@ def list_source_statuses(db: Session) -> List[dict]:
 
 def scan_source(db: Session, source_id: int) -> dict:
     """Scan a source: connect to remote, list files, upsert DB, optionally create alerts."""
-    from app.config import LOG_SCAN_PATH_TIMEOUT
-
     source = _get_source_or_raise(db, source_id)
 
     try:
         username = decrypt_value(source.username)
         password = decrypt_value(source.password)
     except Exception as e:
-        crud_log_source.update_scan_state(db, source, error=f"Decryption failed: {e}")
+        crud_log_source.update_scan_state(
+            db, source, error=f"Decryption failed: {e}", max_failures=LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+        )
         return {
             "file_count": 0,
             "new_count": 0,
@@ -441,8 +486,7 @@ def scan_source(db: Session, source_id: int) -> dict:
             "alert_broadcast": None,
         }
 
-    paths = crud_path.get_paths_by_source(db, source.id)
-    enabled_paths = [p for p in paths if p.is_enabled]
+    enabled_paths = crud_path.get_enabled_paths_by_source(db, source.id)
     if not enabled_paths:
         crud_log_source.update_scan_state(db, source, error=None)
         return {
@@ -456,7 +500,8 @@ def scan_source(db: Session, source_id: int) -> dict:
             "alert_broadcast": None,
         }
 
-    today = date.today()
+    # Use UTC date to match timezone-aware datetime comparisons
+    today = datetime.now(timezone.utc).date()
     total_new = 0
     total_updated = 0
     total_files = 0
@@ -510,8 +555,11 @@ def scan_source(db: Session, source_id: int) -> dict:
                 path_new_files: List[str] = []
                 path_updated_files: List[str] = []
 
+                # Pre-fetch all existing files for this path in one query
+                existing_files = {f.file_name: f for f in crud_log_file.get_files_by_path(db, p.id)}
+
                 for rf in remote_files:
-                    existing = crud_log_file.get_file_by_path_and_name(db, p.id, rf.name)
+                    existing = existing_files.get(rf.name)
                     if existing:
                         if existing.file_size != rf.size or existing.file_modified_at != rf.modified_at:
                             status = "updated"
@@ -519,20 +567,20 @@ def scan_source(db: Session, source_id: int) -> dict:
                             path_updated_files.append(rf.name)
                         else:
                             status = "unchanged"
+                        crud_log_file.update_file(db, existing, rf.size, rf.modified_at, status)
                     else:
                         status = "new"
                         total_new += 1
                         path_new_files.append(rf.name)
-
-                    crud_log_file.upsert_file(
-                        db,
-                        source_id=source.id,
-                        path_id=p.id,
-                        file_name=rf.name,
-                        file_size=rf.size,
-                        file_modified_at=rf.modified_at,
-                        status=status,
-                    )
+                        crud_log_file.create_file(
+                            db,
+                            source_id=source.id,
+                            path_id=p.id,
+                            file_name=rf.name,
+                            file_size=rf.size,
+                            file_modified_at=rf.modified_at,
+                            status=status,
+                        )
                     active_names.append(rf.name)
                     total_files += 1
 
@@ -552,10 +600,10 @@ def scan_source(db: Session, source_id: int) -> dict:
             all_read_entries: List[dict] = []
 
             if source.alert_on_change and (total_new > 0 or total_updated > 0):
-                from app.config import LOG_ALERT_CONTENT_MAX_LINES
-
+                enabled_path_ids = [p.id for p in enabled_paths]
+                changed_files_map = crud_log_file.get_changed_files_by_path_ids(db, enabled_path_ids)
                 for p in enabled_paths:
-                    changed_files = crud_log_file.get_changed_files_by_path(db, p.id)
+                    changed_files = changed_files_map.get(p.id, [])
                     for log_file in changed_files:
                         entries = _read_alert_file_content(
                             connector, source, p, log_file, db, LOG_ALERT_CONTENT_MAX_LINES
@@ -563,7 +611,7 @@ def scan_source(db: Session, source_id: int) -> dict:
                         if entries:
                             content_read_files += 1
                             # Keep last N entries per file for alert message
-                            all_read_entries.extend(entries[-50:])
+                            all_read_entries.extend(entries[-LOG_ALERT_CONTENT_DISPLAY_LINES:])
 
                 logger.info("Content read: %d files for source_id=%d", content_read_files, source.id)
 
@@ -574,7 +622,7 @@ def scan_source(db: Session, source_id: int) -> dict:
     except Exception as e:
         # Expire all to discard any partial flushes
         db.expire_all()
-        crud_log_source.update_scan_state(db, source, error=str(e))
+        crud_log_source.update_scan_state(db, source, error=str(e), max_failures=LOG_SOURCE_MAX_CONSECUTIVE_FAILURES)
         return {
             "file_count": 0,
             "new_count": 0,
@@ -607,7 +655,7 @@ def scan_source(db: Session, source_id: int) -> dict:
     alert_broadcast = None
     if source.alert_on_change and (total_new > 0 or total_updated > 0):
         try:
-            from app.core.constants import AlertSeverity as AlertSeverityConst
+            from app.constants import AlertSeverity as AlertSeverityConst
             from app.crud import alert as crud_alert
             from app.schemas.alert import AlertCreate
 
@@ -624,7 +672,7 @@ def scan_source(db: Session, source_id: int) -> dict:
             # Append content summary if available
             if all_read_entries:
                 alert_msg += "\n\n--- Log Content ---\n"
-                content_lines = [e["message"] for e in all_read_entries[-50:]]
+                content_lines = [e["message"] for e in all_read_entries[-LOG_ALERT_CONTENT_DISPLAY_LINES:]]
                 alert_msg += "\n".join(content_lines)
 
             alert_create_data = AlertCreate(
@@ -727,7 +775,7 @@ def _reconcile_paths(db: Session, source_id: int, paths_data: list) -> None:
                 path,
                 {
                     "base_path": p_data["base_path"],
-                    "file_pattern": p_data.get("file_pattern", "*.log"),
+                    "file_pattern": p_data.get("file_pattern", DEFAULT_LOG_FILE_PATTERN),
                     "is_enabled": p_data.get("is_enabled", True),
                 },
             )
@@ -737,7 +785,7 @@ def _reconcile_paths(db: Session, source_id: int, paths_data: list) -> None:
                 db,
                 source_id=source_id,
                 base_path=p_data["base_path"],
-                file_pattern=p_data.get("file_pattern", "*.log"),
+                file_pattern=p_data.get("file_pattern", DEFAULT_LOG_FILE_PATTERN),
                 is_enabled=p_data.get("is_enabled", True),
             )
 
@@ -747,7 +795,12 @@ def _reconcile_paths(db: Session, source_id: int, paths_data: list) -> None:
             crud_path.delete_path(db, path)
 
 
-def _to_response_dict(db: Session, source: LogSource) -> dict:
+def _to_response_dict(
+    db: Session,
+    source: LogSource,
+    group_map: Optional[Dict] = None,
+    paths_list: Optional[list] = None,
+) -> dict:
     """Convert source model to response dict with masked username and paths."""
     try:
         plain_username = decrypt_value(source.username)
@@ -755,8 +808,10 @@ def _to_response_dict(db: Session, source: LogSource) -> dict:
     except Exception:
         masked = "****"
 
-    paths = crud_path.get_paths_by_source(db, source.id)
-    paths_list = [
+    if paths_list is None:
+        paths_list = crud_path.get_paths_by_source(db, source.id)
+
+    paths_list_data = [
         {
             "id": p.id,
             "source_id": p.source_id,
@@ -766,10 +821,11 @@ def _to_response_dict(db: Session, source: LogSource) -> dict:
             "created_at": p.created_at,
             "updated_at": p.updated_at,
         }
-        for p in paths
+        for p in paths_list
     ]
 
-    group_map = _build_group_map(db)
+    if group_map is None:
+        group_map = _build_group_map(db)
 
     return {
         "id": source.id,
@@ -781,7 +837,7 @@ def _to_response_dict(db: Session, source: LogSource) -> dict:
         "port": source.port,
         "username_masked": masked,
         "domain": source.domain,
-        "paths": paths_list,
+        "paths": paths_list_data,
         "encoding": source.encoding,
         "source_type": source.source_type,
         "polling_interval_sec": source.polling_interval_sec,

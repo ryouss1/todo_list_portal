@@ -18,8 +18,8 @@ def _set_encryption_key(monkeypatch):
     from cryptography.fernet import Fernet
 
     key = Fernet.generate_key().decode()
-    monkeypatch.setattr("app.core.encryption.CREDENTIAL_ENCRYPTION_KEY", key)
-    monkeypatch.setattr("app.core.encryption._fernet", None)  # Reset cached fernet
+    monkeypatch.setattr("portal_core.core.encryption.CREDENTIAL_ENCRYPTION_KEY", key)
+    monkeypatch.setattr("portal_core.core.encryption._fernet", None)  # Reset cached fernet
 
 
 def _valid_create_payload(**overrides) -> dict:
@@ -505,7 +505,7 @@ class TestLogSourceValidation:
         assert res.status_code == 422
 
     def test_polling_interval_too_high(self, client):
-        payload = _valid_create_payload(polling_interval_sec=999)
+        payload = _valid_create_payload(polling_interval_sec=7200)
         res = client.post("/api/log-sources/", json=payload)
         assert res.status_code == 422
 
@@ -1158,7 +1158,46 @@ class TestLogSourceScan:
         assert data["new_count"] == 1
         # Verify list_files was called with modified_since parameter
         call_kwargs = mock_connector.list_files.call_args
-        assert call_kwargs[1].get("modified_since") == date.today()
+        assert call_kwargs[1].get("modified_since") == datetime.now(timezone.utc).date()
+
+    def test_scan_source_today_filter_uses_utc(self, client):
+        """Scan uses UTC date for modified_since, not local date.
+
+        Between 00:00-09:00 JST (= previous day in UTC), the filter date
+        should be the UTC date, ensuring consistency with file timestamps
+        stored in UTC.
+        """
+        create_res = client.post("/api/log-sources/", json=_valid_create_payload())
+        source_id = create_res.json()["id"]
+
+        # Simulate a fixed UTC time (e.g., 2020-03-10 23:30 UTC = 2020-03-11 08:30 JST)
+        fake_utc_now = datetime(2020, 3, 10, 23, 30, 0, tzinfo=timezone.utc)
+        expected_date = date(2020, 3, 10)  # UTC date, NOT JST date (2020-03-11)
+
+        mock_files = [
+            RemoteFileInfo(name="log.txt", size=50, modified_at=fake_utc_now),
+        ]
+        mock_connector = MagicMock()
+        mock_connector.__enter__ = MagicMock(return_value=mock_connector)
+        mock_connector.__exit__ = MagicMock(return_value=False)
+        mock_connector.list_files.return_value = mock_files
+
+        with (
+            patch(
+                "app.services.log_source_service.create_connector",
+                return_value=mock_connector,
+            ),
+            patch(
+                "app.services.log_source_service.datetime",
+            ) as mock_dt,
+        ):
+            mock_dt.now.return_value = fake_utc_now
+            mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+            res = client.post(f"/api/log-sources/{source_id}/scan")
+
+        assert res.status_code == 200
+        call_kwargs = mock_connector.list_files.call_args
+        assert call_kwargs[1].get("modified_since") == expected_date
 
     def test_scan_source_not_found(self, client):
         """Scan non-existent source returns 404."""
@@ -1359,8 +1398,14 @@ class TestScanContentReading:
         assert data["content_read_files"] == 1
         # Verify read_lines was called
         mock_connector.read_lines.assert_called_once()
-        # Verify log_entries were created
-        entries = db_session.query(LogEntry).all()
+        # Verify log_entries were created (filter by source to avoid pre-existing data)
+        entries = (
+            db_session.query(LogEntry)
+            .join(LogFile, LogEntry.file_id == LogFile.id)
+            .filter(LogFile.source_id == source_id)
+            .order_by(LogEntry.line_number)
+            .all()
+        )
         assert len(entries) == 2
         assert entries[0].message == "2026-02-18 ERROR Something went wrong"
         assert entries[1].message == "2026-02-18 INFO Recovery started"
@@ -1499,7 +1544,13 @@ class TestScanContentReading:
         ):
             client.post(f"/api/log-sources/{source_id}/scan")
 
-        entries = db_session.query(LogEntry).order_by(LogEntry.line_number).all()
+        entries = (
+            db_session.query(LogEntry)
+            .join(LogFile, LogEntry.file_id == LogFile.id)
+            .filter(LogFile.source_id == source_id)
+            .order_by(LogEntry.line_number)
+            .all()
+        )
         assert len(entries) == 2
         assert entries[0].severity == "ERROR"
         assert entries[1].severity == "WARNING"
@@ -1574,7 +1625,13 @@ class TestScanContentReading:
         # Only one file was successfully read
         assert data["content_read_files"] == 1
         # Entries from the good file should be saved
-        entries = db_session.query(LogEntry).all()
+        entries = (
+            db_session.query(LogEntry)
+            .join(LogFile, LogEntry.file_id == LogFile.id)
+            .filter(LogFile.source_id == source_id)
+            .order_by(LogEntry.line_number)
+            .all()
+        )
         assert len(entries) == 2
         assert entries[0].message == "Good log line 1"
 
@@ -1708,3 +1765,78 @@ class TestLogSourceReRead:
 
         res = client_user2.post(f"/api/log-sources/{source.id}/re-read")
         assert res.status_code == 403
+
+
+def test_circuit_breaker_config_exists():
+    """LOG_SOURCE_MAX_CONSECUTIVE_FAILURES must be defined in config."""
+    from app import config
+
+    assert hasattr(config, "LOG_SOURCE_MAX_CONSECUTIVE_FAILURES")
+    assert isinstance(config.LOG_SOURCE_MAX_CONSECUTIVE_FAILURES, int)
+    assert config.LOG_SOURCE_MAX_CONSECUTIVE_FAILURES > 0
+
+
+def test_circuit_breaker_auto_disables_after_max_failures(client, db_session):
+    """Source must be auto-disabled after LOG_SOURCE_MAX_CONSECUTIVE_FAILURES errors."""
+    from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+    from app.crud import log_source as crud_ls
+
+    resp = client.post(
+        "/api/log-sources/",
+        json={
+            "name": "Circuit Breaker Test",
+            "group_id": 1,
+            "access_method": "ftp",
+            "host": "localhost",
+            "username": "user",
+            "password": "pass",
+            "paths": [{"base_path": "/logs"}],
+        },
+    )
+    assert resp.status_code == 201
+    source_id = resp.json()["id"]
+    source = crud_ls.get_log_source(db_session, source_id)
+    assert source.is_enabled is True
+
+    # Simulate consecutive failures up to threshold - 1 (still enabled)
+    for i in range(LOG_SOURCE_MAX_CONSECUTIVE_FAILURES - 1):
+        crud_ls.update_scan_state(db_session, source, error="connection refused")
+        db_session.refresh(source)
+        assert source.is_enabled is True, f"Should still be enabled after {i + 1} failures"
+
+    # Final failure — triggers auto-disable
+    crud_ls.update_scan_state(db_session, source, error="connection refused")
+    db_session.refresh(source)
+    assert source.is_enabled is False
+
+
+def test_circuit_breaker_does_not_disable_on_success(client, db_session):
+    """Source must NOT be auto-disabled if errors are intermittent (reset on success)."""
+    from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+    from app.crud import log_source as crud_ls
+
+    resp = client.post(
+        "/api/log-sources/",
+        json={
+            "name": "CB Success Reset Test",
+            "group_id": 1,
+            "access_method": "ftp",
+            "host": "localhost",
+            "username": "user",
+            "password": "pass",
+            "paths": [{"base_path": "/logs"}],
+        },
+    )
+    source_id = resp.json()["id"]
+    source = crud_ls.get_log_source(db_session, source_id)
+
+    # Some failures
+    for _ in range(LOG_SOURCE_MAX_CONSECUTIVE_FAILURES - 1):
+        crud_ls.update_scan_state(db_session, source, error="timeout")
+        db_session.refresh(source)
+
+    # Success resets counter
+    crud_ls.update_scan_state(db_session, source)
+    db_session.refresh(source)
+    assert source.consecutive_errors == 0
+    assert source.is_enabled is True

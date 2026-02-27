@@ -45,6 +45,7 @@ class AppConfig(CoreConfig):
     # Log scanner (background)
     LOG_SCANNER_ENABLED: bool = os.environ.get("LOG_SCANNER_ENABLED", "false").lower() == "true"
     LOG_SCANNER_LOOP_INTERVAL: int = int(os.environ.get("LOG_SCANNER_LOOP_INTERVAL", "30"))
+    LOG_SOURCE_MAX_CONSECUTIVE_FAILURES: int = int(os.environ.get("LOG_SOURCE_MAX_CONSECUTIVE_FAILURES", "5"))
 
     # Site checker (background)
     SITE_CHECKER_ENABLED: bool = os.environ.get("SITE_CHECKER_ENABLED", "false").lower() == "true"
