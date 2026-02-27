@@ -1,51 +1,18 @@
+"""App-specific seed functions for Todo List Portal.
+
+Core seed (seed_default_user) is in app/core/init_db.py.
+"""
+
 import logging
 
-from app.config import DEFAULT_DISPLAY_NAME, DEFAULT_EMAIL, DEFAULT_PASSWORD, DEFAULT_USER_ID
-from app.core.security import hash_password
+# Re-export for backward compatibility (main.py imports from here)
+from app.core.init_db import seed_default_user  # noqa: F401
 from app.database import SessionLocal
-from app.models import User
 from app.models.attendance_preset import AttendancePreset
 from app.models.calendar_room import CalendarRoom
-from app.models.group import Group
 from app.models.task_category import TaskCategory
 
 logger = logging.getLogger("app.init_db")
-
-
-def seed_default_user():
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.id == DEFAULT_USER_ID).first()
-        if not user:
-            user = User(
-                id=DEFAULT_USER_ID,
-                email=DEFAULT_EMAIL,
-                display_name=DEFAULT_DISPLAY_NAME,
-                password_hash=hash_password(DEFAULT_PASSWORD),
-                role="admin",
-            )
-            db.add(user)
-            db.commit()
-            logger.info("Default user '%s' created with admin role.", DEFAULT_DISPLAY_NAME)
-        else:
-            changed = False
-            if not user.password_hash:
-                user.password_hash = hash_password(DEFAULT_PASSWORD)
-                changed = True
-                logger.info("Default user password_hash set.")
-            if user.role != "admin":
-                user.role = "admin"
-                changed = True
-                logger.info("Default user role set to admin.")
-            if user.email != DEFAULT_EMAIL:
-                user.email = DEFAULT_EMAIL
-                changed = True
-                logger.info("Default user email updated to %s.", DEFAULT_EMAIL)
-            if changed:
-                db.commit()
-            logger.info("Default user already exists.")
-    finally:
-        db.close()
 
 
 def seed_default_presets():
@@ -102,42 +69,6 @@ def seed_default_rooms():
             logger.info("Default calendar rooms seeded (%d new).", len(new_rooms))
         else:
             logger.info("Calendar rooms already exist (%d).", len(existing_ids))
-    finally:
-        db.close()
-
-
-DEFAULT_GROUPS = [
-    (1, "開発チーム", "ソフトウェア開発", 1),
-    (2, "営業チーム", "営業・顧客対応", 2),
-    (3, "管理部", "総務・経理", 3),
-]
-
-
-def seed_default_groups():
-    db = SessionLocal()
-    try:
-        from sqlalchemy import text
-
-        existing_ids = {row.id for row in db.query(Group.id).all()}
-        new_groups = [
-            Group(id=gid, name=name, description=desc, sort_order=order)
-            for gid, name, desc, order in DEFAULT_GROUPS
-            if gid not in existing_ids
-        ]
-        if new_groups:
-            db.add_all(new_groups)
-            db.commit()
-            max_id = DEFAULT_GROUPS[-1][0]
-            db.execute(
-                text(
-                    f"SELECT setval('groups_id_seq', GREATEST({max_id}, "
-                    f"(SELECT COALESCE(MAX(id), {max_id}) FROM groups)))"
-                )
-            )
-            db.commit()
-            logger.info("Default groups seeded (%d new).", len(new_groups))
-        else:
-            logger.info("Groups already exist (%d).", len(existing_ids))
     finally:
         db.close()
 

@@ -6,7 +6,6 @@ from app.routers.api_alerts import router as api_alerts_router
 from app.routers.api_attendance_presets import router as api_attendance_presets_router
 from app.routers.api_attendances import router as api_attendances_router
 from app.routers.api_calendar import router as api_calendar_router
-from app.routers.api_groups import router as api_groups_router
 from app.routers.api_log_sources import router as api_log_sources_router
 from app.routers.api_logs import router as api_logs_router
 from app.routers.api_presence import router as api_presence_router
@@ -47,7 +46,6 @@ portal.register_router(api_log_sources_router)
 portal.register_router(api_alerts_router)
 portal.register_router(api_task_categories_router)
 portal.register_router(api_alert_rules_router)
-portal.register_router(api_groups_router)
 portal.register_router(api_task_list_router)
 portal.register_router(api_calendar_router)
 portal.register_router(api_sites_router)
