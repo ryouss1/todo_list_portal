@@ -2,7 +2,7 @@
 
 作成日: 2026-02-26
 対象: Todo List Portal 全体
-ステータス: **HIGH 優先度 対応済み（2026-02-27）、MEDIUM 優先度 対応済み（2026-02-27）、LOW 一部対応済み（3-1・3-3: 2026-02-27）**
+ステータス: **HIGH 優先度 対応済み（2026-02-27）、MEDIUM 優先度 対応済み（2026-02-27）、LOW 一部対応済み（3-1・3-3・3-4: 2026-02-27）、残: 3-2（Excel StreamingResponse、低優先度）**
 
 ---
 
@@ -301,11 +301,19 @@ Excel ファイル生成時にファイル全体を `BytesIO` でメモリに保
 
 ---
 
-### 3-4. 暗号化失敗時のクレデンシャル平文保存リスク
+### 3-4. 暗号化失敗時のクレデンシャル平文保存リスク ✅ 対応済み（検証完了）
 
-**ファイル:** `app/services/log_source_service.py`
+**ファイル:** `app/services/log_source_service.py`, `portal_core/portal_core/core/encryption.py`
 
-暗号化ライブラリが利用不可の場合は `ConflictError` を返すが、`encrypt_value()` の内部エラー（鍵破損等）でサイレントに平文を返す実装になっていないか要確認。クレデンシャルの平文 DB 保存が発生しうる。
+**検証結果（2026-02-27）:**
+`encrypt_value()` の実装を確認した結果、サイレントな平文保存リスクは存在しない。
+
+- `_get_fernet()` は `CREDENTIAL_ENCRYPTION_KEY` が未設定の場合 `ValueError` を raise（silent failure なし）
+- `encrypt_value()` には try/except が存在せず、`_get_fernet()` の例外がそのまま呼び出し元に伝播する
+- `log_source_service.py` の `create_source()` / `update_source()` も try/except で囲っていないため、暗号化失敗時はリクエストが 500 エラーで中断し、平文がDBに保存される経路はない
+- `is_encryption_available()` によるキー有無チェックは create/update の前に行われており、`ConflictError` で早期リターンする設計
+
+**対応内容:** コード修正不要。実装が正しいことを確認済み。
 
 ---
 
@@ -326,7 +334,7 @@ Excel ファイル生成時にファイル全体を `BytesIO` でメモリに保
 | **LOW** | 3-1 | WS ハートビート不在 | ✅ 対応済み（asyncio.wait_for + ping/pong 実装） |
 | **LOW** | 3-2 | Excel メモリ使用 | 未対応 — StreamingResponse 検討 |
 | **LOW** | 3-3 | 在籍状態 非アクティブユーザー混入 | ✅ 対応済み（active_user_ids フィルタ追加） |
-| **LOW** | 3-4 | 暗号化失敗リスク | 未対応 — encrypt_value の例外処理確認推奨 |
+| **LOW** | 3-4 | 暗号化失敗リスク | ✅ 対応済み（コード検証: サイレント平文保存なし確認） |
 
 ---
 

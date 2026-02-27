@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -105,10 +105,21 @@ class AuditLogResponse(BaseModel):
 
 
 @router.post("/forgot-password")
-def forgot_password(body: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+def forgot_password(
+    body: ForgotPasswordRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     ip_address = _get_client_ip(request)
     user_agent = request.headers.get("user-agent", "")
-    password_reset_service.request_password_reset(db, body.email, ip_address=ip_address, user_agent=user_agent)
+    password_reset_service.request_password_reset(
+        db,
+        body.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        add_background_task=background_tasks.add_task,
+    )
     return {"detail": "If an account with that email exists, a reset link has been sent."}
 
 
