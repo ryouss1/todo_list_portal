@@ -1,5 +1,5 @@
 """PortalApp factory — assembles a FastAPI application with core authentication,
-user management, and group management pre-configured.
+user management, and department management pre-configured.
 
 Usage::
 
@@ -35,7 +35,7 @@ from portal_core.core.exceptions import AppError
 from portal_core.core.i18n import get_translator
 from portal_core.core.logging_config import LOGGING_CONFIG
 from portal_core.init_db import seed_default_user
-from portal_core.routers import api_auth, api_departments, api_groups, api_oauth, api_users
+from portal_core.routers import api_auth, api_departments, api_oauth, api_users
 from portal_core.services.websocket_manager import WebSocketManager
 
 logger = logging.getLogger("portal_core")
@@ -194,10 +194,9 @@ class PortalApp:
         self.app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY)
 
     def _register_core_routers(self):
-        """Register auth, user, group, and OAuth API routers."""
+        """Register auth, user, department, and OAuth API routers."""
         self.app.include_router(api_auth.router)
         self.app.include_router(api_users.router)
-        self.app.include_router(api_groups.router)
         self.app.include_router(api_departments.router)
         self.app.include_router(api_oauth.router)
         self.app.include_router(api_oauth.admin_router)

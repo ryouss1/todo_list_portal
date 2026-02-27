@@ -134,11 +134,11 @@ def _check_write_permission(page: WikiPage, user_id: int, is_admin: bool) -> Non
 
 
 def _get_user_group_id(db: Session, user_id: int) -> Optional[int]:
-    """Return the group_id for the given user, or None."""
+    """Return the department_id for the given user, or None."""
     from portal_core.models.user import User as UserModel
 
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    return user.group_id if user else None
+    return user.department_id if user else None
 
 
 def _check_visibility(page: WikiPage, user_id: int, is_admin: bool, db: Session) -> None:
@@ -161,9 +161,9 @@ def _check_visibility(page: WikiPage, user_id: int, is_admin: bool, db: Session)
             from portal_core.models.user import User as UserModel
 
             author = db.query(UserModel).filter(UserModel.id == page.author_id).first()
-            if author and author.group_id is not None:
+            if author and author.department_id is not None:
                 user_group_id = _get_user_group_id(db, user_id)
-                if user_group_id is not None and user_group_id == author.group_id:
+                if user_group_id is not None and user_group_id == author.department_id:
                     return
         raise ForbiddenError("This page is restricted to your department")
     if page.visibility == WikiPageVisibility.PRIVATE:

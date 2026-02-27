@@ -320,3 +320,24 @@ def test_get_departments_tree_api(client):
     resp = client.get("/api/departments/tree")
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
+
+
+def test_user_has_department_id(db_session):
+    """User モデルに department_id カラムが存在すること"""
+    from portal_core.models.user import User
+
+    cols = {c.name for c in User.__table__.columns}
+    assert "department_id" in cols
+    assert "group_id" not in cols
+
+
+def test_user_response_has_department(client):
+    """UserResponse に department_id / department_name フィールドがあること"""
+    resp = client.get("/api/users/")
+    assert resp.status_code == 200
+    users = resp.json()
+    if users:
+        assert "department_id" in users[0]
+        assert "department_name" in users[0]
+        assert "group_id" not in users[0]
+        assert "group_name" not in users[0]

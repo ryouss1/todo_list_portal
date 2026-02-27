@@ -3,10 +3,10 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_id, require_admin
-from app.database import get_db
 from app.schemas.group import GroupCreate, GroupResponse, GroupUpdate
 from app.services import group_service as svc_group
+from portal_core.core.deps import get_current_user_id, require_admin
+from portal_core.database import get_db
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
 

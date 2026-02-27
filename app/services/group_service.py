@@ -4,9 +4,9 @@ from typing import List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ConflictError, NotFoundError
 from app.crud import group as crud_group
 from app.schemas.group import GroupCreate, GroupResponse, GroupUpdate
+from portal_core.core.exceptions import ConflictError, NotFoundError
 
 logger = logging.getLogger("app.services.group")
 

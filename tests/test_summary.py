@@ -1,9 +1,9 @@
 from datetime import date, timedelta
 
 from app.models.daily_report import DailyReport
-from app.models.group import Group
 from app.models.task_category import TaskCategory
 from app.models.user import User
+from portal_core.models.department import Department
 
 
 def _ensure_category(db_session, category_id=7, name="その他"):
@@ -98,16 +98,15 @@ class TestSummaryAPI:
     def test_summary_category_trends(self, client, db_session):
         _ensure_category(db_session, category_id=1, name="開発")
         _ensure_category(db_session, category_id=2, name="設計")
-        today = date.today()
+        # Use a fixed past date range to ensure both reports fall within the same week
+        ref = date(2020, 1, 8)  # Wednesday — Mon(6)..Sun(12) range
         db_session.add(
-            DailyReport(
-                user_id=1, report_date=today, category_id=1, task_name="Dev", time_minutes=120, work_content="W"
-            )
+            DailyReport(user_id=1, report_date=ref, category_id=1, task_name="Dev", time_minutes=120, work_content="W")
         )
         db_session.add(
             DailyReport(
                 user_id=1,
-                report_date=today - timedelta(days=1),
+                report_date=ref - timedelta(days=1),
                 category_id=2,
                 task_name="Design",
                 time_minutes=60,
@@ -116,7 +115,7 @@ class TestSummaryAPI:
         )
         db_session.flush()
 
-        resp = client.get(f"/api/summary/?period=weekly&ref_date={today.isoformat()}")
+        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}")
         data = resp.json()
         assert "category_trends" in data
         assert len(data["category_trends"]) >= 2
@@ -262,13 +261,13 @@ class TestSummaryAPI:
     def test_summary_group_filter(self, client, db_session, other_user):
         """group_id指定でそのグループのユーザーのみ集計される."""
         _ensure_category(db_session)
-        # Create a group and assign user 1 to it
-        group = Group(name="FilterGroup", sort_order=99)
-        db_session.add(group)
+        # Create a department and assign user 1 to it
+        dept = Department(name="FilterGroup", sort_order=99)
+        db_session.add(dept)
         db_session.flush()
         user1 = db_session.query(User).filter(User.id == 1).first()
-        user1.group_id = group.id
-        other_user.group_id = None
+        user1.department_id = dept.id
+        other_user.department_id = None
         db_session.flush()
 
         ref = date(2020, 4, 6)  # Monday
@@ -280,8 +279,8 @@ class TestSummaryAPI:
         )
         db_session.flush()
 
-        # With group filter: only user1's report
-        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={group.id}")
+        # With group filter (group_id maps to department_id): only user1's report
+        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={dept.id}")
         data = resp.json()
         assert data["total_reports"] == 1
         user_ids = [u["user_id"] for u in data["user_report_statuses"]]
@@ -290,12 +289,12 @@ class TestSummaryAPI:
 
     def test_summary_group_filter_empty(self, client, db_session):
         """所属ユーザーがいないグループではtotal_reports=0."""
-        group = Group(name="EmptyGroup", sort_order=99)
-        db_session.add(group)
+        dept = Department(name="EmptyGroup", sort_order=99)
+        db_session.add(dept)
         db_session.flush()
 
         ref = date(2020, 5, 4)
-        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={group.id}")
+        resp = client.get(f"/api/summary/?period=weekly&ref_date={ref.isoformat()}&group_id={dept.id}")
         data = resp.json()
         assert data["total_reports"] == 0
         assert data["user_report_statuses"] == []

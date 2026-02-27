@@ -2,9 +2,8 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.crud.base import CRUDBase
 from app.models.group import Group
-from app.models.user import User
+from portal_core.crud.base import CRUDBase
 
 _crud = CRUDBase(Group)
 
@@ -27,4 +26,6 @@ delete_group = _crud.delete
 
 
 def count_members(db: Session, group_id: int) -> int:
-    return db.query(User).filter(User.group_id == group_id).count()
+    from portal_core.models.user import User
+
+    return db.query(User).filter(User.department_id == group_id).count()

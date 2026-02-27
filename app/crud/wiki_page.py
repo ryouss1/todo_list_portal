@@ -51,7 +51,7 @@ def get_all_pages(
             if user_group_id is not None:
                 from portal_core.models.user import User as UserModel
 
-                same_group_authors = db.query(UserModel.id).filter(UserModel.group_id == user_group_id)
+                same_group_authors = db.query(UserModel.id).filter(UserModel.department_id == user_group_id)
                 local_subconditions.append(WikiPage.author_id.in_(same_group_authors))
             local_cond = and_(
                 WikiPage.visibility == WikiPageVisibility.LOCAL,
@@ -122,7 +122,7 @@ def get_tree(
                             OR (
                                 :user_group_id IS NOT NULL
                                 AND author_id IN (
-                                    SELECT id FROM users WHERE group_id = :user_group_id
+                                    SELECT id FROM users WHERE department_id = :user_group_id
                                 )
                             )
                         )
@@ -146,7 +146,7 @@ def get_tree(
                             OR (
                                 :user_group_id IS NOT NULL
                                 AND wp.author_id IN (
-                                    SELECT id FROM users WHERE group_id = :user_group_id
+                                    SELECT id FROM users WHERE department_id = :user_group_id
                                 )
                             )
                         )

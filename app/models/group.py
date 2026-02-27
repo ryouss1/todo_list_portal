@@ -1,6 +1,6 @@
 from sqlalchemy import Column, DateTime, Integer, String, func
 
-from app.database import Base
+from portal_core.database import Base
 
 
 class Group(Base):

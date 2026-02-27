@@ -1,13 +1,13 @@
 """Unit tests for CRUDBase generic class (portal_core).
 
-Uses Group model (core model) instead of TaskCategory (app-specific).
+Uses Department model (core model) instead of Group (removed) or TaskCategory (app-specific).
 """
 
 import pytest
 from pydantic import BaseModel
 
 from portal_core.crud.base import CRUDBase
-from portal_core.models.group import Group
+from portal_core.models.department import Department
 
 
 class FakeCreate(BaseModel):
@@ -20,27 +20,27 @@ class FakeUpdate(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-_crud = CRUDBase(Group)
+_crud = CRUDBase(Department)
 
 
 @pytest.fixture()
-def group(db_session):
-    """Create a test group."""
-    grp = Group(name="TestGroup")
-    db_session.add(grp)
+def dept(db_session):
+    """Create a test department."""
+    d = Department(name="TestDept")
+    db_session.add(d)
     db_session.commit()
-    db_session.refresh(grp)
-    return grp
+    db_session.refresh(d)
+    return d
 
 
 # --- get ---
 
 
-def test_get_existing(db_session, group):
-    result = _crud.get(db_session, group.id)
+def test_get_existing(db_session, dept):
+    result = _crud.get(db_session, dept.id)
     assert result is not None
-    assert result.id == group.id
-    assert result.name == "TestGroup"
+    assert result.id == dept.id
+    assert result.name == "TestDept"
 
 
 def test_get_nonexistent(db_session):
@@ -51,10 +51,10 @@ def test_get_nonexistent(db_session):
 # --- get_all ---
 
 
-def test_get_all(db_session, group):
+def test_get_all(db_session, dept):
     results = _crud.get_all(db_session)
     ids = [r.id for r in results]
-    assert group.id in ids
+    assert dept.id in ids
 
 
 # --- create with schema ---
@@ -100,56 +100,56 @@ def test_create_no_commit(db_session):
 # --- update with schema ---
 
 
-def test_update_with_schema(db_session, group):
+def test_update_with_schema(db_session, dept):
     data = FakeUpdate(name="Updated")
-    result = _crud.update(db_session, group, data)
+    result = _crud.update(db_session, dept, data)
     assert result.name == "Updated"
-    assert result.id == group.id
+    assert result.id == dept.id
 
 
 # --- update with dict ---
 
 
-def test_update_with_dict(db_session, group):
-    result = _crud.update(db_session, group, {"name": "DictUpdated"})
+def test_update_with_dict(db_session, dept):
+    result = _crud.update(db_session, dept, {"name": "DictUpdated"})
     assert result.name == "DictUpdated"
 
 
 # --- update exclude_unset ---
 
 
-def test_update_exclude_unset(db_session, group):
+def test_update_exclude_unset(db_session, dept):
     """When using a schema with unset fields, only set fields are applied."""
-    original_name = group.name
+    original_name = dept.name
     data = FakeUpdate()
-    result = _crud.update(db_session, group, data)
+    result = _crud.update(db_session, dept, data)
     assert result.name == original_name
 
 
 # --- update with commit=False ---
 
 
-def test_update_no_commit(db_session, group):
-    result = _crud.update(db_session, group, {"name": "FlushUpdated"}, commit=False)
+def test_update_no_commit(db_session, dept):
+    result = _crud.update(db_session, dept, {"name": "FlushUpdated"}, commit=False)
     assert result.name == "FlushUpdated"
 
 
 # --- delete ---
 
 
-def test_delete(db_session, group):
-    grp_id = group.id
-    _crud.delete(db_session, group)
-    assert _crud.get(db_session, grp_id) is None
+def test_delete(db_session, dept):
+    dept_id = dept.id
+    _crud.delete(db_session, dept)
+    assert _crud.get(db_session, dept_id) is None
 
 
 # --- delete with commit=False ---
 
 
-def test_delete_no_commit(db_session, group):
-    grp_id = group.id
-    _crud.delete(db_session, group, commit=False)
-    result = db_session.query(Group).filter(Group.id == grp_id).first()
+def test_delete_no_commit(db_session, dept):
+    dept_id = dept.id
+    _crud.delete(db_session, dept, commit=False)
+    result = db_session.query(Department).filter(Department.id == dept_id).first()
     assert result is None
 
 
