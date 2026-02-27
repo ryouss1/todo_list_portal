@@ -217,8 +217,9 @@ def batch_done(db: Session, user_id: int, items: List[BatchDoneItem]) -> List[Ba
     """Batch-complete overdue tasks with specified end times."""
     task_ids = [item.task_id for item in items]
 
-    # Batch-fetch tasks and active entries (2 queries instead of 2N)
-    task_map = {t.id: t for t in crud_task.get_tasks_by_ids(db, task_ids)}
+    # Batch-fetch tasks with row locks and active entries (2 queries instead of 2N)
+    # SELECT FOR UPDATE prevents another request from deleting tasks mid-batch.
+    task_map = {t.id: t for t in crud_task.get_tasks_by_ids_for_update(db, task_ids)}
     active_entries = crud_task.get_active_entries_batch(db, task_ids)
 
     # Ownership check upfront (before any DB writes)

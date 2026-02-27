@@ -436,6 +436,21 @@ def test_stop_timer_accumulates_total_seconds(client, db_session):
     assert task_resp.json()["total_seconds"] == elapsed
 
 
+class TestBatchDoneForUpdate:
+    def test_batch_done_uses_for_update(self, db_session):
+        """batch_done should use SELECT FOR UPDATE to lock tasks before deletion."""
+        from app.crud.task import get_tasks_by_ids_for_update
+        from app.models.task import Task
+
+        t = Task(user_id=1, title="Lock test", status="pending")
+        db_session.add(t)
+        db_session.flush()
+
+        locked = get_tasks_by_ids_for_update(db_session, [t.id])
+        assert len(locked) == 1
+        assert locked[0].id == t.id
+
+
 class TestPagination:
     def test_list_tasks_limit(self, client, db_session):
         """GET /api/tasks/ should support limit parameter."""

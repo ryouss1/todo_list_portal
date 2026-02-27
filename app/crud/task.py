@@ -102,6 +102,13 @@ def get_tasks_by_ids(db: Session, task_ids: List[int]) -> List[Task]:
     return db.query(Task).filter(Task.id.in_(task_ids)).all()
 
 
+def get_tasks_by_ids_for_update(db: Session, task_ids: List[int]) -> List[Task]:
+    """Batch-fetch tasks by IDs with SELECT FOR UPDATE row lock."""
+    if not task_ids:
+        return []
+    return db.query(Task).filter(Task.id.in_(task_ids)).with_for_update().all()
+
+
 def get_active_entries_batch(db: Session, task_ids: List[int]) -> Dict[int, TaskTimeEntry]:
     """Return {task_id: active_entry} for all specified tasks in a single query."""
     if not task_ids:
