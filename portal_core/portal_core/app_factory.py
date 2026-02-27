@@ -13,6 +13,7 @@ Usage::
     app = portal.build()
 """
 
+import asyncio
 import logging
 import logging.config
 from contextlib import asynccontextmanager
@@ -408,7 +409,7 @@ class PortalApp:
         """Register WebSocket endpoints from register_websocket() calls."""
         for path, manager in self._ws_handlers.items():
 
-            def make_ws_handler(_manager, _path):
+            def make_ws_handler(_manager, _path, _portal):
                 async def ws_handler(websocket: WebSocket):
                     await _manager.connect(websocket)
                     try:
@@ -420,10 +421,36 @@ class PortalApp:
                         await _manager.disconnect(websocket)
                         return
                     logger.info("%s WebSocket client connected: %s", _path, websocket.client)
+                    ping_interval = _portal.config.WS_PING_INTERVAL
+                    ping_timeout = _portal.config.WS_PING_TIMEOUT
                     try:
                         while True:
-                            await websocket.receive_text()
+                            try:
+                                msg = await asyncio.wait_for(
+                                    websocket.receive_text(),
+                                    timeout=ping_interval,
+                                )
+                                # Respond to client-initiated pings
+                                if msg == "__ping__":
+                                    await websocket.send_text("__pong__")
+                            except asyncio.TimeoutError:
+                                # Idle timeout: send a ping and wait for any response
+                                try:
+                                    await asyncio.wait_for(
+                                        websocket.send_text("__ping__"),
+                                        timeout=ping_timeout,
+                                    )
+                                except Exception:
+                                    # Send failed = zombie connection
+                                    logger.warning(
+                                        "%s WebSocket ping failed, disconnecting: %s",
+                                        _path,
+                                        websocket.client,
+                                    )
+                                    break
                     except WebSocketDisconnect:
+                        pass
+                    finally:
                         await _manager.disconnect(websocket)
                         logger.info(
                             "%s WebSocket client disconnected: %s",
@@ -433,4 +460,4 @@ class PortalApp:
 
                 return ws_handler
 
-            self.app.websocket(path)(make_ws_handler(manager, path))
+            self.app.websocket(path)(make_ws_handler(manager, path, self))
