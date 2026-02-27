@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
@@ -21,8 +21,13 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
 @router.get("/", response_model=List[TaskResponse])
-def list_tasks(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
-    return svc_task.list_tasks(db, user_id)
+def list_tasks(
+    limit: int = Query(200, ge=1, le=10000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    return svc_task.list_tasks(db, user_id, limit=limit, offset=offset)
 
 
 @router.post("/", response_model=TaskResponse, status_code=201)

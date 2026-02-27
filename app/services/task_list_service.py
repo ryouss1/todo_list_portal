@@ -42,8 +42,10 @@ def list_all(
     assignee_id: Optional[int] = None,
     statuses: Optional[List[str]] = None,
     q: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[TaskListItem]:
-    return crud_tli.get_all_items(db, assignee_id, statuses, q)
+    return crud_tli.get_all_items(db, assignee_id, statuses, q, limit=limit, offset=offset)
 
 
 def list_mine(db: Session, user_id: int, statuses: Optional[List[str]] = None) -> List[TaskListItem]:

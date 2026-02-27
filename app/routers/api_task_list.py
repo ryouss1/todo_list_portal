@@ -34,10 +34,13 @@ def list_mine(
 def list_all(
     assignee_id: Optional[int] = Query(None),
     status: Optional[List[str]] = Query(None),
+    q: Optional[str] = Query(None, description="タイトル部分一致フィルタ（大文字小文字を区別しない）"),
+    limit: int = Query(200, ge=1, le=10000),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    return svc.list_all(db, assignee_id, status)
+    return svc.list_all(db, assignee_id, status, q, limit=limit, offset=offset)
 
 
 @router.post("/", response_model=TaskListItemResponse, status_code=201)

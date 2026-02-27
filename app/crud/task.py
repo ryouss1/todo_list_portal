@@ -19,8 +19,15 @@ def get_task_for_update(db: Session, task_id: int) -> Optional[Task]:
     return db.query(Task).filter(Task.id == task_id).with_for_update().first()
 
 
-def get_tasks(db: Session, user_id: int) -> List[Task]:
-    return db.query(Task).filter(Task.user_id == user_id).order_by(Task.created_at.desc()).all()
+def get_tasks(db: Session, user_id: int, limit: int = 200, offset: int = 0) -> List[Task]:
+    return (
+        db.query(Task)
+        .filter(Task.user_id == user_id)
+        .order_by(Task.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
 
 
 def create_task(db: Session, user_id: int, data: TaskCreate) -> Task:

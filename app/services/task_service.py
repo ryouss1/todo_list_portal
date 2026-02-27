@@ -20,9 +20,9 @@ from app.schemas.task import BatchDoneItem, BatchDoneResult, TaskCreate, TaskUpd
 logger = logging.getLogger("app.services.task")
 
 
-def list_tasks(db: Session, user_id: int) -> List[Task]:
+def list_tasks(db: Session, user_id: int, limit: int = 200, offset: int = 0) -> List[Task]:
     logger.info("Listing tasks for user_id=%d", user_id)
-    return crud_task.get_tasks(db, user_id)
+    return crud_task.get_tasks(db, user_id, limit=limit, offset=offset)
 
 
 def get_task(db: Session, task_id: int, user_id: int) -> Task:

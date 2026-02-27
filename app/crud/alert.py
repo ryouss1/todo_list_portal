@@ -17,8 +17,8 @@ def create_alert_rule(db: Session, data: AlertRuleCreate) -> AlertRule:
     return _crud_rule.create(db, data)
 
 
-def get_alert_rules(db: Session) -> List[AlertRule]:
-    return db.query(AlertRule).order_by(AlertRule.id).all()
+def get_alert_rules(db: Session, limit: int = 200, offset: int = 0) -> List[AlertRule]:
+    return db.query(AlertRule).order_by(AlertRule.id).limit(limit).offset(offset).all()
 
 
 def get_enabled_alert_rules(db: Session) -> List[AlertRule]:

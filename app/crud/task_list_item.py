@@ -25,6 +25,8 @@ def get_all_items(
     assignee_id: Optional[int] = None,
     statuses: Optional[List[str]] = None,
     q: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[TaskListItem]:
     query = db.query(TaskListItem)
     if assignee_id is not None:
@@ -36,7 +38,12 @@ def get_all_items(
         query = query.filter(TaskListItem.status.in_(statuses))
     if q:
         query = query.filter(TaskListItem.title.ilike(f"%{q}%"))
-    return query.order_by(TaskListItem.scheduled_date.asc().nullslast(), TaskListItem.created_at.asc()).all()
+    return (
+        query.order_by(TaskListItem.scheduled_date.asc().nullslast(), TaskListItem.created_at.asc())
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
 
 
 def get_assigned_items(db: Session, user_id: int, statuses: Optional[List[str]] = None) -> List[TaskListItem]:

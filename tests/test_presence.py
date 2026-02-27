@@ -156,3 +156,27 @@ def test_get_in_progress_with_backlog_respects_limit(db_session):
     # Must not raise — limit parameter must exist
     result = crud_task.get_in_progress_with_backlog(db_session, limit=5)
     assert isinstance(result, list)
+
+
+class TestPagination:
+    def test_list_statuses_limit(self, client, db_session):
+        """GET /api/presence/statuses should support limit parameter."""
+        from app.models.presence import PresenceStatus
+        from portal_core.core.security import hash_password
+        from portal_core.models.user import User
+
+        for i in range(3):
+            u = User(
+                id=100 + i,
+                email=f"pag{i}@test.com",
+                display_name=f"User {i}",
+                password_hash=hash_password("test"),
+            )
+            db_session.add(u)
+            db_session.flush()
+            db_session.add(PresenceStatus(user_id=u.id, status="offline"))
+        db_session.flush()
+
+        resp = client.get("/api/presence/statuses?limit=1")
+        assert resp.status_code == 200
+        assert len(resp.json()) <= 1

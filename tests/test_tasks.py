@@ -434,3 +434,30 @@ def test_stop_timer_accumulates_total_seconds(client, db_session):
     task_resp = client.get(f"/api/tasks/{task_id}")
     assert task_resp.status_code == 200
     assert task_resp.json()["total_seconds"] == elapsed
+
+
+class TestPagination:
+    def test_list_tasks_limit(self, client, db_session):
+        """GET /api/tasks/ should support limit parameter."""
+        from app.models.task import Task
+
+        for i in range(3):
+            db_session.add(Task(user_id=1, title=f"Task {i}", status="pending"))
+        db_session.flush()
+
+        resp = client.get("/api/tasks/?limit=2")
+        assert resp.status_code == 200
+        assert len(resp.json()) <= 2
+
+    def test_list_tasks_offset(self, client, db_session):
+        """GET /api/tasks/ should support offset parameter."""
+        from app.models.task import Task
+
+        for i in range(3):
+            db_session.add(Task(user_id=1, title=f"Task {i}", status="pending"))
+        db_session.flush()
+
+        resp_all = client.get("/api/tasks/?limit=200")
+        resp_offset = client.get(f"/api/tasks/?limit=200&offset={len(resp_all.json())}")
+        assert resp_offset.status_code == 200
+        assert len(resp_offset.json()) == 0

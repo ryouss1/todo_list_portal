@@ -28,7 +28,7 @@ def get_my_status(db: Session, user_id: int) -> PresenceStatus:
     return PresenceStatus(id=0, user_id=user_id, status=PresenceStatusValue.OFFLINE, message=None, updated_at=None)
 
 
-def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
+def get_all_statuses(db: Session, limit: int = 500, offset: int = 0) -> List[PresenceStatusWithUser]:
     statuses = crud_presence.get_all_presence_statuses(db)
     users = crud_user.get_users(db, active_only=True)
 
@@ -57,7 +57,7 @@ def get_all_statuses(db: Session) -> List[PresenceStatusWithUser]:
                 active_tickets=tickets_by_user.get(user.id, []),
             )
         )
-    return result
+    return result[offset : offset + limit]
 
 
 def get_logs(db: Session, user_id: int):

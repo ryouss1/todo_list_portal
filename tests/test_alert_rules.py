@@ -393,3 +393,23 @@ class TestRuleEvaluationIntegration:
         res = client.get("/api/alerts/")
         auto_alerts = [a for a in res.json() if a["rule_id"] is not None]
         assert len(auto_alerts) >= 2
+
+
+class TestPagination:
+    def test_list_rules_limit(self, client, db_session):
+        """GET /api/alert-rules/ should support limit parameter."""
+        from app.models.alert import AlertRule
+
+        for i in range(3):
+            db_session.add(
+                AlertRule(
+                    name=f"Rule {i}",
+                    condition={"severity": "ERROR"},
+                    alert_title_template="Test",
+                )
+            )
+        db_session.flush()
+
+        resp = client.get("/api/alert-rules/?limit=1")
+        assert resp.status_code == 200
+        assert len(resp.json()) <= 1

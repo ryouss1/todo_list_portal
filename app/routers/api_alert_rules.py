@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_id, require_admin
@@ -13,10 +13,12 @@ router = APIRouter(prefix="/api/alert-rules", tags=["alert-rules"])
 
 @router.get("/", response_model=List[AlertRuleResponse])
 def list_rules(
+    limit: int = Query(200, ge=1, le=10000),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    return svc.list_rules(db)
+    return svc.list_rules(db, limit=limit, offset=offset)
 
 
 @router.post("/", response_model=AlertRuleResponse, status_code=201)

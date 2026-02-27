@@ -681,3 +681,17 @@ class TestStartAsTaskRaceCondition:
         locked = get_item_for_update(db_session, item.id)
         assert locked is not None
         assert locked.id == item.id
+
+
+class TestListAllPagination:
+    def test_list_all_limit(self, client, db_session):
+        """GET /api/task-list/all should support limit parameter."""
+        from app.models.task_list_item import TaskListItem
+
+        for i in range(5):
+            db_session.add(TaskListItem(title=f"Item {i}", created_by=1, status="open"))
+        db_session.flush()
+
+        resp = client.get("/api/task-list/all?limit=2")
+        assert resp.status_code == 200
+        assert len(resp.json()) <= 2

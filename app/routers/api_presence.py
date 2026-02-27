@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_id
@@ -20,7 +20,6 @@ router = APIRouter(prefix="/api/presence", tags=["presence"])
 @router.put("/status", response_model=PresenceStatusResponse)
 async def update_status(
     data: PresenceUpdateRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
@@ -32,8 +31,13 @@ async def update_status(
 
 
 @router.get("/statuses", response_model=List[PresenceStatusWithUser])
-def list_statuses(db: Session = Depends(get_db), _user_id: int = Depends(get_current_user_id)):
-    return svc_presence.get_all_statuses(db)
+def list_statuses(
+    limit: int = Query(500, ge=1, le=10000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    _user_id: int = Depends(get_current_user_id),
+):
+    return svc_presence.get_all_statuses(db, limit=limit, offset=offset)
 
 
 @router.get("/me", response_model=PresenceStatusResponse)

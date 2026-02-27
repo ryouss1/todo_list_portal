@@ -21,8 +21,8 @@ def create_rule(db: Session, data: AlertRuleCreate) -> AlertRule:
     return crud_alert.create_alert_rule(db, data)
 
 
-def list_rules(db: Session) -> List[AlertRule]:
-    return crud_alert.get_alert_rules(db)
+def list_rules(db: Session, limit: int = 200, offset: int = 0) -> List[AlertRule]:
+    return crud_alert.get_alert_rules(db, limit=limit, offset=offset)
 
 
 def get_rule(db: Session, rule_id: int) -> AlertRule:
