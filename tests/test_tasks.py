@@ -395,8 +395,12 @@ def test_get_task_for_update_exists():
     assert callable(crud_task.get_task_for_update)
 
 
-def test_start_timer_uses_row_lock(client, db_session):
-    """start_timer: second concurrent start must return 400 even under race."""
+def test_start_timer_duplicate_rejected_with_lock(client, db_session):
+    """start_timer: second request must be rejected when timer already running.
+
+    The SELECT FOR UPDATE in _get_task_with_lock serializes concurrent requests,
+    ensuring the second sees the active entry created by the first.
+    """
     resp = client.post("/api/tasks/", json={"title": "TOCTOU Test"})
     assert resp.status_code == 201
     task_id = resp.json()["id"]
@@ -417,14 +421,16 @@ def test_start_timer_uses_row_lock(client, db_session):
 
 
 def test_stop_timer_accumulates_total_seconds(client, db_session):
-    """stop_timer: total_seconds must be non-negative after start→stop cycle."""
+    """stop_timer: total_seconds must equal elapsed_seconds after a single start→stop cycle."""
     resp = client.post("/api/tasks/", json={"title": "Elapsed Test"})
     task_id = resp.json()["id"]
 
     client.post(f"/api/tasks/{task_id}/start")
-    resp = client.post(f"/api/tasks/{task_id}/stop")
-    assert resp.status_code == 200
-    assert resp.json()["elapsed_seconds"] >= 0
+    stop_resp = client.post(f"/api/tasks/{task_id}/stop")
+    assert stop_resp.status_code == 200
+    elapsed = stop_resp.json()["elapsed_seconds"]
+    assert elapsed >= 0
 
-    resp = client.get(f"/api/tasks/{task_id}")
-    assert resp.json()["total_seconds"] >= 0
+    task_resp = client.get(f"/api/tasks/{task_id}")
+    assert task_resp.status_code == 200
+    assert task_resp.json()["total_seconds"] == elapsed

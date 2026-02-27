@@ -112,7 +112,14 @@ def delete_task(db: Session, task_id: int, user_id: int) -> None:
 
 
 def _get_task_with_lock(db: Session, task_id: int, user_id: int) -> Task:
-    """Get task with SELECT FOR UPDATE, checking ownership."""
+    """Get task with SELECT FOR UPDATE, checking ownership.
+
+    The row lock on `tasks` serializes concurrent timer operations:
+    - Concurrent requests block at this SELECT FOR UPDATE until the first commits.
+    - After unblocking, they read the latest committed state of task_time_entries
+      (READ COMMITTED: each statement sees the latest committed data).
+    - This prevents both duplicate start_timer entries and lost updates in stop_timer.
+    """
     task = crud_task.get_task_for_update(db, task_id)
     if not task or task.user_id != user_id:
         logger.warning("Task not found (locked): id=%d", task_id)
