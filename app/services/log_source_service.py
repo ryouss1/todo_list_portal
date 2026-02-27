@@ -617,7 +617,7 @@ def scan_source(db: Session, source_id: int) -> dict:
 
         db.commit()
         error_msg = "; ".join(path_errors) if path_errors else None
-        crud_log_source.update_scan_state(db, source, error=error_msg)
+        crud_log_source.update_scan_state(db, source, error=error_msg, max_failures=LOG_SOURCE_MAX_CONSECUTIVE_FAILURES)
 
     except Exception as e:
         # Expire all to discard any partial flushes

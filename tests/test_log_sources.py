@@ -1840,3 +1840,40 @@ def test_circuit_breaker_does_not_disable_on_success(client, db_session):
     db_session.refresh(source)
     assert source.consecutive_errors == 0
     assert source.is_enabled is True
+
+
+def test_circuit_breaker_via_scan_endpoint_disables_source(client):
+    """Service layer: POST /api/log-sources/{id}/scan auto-disables source after N consecutive failures."""
+    from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
+
+    resp = client.post(
+        "/api/log-sources/",
+        json={
+            "name": "CB Service Integration Test",
+            "group_id": 1,
+            "access_method": "ftp",
+            "host": "localhost",
+            "username": "user",
+            "password": "pass",
+            "paths": [{"base_path": "/logs"}],
+        },
+    )
+    assert resp.status_code == 201
+    source_id = resp.json()["id"]
+
+    # Call the scan endpoint N times, each raising a connector exception
+    for i in range(LOG_SOURCE_MAX_CONSECUTIVE_FAILURES):
+        with patch(
+            "app.services.log_source_service.create_connector",
+            side_effect=ConnectionRefusedError("connection refused"),
+        ):
+            scan_res = client.post(f"/api/log-sources/{source_id}/scan")
+        assert scan_res.status_code == 200
+        assert "Scan failed" in scan_res.json()["message"]
+
+    # After N failures the source must be auto-disabled
+    source_res = client.get(f"/api/log-sources/{source_id}")
+    assert source_res.status_code == 200
+    data = source_res.json()
+    assert data["is_enabled"] is False
+    assert data["consecutive_errors"] == LOG_SOURCE_MAX_CONSECUTIVE_FAILURES

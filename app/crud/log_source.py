@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
 from app.crud.base import CRUDBase
 from app.models.log_source import LogSource
 
@@ -39,8 +40,6 @@ def update_scan_state(
     error: Optional[str] = None,
     max_failures: Optional[int] = None,
 ) -> None:
-    from app.config import LOG_SOURCE_MAX_CONSECUTIVE_FAILURES
-
     source.last_checked_at = datetime.now(timezone.utc)
     if error:
         source.last_error = error
