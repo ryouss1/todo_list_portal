@@ -140,6 +140,28 @@ class TestPresenceAPI:
         assert "WHT-200" in ticket_ids
 
 
+def test_inactive_user_excluded_from_statuses(client, db_session, other_user):
+    """非アクティブユーザーが在籍一覧に表示されないことを確認"""
+    from app.models.presence import PresenceStatus
+    from portal_core.models.user import User
+
+    # other_user (user_id=2) の在籍ステータスを作成
+    ps = PresenceStatus(user_id=other_user.id, status="available", message="test")
+    db_session.add(ps)
+    db_session.flush()
+
+    # other_user を非アクティブ化
+    db_session.query(User).filter(User.id == other_user.id).update({"is_active": False})
+    db_session.flush()
+
+    resp = client.get("/api/presence/statuses")
+    assert resp.status_code == 200
+    data = resp.json()
+
+    user_ids = [item["user_id"] for item in data]
+    assert other_user.id not in user_ids
+
+
 def test_presence_active_task_limit_config_exists():
     """PRESENCE_ACTIVE_TASK_LIMIT must be set in app.config."""
     from app import config

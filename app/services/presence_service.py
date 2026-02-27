@@ -43,7 +43,8 @@ def get_all_statuses(db: Session, limit: int = 500, offset: int = 0) -> List[Pre
             )
         )
 
-    status_map = {s.user_id: s for s in statuses}
+    active_user_ids = {u.id for u in users}
+    status_map = {s.user_id: s for s in statuses if s.user_id in active_user_ids}
     result = []
     for user in users:
         s = status_map.get(user.id)
