@@ -694,4 +694,4 @@ class TestListAllPagination:
 
         resp = client.get("/api/task-list/all?limit=2")
         assert resp.status_code == 200
-        assert len(resp.json()) <= 2
+        assert len(resp.json()) == 2

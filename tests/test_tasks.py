@@ -447,7 +447,7 @@ class TestPagination:
 
         resp = client.get("/api/tasks/?limit=2")
         assert resp.status_code == 200
-        assert len(resp.json()) <= 2
+        assert len(resp.json()) == 2
 
     def test_list_tasks_offset(self, client, db_session):
         """GET /api/tasks/ should support offset parameter."""
