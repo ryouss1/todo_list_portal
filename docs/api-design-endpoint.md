@@ -221,6 +221,27 @@
 | GET | `/api/calendar/settings` | カレンダー設定取得 | 200 | 必要 |
 | PUT | `/api/calendar/settings` | カレンダー設定更新 | 200 | 必要 |
 
+#### サイトリンク (`/api/sites`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/sites/` | サイトリンク一覧 | 200 | 必要 |
+| POST | `/api/sites/` | サイトリンク作成 | 201 | 必要 |
+| GET | `/api/sites/{id}` | サイトリンク取得 | 200 / 404 | 必要 |
+| GET | `/api/sites/{id}/url` | サイトURL取得 | 200 / 404 | 必要 |
+| PUT | `/api/sites/{id}` | サイトリンク更新 | 200 / 403 / 404 | 必要 |
+| DELETE | `/api/sites/{id}` | サイトリンク削除 | 204 / 403 / 404 | 必要 |
+| POST | `/api/sites/{id}/check` | ヘルスチェック実行 | 200 / 404 | 必要 |
+
+#### サイトグループ (`/api/site-groups`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/site-groups/` | サイトグループ一覧 | 200 | 必要 |
+| POST | `/api/site-groups/` | サイトグループ作成 | 201 | 必要（admin） |
+| PUT | `/api/site-groups/{id}` | サイトグループ更新 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/site-groups/{id}` | サイトグループ削除 | 204 / 404 | 必要（admin） |
+
 #### 勤怠プリセット (`/api/attendance-presets`)
 
 | メソッド | パス | 説明 | ステータスコード | 認証 |
@@ -235,6 +256,41 @@
 | POST | `/api/admin/oauth-providers/` | OAuthプロバイダ作成 | 201 | 必要（admin） |
 | PUT | `/api/admin/oauth-providers/{id}` | OAuthプロバイダ更新 | 200 / 404 | 必要（admin） |
 | DELETE | `/api/admin/oauth-providers/{id}` | OAuthプロバイダ削除 | 204 / 404 | 必要（admin） |
+
+#### Wiki カテゴリ (`/api/wiki/categories`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/wiki/categories/` | カテゴリ一覧 | 200 | 必要 |
+| POST | `/api/wiki/categories/` | カテゴリ作成 | 201 / 400 | 必要（admin） |
+| PUT | `/api/wiki/categories/{id}` | カテゴリ更新 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/wiki/categories/{id}` | カテゴリ削除 | 204 / 404 | 必要（admin） |
+
+#### Wiki タグ (`/api/wiki/tags`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/wiki/tags/` | タグ一覧（?q=検索対応） | 200 | 必要 |
+| POST | `/api/wiki/tags/` | タグ作成 | 201 / 400 | 必要 |
+| DELETE | `/api/wiki/tags/{id}` | タグ削除 | 204 / 404 | 必要（admin） |
+
+#### Wiki ページ (`/api/wiki/pages`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/wiki/pages/tree` | ページツリー取得 | 200 | 必要 |
+| GET | `/api/wiki/pages/by-slug/{slug}` | スラッグでページ取得 | 200 / 404 | 必要 |
+| GET | `/api/wiki/pages/` | ページ一覧（tag_slug/category_idフィルタ対応） | 200 | 必要 |
+| POST | `/api/wiki/pages/` | ページ作成 | 201 | 必要 |
+| GET | `/api/wiki/pages/{id}` | ページ詳細取得 | 200 / 404 | 必要 |
+| PUT | `/api/wiki/pages/{id}` | ページ更新 | 200 / 403 / 404 | 必要 |
+| DELETE | `/api/wiki/pages/{id}` | ページ削除 | 204 / 403 / 404 | 必要 |
+| PUT | `/api/wiki/pages/{id}/move` | ページ移動（親変更） | 200 / 400 / 403 / 404 | 必要 |
+| PUT | `/api/wiki/pages/{id}/tags` | タグ関連付け一括更新 | 200 / 403 / 404 | 必要 |
+| GET | `/api/wiki/pages/{id}/tasks` | タスクリンク一覧 | 200 / 404 | 必要 |
+| PUT | `/api/wiki/pages/{id}/tasks/task-items` | タスクリストアイテムリンク一括更新 | 200 / 403 / 404 | 必要 |
+| POST | `/api/wiki/pages/{id}/tasks/{task_id}` | タスクリンク追加 | 204 / 403 / 404 | 必要 |
+| DELETE | `/api/wiki/pages/{id}/tasks/{task_id}` | タスクリンク解除 | 204 / 403 / 404 | 必要 |
 
 ---
 
@@ -259,6 +315,11 @@
 | GET | `/alerts` | Alerts画面 |
 | GET | `/users` | ユーザー管理画面 |
 | GET | `/calendar` | カレンダー画面 |
+| GET | `/sites` | サイトリンク画面 |
+| GET | `/wiki` | Wiki一覧画面 |
+| GET | `/wiki/new` | Wiki新規ページ作成画面 |
+| GET | `/wiki/{slug}` | Wikiページ閲覧画面 |
+| GET | `/wiki/{slug}/edit` | Wikiページ編集画面 |
 
 ### WebSocket エンドポイント
 
@@ -267,3 +328,4 @@
 | WS | `/ws/logs` | リアルタイムログ配信 | 必要 |
 | WS | `/ws/presence` | 在籍状態リアルタイム配信 | 必要 |
 | WS | `/ws/alerts` | リアルタイムアラート配信 | 必要 |
+| WS | `/ws/sites` | サイトリンクヘルスチェックリアルタイム配信 | 必要 |

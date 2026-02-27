@@ -21,7 +21,7 @@
 | Todo | 自分のTodoのみ（公開一覧は全員分） | 自分のTodoのみ |
 | Task | 自分のTaskのみ | 自分のTaskのみ |
 | Attendance | 自分の記録のみ | 自分の記録のみ |
-| Presence | 全ユーザーの在籍状態閲覧可 | 自分のステータスのみ更新可 |
+| Presence | アクティブユーザーの在籍状態閲覧可（is_active=false を除外） | 自分のステータスのみ更新可 |
 | Report | 自分の日報 / 全ユーザーの日報 | 閲覧:全員、編集/削除:所有者のみ |
 | Summary | 全ユーザーの集約データ（閲覧のみ） | N/A |
 | User | 全ユーザー閲覧可（認証必須） | admin:全編集、user:自分のdisplay_nameのみ |
@@ -32,6 +32,11 @@
 | TaskList | 未割当:全ユーザー / 割当済:全ユーザー閲覧可 | 編集/削除:全認証ユーザー |
 | TaskCategory | 全件閲覧可（認証必須） | CUD:admin のみ |
 | OAuthProvider | 有効プロバイダ一覧は認証不要、管理はadminのみ | admin:全操作 |
+| SiteLink | 全件閲覧可（認証必須） | 編集/削除:作成者のみ |
+| SiteGroup | 全件閲覧可（認証必須） | CUD:admin のみ |
+| WikiPage | 全件閲覧可（認証必須） | 編集/削除:作成者のみ |
+| WikiCategory | 全件閲覧可（認証必須） | CUD:admin のみ |
+| WikiTag | 全件閲覧可（認証必須） | 作成:全認証ユーザー、削除:admin のみ |
 
 ---
 
@@ -138,7 +143,7 @@
 
 ---
 
-## 1b. OAuth API (`/api/auth/oauth`)
+## 2. OAuth API (`/api/auth/oauth`)
 
 ### GET /api/auth/oauth/providers
 有効なOAuthプロバイダ一覧を取得する（ログインページ用）。
@@ -200,7 +205,7 @@ OAuthアカウントのリンクを解除する。最後の認証手段の場合
 
 ---
 
-## 1c. OAuthプロバイダ管理 API (`/api/admin/oauth-providers`)
+## 3. OAuthプロバイダ管理 API (`/api/admin/oauth-providers`)
 
 ### GET /api/admin/oauth-providers/
 OAuthプロバイダ一覧を取得する。
@@ -260,7 +265,7 @@ OAuthプロバイダを削除する。
 
 ---
 
-## 2. Todo API (`/api/todos`)
+## 4. Todo API (`/api/todos`)
 
 ### GET /api/todos/
 自分のTodo一覧を取得する。
@@ -329,7 +334,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 3. Attendance API (`/api/attendances`)
+## 5. Attendance API (`/api/attendances`)
 
 ### POST /api/attendances/clock-in
 出勤を記録する。既に出勤中の場合や同日退勤後はエラー。
@@ -444,7 +449,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 4. Task API (`/api/tasks`)
+## 6. Task API (`/api/tasks`)
 
 ### GET /api/tasks/
 タスク一覧を作成日時降順で取得する。
@@ -558,7 +563,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 5. Task List API (`/api/task-list`)
+## 7. Task List API (`/api/task-list`)
 
 ### GET /api/task-list/unassigned
 担当者なし（未割当）のアイテム一覧を取得する。
@@ -577,7 +582,7 @@ Todoの完了状態をトグルする。
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
 ### GET /api/task-list/all
-全アイテム一覧を取得する（担当者/ステータスフィルタ対応）。
+全アイテム一覧を取得する（担当者/ステータス/キーワードフィルタ対応）。
 
 - **クエリパラメータ**:
 
@@ -585,6 +590,7 @@ Todoの完了状態をトグルする。
 |------------|-----|-----------|------|
 | assignee_id | integer | null | 担当者IDフィルタ（0=未割当） |
 | status | List[string] | null | ステータスフィルタ（複数指定可。例: `?status=open&status=in_progress`） |
+| q | string | null | タイトル部分一致フィルタ（大文字小文字を区別しない ILIKE 検索） |
 
 - **レスポンス**: `200 OK` - `TaskListItemResponse[]`
 
@@ -660,7 +666,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 6. Task Category API (`/api/task-categories`)
+## 8. Task Category API (`/api/task-categories`)
 
 ### GET /api/task-categories/
 タスク分類一覧を取得する。
@@ -703,7 +709,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 7. Log API (`/api/logs`)
+## 9. Log API (`/api/logs`)
 
 ### POST /api/logs/
 ログを登録する。登録後、WebSocket経由で全接続クライアントにブロードキャストされる。アラートルール評価も実行される。
@@ -747,7 +753,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 8. User API (`/api/users`)
+## 10. User API (`/api/users`)
 
 ### GET /api/users/
 ユーザー一覧を取得する。
@@ -828,6 +834,13 @@ Todoの完了状態をトグルする。
 
 - **レスポンス**: `200 OK` - `{"detail": "Password reset"}`
 
+### POST /api/users/{user_id}/unlock
+アカウントロックを解除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `{"detail": "Account unlocked"}`
+- **エラー**: `404 Not Found`
+
 ### UserResponse スキーマ
 
 | フィールド | 型 | 説明 |
@@ -844,7 +857,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 9. Presence API (`/api/presence`)
+## 11. Presence API (`/api/presence`)
 
 ### PUT /api/presence/status
 自分の在籍ステータスを更新する。更新後、WebSocket経由で全接続クライアントにブロードキャストされる。
@@ -859,7 +872,7 @@ Todoの完了状態をトグルする。
 - **レスポンス**: `200 OK` - `PresenceStatusResponse`
 
 ### GET /api/presence/statuses
-全ユーザーの在籍状態一覧を取得する（display_name付き）。ステータスが未設定のユーザーは "offline" として表示される。
+アクティブユーザーの在籍状態一覧を取得する（display_name付き）。ステータスが未設定のユーザーは "offline" として表示される。is_active=false のユーザーは除外される。
 
 - **レスポンス**: `200 OK` - `PresenceStatusWithUser[]`
 
@@ -904,7 +917,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 10. Report API (`/api/reports`)
+## 12. Report API (`/api/reports`)
 
 ### GET /api/reports/
 自分の日報一覧を取得する。
@@ -976,7 +989,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 11. Summary API (`/api/summary`)
+## 13. Summary API (`/api/summary`)
 
 ### GET /api/summary/
 業務サマリーを取得する。
@@ -1017,7 +1030,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 12. Log Source API (`/api/log-sources`)
+## 14. Log Source API (`/api/log-sources`)
 
 ### GET /api/log-sources/
 ログソース一覧を取得する。
@@ -1258,7 +1271,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 13. Alert API (`/api/alerts`)
+## 15. Alert API (`/api/alerts`)
 
 ### GET /api/alerts/
 アラート一覧を取得する。
@@ -1338,7 +1351,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 14. Alert Rule API (`/api/alert-rules`)
+## 16. Alert Rule API (`/api/alert-rules`)
 
 ### GET /api/alert-rules/
 アラートルール一覧を取得する。
@@ -1405,7 +1418,7 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 15. Attendance Preset API (`/api/attendance-presets`)
+## 17. Attendance Preset API (`/api/attendance-presets`)
 
 ### GET /api/attendance-presets/
 出勤プリセット一覧を取得する。
@@ -1425,7 +1438,166 @@ Todoの完了状態をトグルする。
 
 ---
 
-## 16. WebSocket
+## 18. Site Link API (`/api/sites`)
+
+### GET /api/sites/
+サイトリンク一覧を取得する。
+
+- **レスポンス**: `200 OK` - `SiteLinkResponse[]`
+
+### POST /api/sites/
+サイトリンクを作成する。
+
+- **リクエストボディ**: `SiteLinkCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | サイト名 |
+| url | string | Yes | - | URL（http:// または https://） |
+| description | string | No | null | 説明 |
+| group_id | integer | No | null | サイトグループID |
+| sort_order | integer | No | 0 | 表示順 |
+| is_enabled | boolean | No | true | 有効/無効 |
+| check_enabled | boolean | No | true | ヘルスチェック有効/無効 |
+| check_interval_sec | integer | No | 300 | チェック間隔（秒、60〜3600） |
+| check_timeout_sec | integer | No | 10 | タイムアウト（秒、3〜60） |
+| check_ssl_verify | boolean | No | true | SSL証明書検証 |
+
+- **レスポンス**: `201 Created` - `SiteLinkResponse`
+
+### GET /api/sites/{id}
+サイトリンクを取得する。
+
+- **レスポンス**: `200 OK` - `SiteLinkResponse`
+- **エラー**: `404 Not Found`
+
+### GET /api/sites/{id}/url
+サイトリンクのURLを取得する。URL保護用（一覧レスポンスにはURLを含まない）。
+
+- **レスポンス**: `200 OK` - `SiteUrlResponse`
+- **エラー**: `404 Not Found`
+
+### PUT /api/sites/{id}
+サイトリンクを更新する。
+
+- **権限**: 作成者のみ
+- **リクエストボディ**: `SiteLinkUpdate`（全フィールド任意）
+- **レスポンス**: `200 OK` - `SiteLinkResponse`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### DELETE /api/sites/{id}
+サイトリンクを削除する。
+
+- **権限**: 作成者のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### POST /api/sites/{id}/check
+サイトリンクのヘルスチェックを手動実行する。
+
+- **レスポンス**: `200 OK` - `SiteCheckResponse`
+- **エラー**: `404 Not Found`
+
+### SiteLinkResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | サイトリンクID |
+| name | string | サイト名 |
+| description | string \| null | 説明 |
+| group_id | integer \| null | サイトグループID |
+| group_name | string \| null | サイトグループ名 |
+| created_by | integer \| null | 作成者ID |
+| sort_order | integer | 表示順 |
+| is_enabled | boolean | 有効フラグ |
+| check_enabled | boolean | ヘルスチェック有効フラグ |
+| check_interval_sec | integer | チェック間隔（秒） |
+| check_timeout_sec | integer | タイムアウト（秒） |
+| check_ssl_verify | boolean | SSL証明書検証フラグ |
+| status | string | ステータス（unknown/healthy/unhealthy/error） |
+| response_time_ms | integer \| null | レスポンス時間（ミリ秒） |
+| http_status_code | integer \| null | HTTPステータスコード |
+| last_checked_at | datetime \| null | 最終チェック日時 |
+| last_status_changed_at | datetime \| null | 最終ステータス変更日時 |
+| consecutive_failures | integer | 連続失敗回数 |
+| last_error | string \| null | 最終エラー |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime \| null | 更新日時 |
+
+### SiteUrlResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | サイトリンクID |
+| url | string | URL |
+
+### SiteCheckResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | サイトリンクID |
+| status | string | チェック後のステータス |
+| previous_status | string | チェック前のステータス |
+| response_time_ms | integer \| null | レスポンス時間（ミリ秒） |
+| http_status_code | integer \| null | HTTPステータスコード |
+| checked_at | datetime | チェック日時 |
+| message | string | 結果メッセージ |
+
+---
+
+## 19. Site Group API (`/api/site-groups`)
+
+### GET /api/site-groups/
+サイトグループ一覧を取得する。
+
+- **レスポンス**: `200 OK` - `SiteGroupResponse[]`
+
+### POST /api/site-groups/
+サイトグループを作成する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `SiteGroupCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | グループ名 |
+| description | string | No | null | 説明 |
+| color | string | No | "#6c757d" | 表示色（#RRGGBB形式） |
+| icon | string | No | null | アイコン |
+| sort_order | integer | No | 0 | 表示順 |
+
+- **レスポンス**: `201 Created` - `SiteGroupResponse`
+
+### PUT /api/site-groups/{id}
+サイトグループを更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `SiteGroupUpdate`（全フィールド任意）
+- **レスポンス**: `200 OK` - `SiteGroupResponse`
+- **エラー**: `404 Not Found`
+
+### DELETE /api/site-groups/{id}
+サイトグループを削除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### SiteGroupResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | グループID |
+| name | string | グループ名 |
+| description | string \| null | 説明 |
+| color | string | 表示色 |
+| icon | string \| null | アイコン |
+| sort_order | integer | 表示順 |
+| link_count | integer | 所属リンク数 |
+
+---
+
+## 20. WebSocket
 
 接続管理・認証・再接続の共通仕様は [spec_nonfunction.md](./spec_nonfunction.md) セクション5 を参照。
 
@@ -1434,3 +1606,314 @@ Todoの完了状態をトグルする。
 | `/ws/logs` | `POST /api/logs/` | ログデータ（JSON） |
 | `/ws/presence` | `PUT /api/presence/status` | ステータスデータ（JSON） |
 | `/ws/alerts` | アラート生成（手動 or ルール評価） | アラートデータ（JSON）+ ナビバッジ更新 |
+| `/ws/sites` | サイトリンクヘルスチェック完了 | ヘルスチェック結果データ（JSON） |
+
+---
+
+## 21. Wiki カテゴリ API (`/api/wiki/categories`)
+
+### GET /api/wiki/categories/
+Wikiカテゴリ一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiCategoryResponse[]`
+
+### POST /api/wiki/categories/
+Wikiカテゴリを作成する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `WikiCategoryCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | カテゴリ名 |
+| description | string | No | null | 説明 |
+| color | string | No | "#6c757d" | 表示色（#RRGGBB） |
+| sort_order | integer | No | 0 | 表示順 |
+
+- **レスポンス**: `201 Created` - `WikiCategoryResponse`
+- **エラー**: `400 Bad Request` - 名前重複
+
+### PUT /api/wiki/categories/{id}
+Wikiカテゴリを更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `WikiCategoryUpdate`（全フィールド任意）
+- **レスポンス**: `200 OK` - `WikiCategoryResponse`
+- **エラー**: `404 Not Found`
+
+### DELETE /api/wiki/categories/{id}
+Wikiカテゴリを削除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### WikiCategoryResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | カテゴリID |
+| name | string | カテゴリ名 |
+| description | string \| null | 説明 |
+| color | string | 表示色 |
+| sort_order | integer | 表示順 |
+| page_count | integer | 所属ページ数 |
+
+---
+
+## 22. Wiki タグ API (`/api/wiki/tags`)
+
+### GET /api/wiki/tags/
+Wikiタグ一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **クエリパラメータ**: `q` (string, 任意) — タグ名部分一致フィルタ
+- **レスポンス**: `200 OK` - `WikiTagResponse[]`
+
+### POST /api/wiki/tags/
+Wikiタグを作成する。
+
+- **権限**: 認証済みユーザー
+- **リクエストボディ**: `WikiTagCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | タグ名 |
+| color | string | No | "#6c757d" | 表示色（#RRGGBB） |
+
+- **レスポンス**: `201 Created` - `WikiTagResponse`
+- **エラー**: `400 Bad Request` - 名前重複
+
+### DELETE /api/wiki/tags/{id}
+Wikiタグを削除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### WikiTagResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | タグID |
+| name | string | タグ名 |
+| slug | string | URLスラッグ |
+| color | string | 表示色 |
+| page_count | integer | 所属ページ数 |
+
+---
+
+## 23. Wiki ページ API (`/api/wiki/pages`)
+
+### GET /api/wiki/pages/tree
+Wikiページ階層ツリーを取得する。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiPageTreeNode[]`
+
+### GET /api/wiki/pages/by-slug/{slug}
+スラッグ指定でWikiページを取得する（パンくずリスト・本文付き）。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiPageDetailResponse`
+- **エラー**: `404 Not Found`
+
+### GET /api/wiki/pages/
+Wikiページ一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| tag_slug | string | null | タグスラッグフィルタ |
+| category_id | integer | null | カテゴリIDフィルタ |
+
+- **レスポンス**: `200 OK` - `WikiPageResponse[]`
+
+### POST /api/wiki/pages/
+Wikiページを作成する。
+
+- **権限**: 認証済みユーザー
+- **リクエストボディ**: `WikiPageCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| title | string | Yes | - | ページタイトル |
+| slug | string | No | 自動生成 | URLスラッグ（重複時はサフィックス付与） |
+| parent_id | integer | No | null | 親ページID |
+| content | string | No | "" | 本文（Markdown） |
+| sort_order | integer | No | 0 | 表示順 |
+| visibility | string | No | "local" | 公開範囲 (local/public/private) |
+| category_id | integer | No | null | カテゴリID |
+| tag_ids | integer[] | No | [] | タグIDリスト |
+
+- **レスポンス**: `201 Created` - `WikiPageDetailResponse`
+
+### GET /api/wiki/pages/{id}
+IDでWikiページを取得する（パンくずリスト・本文付き）。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiPageDetailResponse`
+- **エラー**: `404 Not Found`
+
+### PUT /api/wiki/pages/{id}
+Wikiページを更新する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **リクエストボディ**: `WikiPageUpdate`（全フィールド任意）
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| title | string | No | タイトル |
+| slug | string | No | スラッグ |
+| content | string | No | 本文（Markdown） |
+| sort_order | integer | No | 表示順 |
+| visibility | string | No | 公開範囲 |
+| category_id | integer | No | カテゴリID |
+
+- **レスポンス**: `200 OK` - `WikiPageDetailResponse`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### DELETE /api/wiki/pages/{id}
+Wikiページを削除する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### PUT /api/wiki/pages/{id}/move
+Wikiページを別の親の下に移動する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **リクエストボディ**: `WikiPageMove`
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| parent_id | integer \| null | No | 新しい親ページID（null=ルート） |
+| sort_order | integer | No | 表示順 |
+
+- **レスポンス**: `200 OK` - `WikiPageDetailResponse`
+- **エラー**: `400 Bad Request` - 循環参照 / `403 Forbidden` / `404 Not Found`
+
+### PUT /api/wiki/pages/{id}/tags
+ページのタグ関連付けを一括更新する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **リクエストボディ**: `WikiTagIdsUpdate`
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| tag_ids | integer[] | Yes | タグIDリスト（上書き更新） |
+
+- **レスポンス**: `200 OK` - `WikiPageDetailResponse`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### GET /api/wiki/pages/{id}/tasks
+ページに紐づくタスクリンク一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiTaskLinksResponse`
+- **エラー**: `404 Not Found`
+
+### PUT /api/wiki/pages/{id}/tasks/task-items
+ページに紐づくタスクリストアイテムリンクを一括更新する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **リクエストボディ**: `WikiTaskItemLinksUpdate`
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| task_item_ids | integer[] | Yes | タスクリストアイテムIDリスト（上書き更新） |
+
+- **レスポンス**: `200 OK` - `WikiTaskLinksResponse`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### POST /api/wiki/pages/{id}/tasks/{task_id}
+ページに進行中タスクをリンクする（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### DELETE /api/wiki/pages/{id}/tasks/{task_id}
+ページとタスクのリンクを解除する（作成者のみ）。
+
+- **権限**: 作成者のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `403 Forbidden` / `404 Not Found`
+
+### WikiPageResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | ページID |
+| title | string | タイトル |
+| slug | string | URLスラッグ |
+| parent_id | integer \| null | 親ページID |
+| author_id | integer \| null | 作成者ID |
+| author_name | string \| null | 作成者表示名 |
+| sort_order | integer | 表示順 |
+| visibility | string | 公開範囲 |
+| category_id | integer \| null | カテゴリID |
+| category_name | string \| null | カテゴリ名 |
+| category_color | string \| null | カテゴリ表示色 |
+| tags | WikiTagResponse[] | タグ一覧 |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime \| null | 更新日時 |
+
+### WikiPageDetailResponse スキーマ（WikiPageResponse を継承）
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| content | string | ページ本文（Markdown） |
+| breadcrumbs | WikiBreadcrumb[] | パンくずリスト |
+
+### WikiPageTreeNode スキーマ（WikiPageResponse を継承）
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| children | WikiPageTreeNode[] | 子ページ一覧（再帰） |
+
+### WikiBreadcrumb スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | ページID |
+| title | string | タイトル |
+| slug | string | URLスラッグ |
+
+### WikiTaskLinksResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| task_items | LinkedTaskItemResponse[] | リンク済みタスクリストアイテム |
+| tasks | LinkedTaskResponse[] | リンク済みタスク |
+
+### LinkedTaskItemResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | タスクリストアイテムID |
+| title | string | タイトル |
+| status | string | ステータス |
+| assignee_id | integer \| null | 担当者ID |
+| assignee_name | string \| null | 担当者名 |
+| backlog_ticket_id | string \| null | Backlogチケット番号 |
+| scheduled_date | date \| null | 予定日 |
+| linked_at | datetime | リンク作成日時 |
+
+### LinkedTaskResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| link_id | integer | リンクID |
+| task_id | integer \| null | タスクID（タスク削除後は null） |
+| title | string | タスクタイトルスナップショット |
+| status | string \| null | タスクステータス |
+| user_id | integer \| null | タスク所有者ID |
+| display_name | string \| null | タスク所有者表示名 |
+| backlog_ticket_id | string \| null | Backlogチケット番号 |
+| is_completed | boolean | true = タスク削除済み |
+| linked_at | datetime | リンク作成日時 |
