@@ -33,6 +33,14 @@ from portal_core.schemas.menu import (
 router = APIRouter(prefix="/api/menus", tags=["menus"])
 
 
+def _get_menu_or_404(db: Session, menu_id: int):
+    """Fetch a menu by ID or raise NotFoundError."""
+    menu = crud_menu.get_menu(db, menu_id)
+    if not menu:
+        raise NotFoundError("Menu not found")
+    return menu
+
+
 @router.get("/my", response_model=List[MenuResponse])
 def get_my_menus(
     user_id: int = Depends(get_current_user_id),
@@ -58,8 +66,7 @@ def update_my_visibility(
     db: Session = Depends(get_db),
 ):
     """Set/update current user's visibility override for one menu."""
-    if not crud_menu.get_menu(db, data.menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, data.menu_id)
     set_my_menu_visibility(db, user_id=user_id, menu_id=data.menu_id, kino_kbn=data.kino_kbn)
     db.commit()
     return {"menu_id": data.menu_id, "kino_kbn": data.kino_kbn}
@@ -93,10 +100,7 @@ def create_menu(data: MenuCreate, db: Session = Depends(get_db), _: int = Depend
 
 @router.get("/{menu_id}", response_model=MenuResponse)
 def get_menu_by_id(menu_id: int, db: Session = Depends(get_db), _: int = Depends(require_admin)):
-    menu = crud_menu.get_menu(db, menu_id)
-    if not menu:
-        raise NotFoundError("Menu not found")
-    return menu
+    return _get_menu_or_404(db, menu_id)
 
 
 @router.put("/{menu_id}", response_model=MenuResponse)
@@ -116,8 +120,7 @@ def update_menu(
 
 @router.delete("/{menu_id}", status_code=204)
 def delete_menu(menu_id: int, db: Session = Depends(get_db), _: int = Depends(require_admin)):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     crud_menu.delete_menu(db, menu_id)
     db.commit()
 
@@ -131,20 +134,18 @@ def get_role_visibility(
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     return get_role_menu_visibility(db, menu_id)
 
 
-@router.put("/{menu_id}/role-visibility", status_code=200)
+@router.put("/{menu_id}/role-visibility", status_code=200, response_model=List[RoleVisibilityEntry])
 def update_role_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     for item in data.items:
         set_role_menu_visibility(db, menu_id=menu_id, role_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
@@ -160,20 +161,18 @@ def get_department_visibility(
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     return get_department_menu_visibility(db, menu_id)
 
 
-@router.put("/{menu_id}/department-visibility", status_code=200)
+@router.put("/{menu_id}/department-visibility", status_code=200, response_model=List[DepartmentVisibilityEntry])
 def update_department_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     for item in data.items:
         set_department_menu_visibility(db, menu_id=menu_id, department_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
@@ -189,20 +188,18 @@ def get_user_visibility(
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     return get_user_menu_visibility(db, menu_id)
 
 
-@router.put("/{menu_id}/user-visibility", status_code=200)
+@router.put("/{menu_id}/user-visibility", status_code=200, response_model=List[UserVisibilityEntry])
 def update_user_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    if not crud_menu.get_menu(db, menu_id):
-        raise NotFoundError("Menu not found")
+    _get_menu_or_404(db, menu_id)
     for item in data.items:
         set_user_menu_visibility(db, menu_id=menu_id, user_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
