@@ -15,7 +15,7 @@
                 <th>{{ _("ID") }}</th>
                 <th>{{ _("Email") }}</th>
                 <th>{{ _("Display Name") }}</th>
-                <th>{{ _("Group") }}</th>
+                <th>{{ _("Department") }}</th>
                 <th>{{ _("Role") }}</th>
                 <th>{{ _("Status") }}</th>
                 <th style="width:200px">{{ _("Actions") }}</th>
@@ -29,9 +29,9 @@
 <div class="d-none" id="department-section">
     <hr>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4><i class="bi bi-collection"></i> {{ _("Groups") }}</h4>
+        <h4><i class="bi bi-collection"></i> {{ _("Departments") }}</h4>
         <button class="btn btn-primary btn-sm" onclick="startNewDepartment()">
-            <i class="bi bi-plus-lg"></i> {{ _("Add Group") }}
+            <i class="bi bi-plus-lg"></i> {{ _("Add Department") }}
         </button>
     </div>
     <div class="table-responsive">
@@ -39,9 +39,11 @@
             <thead class="table-dark">
                 <tr>
                     <th>{{ _("Name") }}</th>
+                    <th>{{ _("Parent") }}</th>
                     <th>{{ _("Description") }}</th>
                     <th>{{ _("Members") }}</th>
                     <th>{{ _("Sort Order") }}</th>
+                    <th>{{ _("Active") }}</th>
                     <th style="width:150px">{{ _("Actions") }}</th>
                 </tr>
             </thead>
@@ -78,6 +80,12 @@
                         <option value="admin">{{ _("Admin") }}</option>
                     </select>
                 </div>
+                <div class="stl-field">
+                    <label class="stl-label"><i class="bi bi-building"></i> {{ _("Department") }}</label>
+                    <select class="form-select form-select-sm" id="create-department-id">
+                        <option value="">-- {{ _("None") }} --</option>
+                    </select>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Cancel") }}</button>
@@ -106,7 +114,7 @@
                     <input type="text" class="form-control form-control-sm" id="edit-display-name" required>
                 </div>
                 <div class="stl-field" id="edit-department-group">
-                    <label class="stl-label"><i class="bi bi-collection"></i> {{ _("Group") }}</label>
+                    <label class="stl-label"><i class="bi bi-building"></i> {{ _("Department") }}</label>
                     <select class="form-select form-select-sm" id="edit-department-id">
                         <option value="">-- {{ _("None") }} --</option>
                     </select>
@@ -157,6 +165,33 @@
     </div>
 </div>
 
+<!-- RBAC Roles Modal -->
+<div class="modal fade" id="userRolesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content modal-styled">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-shield-check"></i> {{ _("Roles") }} — <span id="roles-modal-user"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2 px-3">
+                <input type="hidden" id="roles-modal-user-id">
+                <div id="user-roles-list" class="mb-3"></div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" id="roles-add-select" style="max-width:220px">
+                        <option value="">-- {{ _("Select role to add") }} --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary" onclick="assignRole()">
+                        <i class="bi bi-plus"></i> {{ _("Add") }}
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Close") }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal fade" id="userDeleteModal" tabindex="-1">
     <div class="modal-dialog">
@@ -179,5 +214,5 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/core/js/users.js?v=3"></script>
+<script src="/static/core/js/users.js?v=4"></script>
 {% endblock %}

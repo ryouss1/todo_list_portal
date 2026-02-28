@@ -1066,6 +1066,18 @@ msgstr "ロール"
 msgid "Groups"
 msgstr "グループ"
 
+msgid "Departments"
+msgstr "部署管理"
+
+msgid "Add Department"
+msgstr "部署追加"
+
+msgid "Department"
+msgstr "部署"
+
+msgid "Parent"
+msgstr "親部署"
+
 #: templates/users.html:34
 msgid "Add Group"
 msgstr "グループ追加"

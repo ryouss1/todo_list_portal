@@ -1067,6 +1067,18 @@ msgstr "Role"
 msgid "Groups"
 msgstr "Groups"
 
+msgid "Departments"
+msgstr "Departments"
+
+msgid "Add Department"
+msgstr "Add Department"
+
+msgid "Department"
+msgstr "Department"
+
+msgid "Parent"
+msgstr "Parent"
+
 #: templates/users.html:34
 msgid "Add Group"
 msgstr "Add Group"
