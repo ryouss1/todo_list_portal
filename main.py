@@ -24,9 +24,16 @@ from app.services.alert_service import create_alert_from_scan
 from app.services.daily_report_service import create_report_from_task
 from app.services.log_scanner import start_scanner, stop_scanner
 from app.services.log_source_service import register_on_change_detected
+from app.services.reminder_checker import start_reminder_checker, stop_reminder_checker
 from app.services.site_checker import start_checker, stop_checker
 from app.services.task_service import register_on_task_done
-from app.services.websocket_manager import alert_ws_manager, log_ws_manager, presence_ws_manager, site_ws_manager
+from app.services.websocket_manager import (
+    alert_ws_manager,
+    calendar_ws_manager,
+    log_ws_manager,
+    presence_ws_manager,
+    site_ws_manager,
+)
 from portal_core.app_factory import NavItem, PortalApp
 
 # --- Register service hooks ---
@@ -88,6 +95,7 @@ portal.register_websocket("/ws/logs", log_ws_manager)
 portal.register_websocket("/ws/alerts", alert_ws_manager)
 portal.register_websocket("/ws/presence", presence_ws_manager)
 portal.register_websocket("/ws/sites", site_ws_manager)
+portal.register_websocket("/ws/calendar", calendar_ws_manager)
 
 # === Template and static directories ===
 portal.register_template_dir("templates")
@@ -103,8 +111,10 @@ portal.register_seed_hook(seed_default_categories)
 # === Background services ===
 portal.register_startup_hook(start_scanner)
 portal.register_startup_hook(start_checker)
+portal.register_startup_hook(start_reminder_checker)
 portal.register_shutdown_hook(stop_scanner)
 portal.register_shutdown_hook(stop_checker)
+portal.register_shutdown_hook(stop_reminder_checker)
 
 # === Build ===
 app = portal.build()
