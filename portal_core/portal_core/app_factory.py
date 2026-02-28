@@ -34,7 +34,7 @@ from portal_core.core.exception_handlers import app_error_handler
 from portal_core.core.exceptions import AppError
 from portal_core.core.i18n import get_translator
 from portal_core.core.logging_config import LOGGING_CONFIG
-from portal_core.init_db import seed_default_user
+from portal_core.init_db import seed_default_roles, seed_default_user
 from portal_core.routers import api_auth, api_departments, api_menus, api_oauth, api_roles, api_users
 from portal_core.services.websocket_manager import WebSocketManager
 
@@ -125,33 +125,42 @@ class PortalApp:
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             logger.info("Application starting up...")
-            seed_default_user()
-            from portal_core.init_db import seed_default_roles
+            try:
+                seed_default_user()
+            except Exception as e:
+                logger.error("Failed to seed default user: %s", e)
 
-            seed_default_roles()
+            try:
+                seed_default_roles()
+            except Exception as e:
+                logger.error("Failed to seed default roles: %s", e)
+
             for hook in portal._seed_hooks:
                 hook()
 
             # NavItem → menus DB sync
-            from portal_core.crud.menu import upsert_menu_from_nav_item as _upsert_menu
-            from portal_core.database import SessionLocal
-
-            _db = SessionLocal()
             try:
-                for nav in portal._seed_hooks_nav:
-                    name = nav.path.lstrip("/").replace("/", "_") or "dashboard"
-                    _upsert_menu(
-                        _db,
-                        name=name,
-                        label=nav.label,
-                        path=nav.path,
-                        icon=getattr(nav, "icon", None),
-                        sort_order=getattr(nav, "sort_order", 0),
-                        badge_id=getattr(nav, "badge_id", None),
-                    )
-                _db.commit()
-            finally:
-                _db.close()
+                from portal_core.crud.menu import upsert_menu_from_nav_item as _upsert_menu
+                from portal_core.database import SessionLocal
+
+                _db = SessionLocal()
+                try:
+                    for nav in portal._seed_hooks_nav:
+                        name = nav.path.lstrip("/").replace("/", "_") or "dashboard"
+                        _upsert_menu(
+                            _db,
+                            name=name,
+                            label=nav.label,
+                            path=nav.path,
+                            icon=getattr(nav, "icon", None),
+                            sort_order=getattr(nav, "sort_order", 0),
+                            badge_id=getattr(nav, "badge_id", None),
+                        )
+                    _db.commit()
+                finally:
+                    _db.close()
+            except Exception as e:
+                logger.error("Failed to sync nav items to menus DB: %s", e)
 
             for hook in portal._startup_hooks:
                 await hook(app)

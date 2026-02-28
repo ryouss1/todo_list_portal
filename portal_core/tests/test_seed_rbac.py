@@ -16,6 +16,7 @@ def test_seed_default_roles_creates_system_admin(db_session):
         .first()
     )
     assert wildcard is not None
+    assert wildcard.kino_kbn == 1  # wildcard must be a grant, not a deny
 
 
 def test_seed_default_roles_idempotent(db_session):
