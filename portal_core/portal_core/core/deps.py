@@ -68,10 +68,10 @@ def require_admin(user_id: int = Depends(get_current_user_id), db: Session = Dep
     from portal_core.crud.role import has_permission
     from portal_core.models.user import User
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
+    row = db.query(User.role).filter(User.id == user_id).first()
+    if not row:
         raise ForbiddenError("Admin access required")
-    if user.role == UserRole.ADMIN:
+    if row.role == UserRole.ADMIN:
         return user_id
     if has_permission(db, user_id, "*", "*"):
         return user_id
@@ -93,9 +93,11 @@ def require_permission(resource: str, action: str) -> Callable:
         from portal_core.crud.role import has_permission
         from portal_core.models.user import User
 
-        user = db.query(User).filter(User.id == user_id).first()
+        row = db.query(User.role).filter(User.id == user_id).first()
+        if not row:
+            raise ForbiddenError(f"Permission required: {resource}:{action}")
         # Legacy admin bypass
-        if user and user.role == UserRole.ADMIN:
+        if row.role == UserRole.ADMIN:
             return user_id
         if not has_permission(db, user_id, resource, action):
             raise ForbiddenError(f"Permission required: {resource}:{action}")

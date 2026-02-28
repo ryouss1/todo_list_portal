@@ -44,8 +44,12 @@ class TestRequireAdminRBACUnification:
 
 
 class TestHasPermission:
-    def test_has_permission_wildcard_grants_access(self, db_session, test_user):
-        """has_permission returns True for any resource:action when user has *:* RBAC permission."""
+    def test_has_permission_wildcard_grants_access(self, db_session, other_user):
+        """has_permission returns True for any resource:action when user has *:* RBAC permission.
+
+        Uses other_user (role=user, not admin) so the RBAC code path is exercised
+        rather than bypassed by the legacy admin role check.
+        """
         from portal_core.crud.role import (
             assign_user_role,
             create_role,
@@ -57,11 +61,11 @@ class TestHasPermission:
         role = create_role(db_session, RoleCreate(name="wildcard_tester", display_name="Wildcard"))
         db_session.flush()
         set_role_permissions(db_session, role.id, [("*", "*", 1)])
-        assign_user_role(db_session, test_user.id, role.id)
+        assign_user_role(db_session, other_user.id, role.id)
         db_session.flush()
 
-        assert has_permission(db_session, test_user.id, "*", "*") is True
-        assert has_permission(db_session, test_user.id, "anything", "delete") is True
+        assert has_permission(db_session, other_user.id, "*", "*") is True
+        assert has_permission(db_session, other_user.id, "anything", "delete") is True
 
     def test_has_permission_false_for_user_without_roles(self, db_session, other_user):
         """has_permission returns False for a user with no RBAC roles assigned."""
@@ -69,3 +73,28 @@ class TestHasPermission:
 
         result = has_permission(db_session, other_user.id, "*", "*")
         assert result is False
+
+
+class TestRequireAdminBoundary:
+    def test_require_admin_rejects_non_wildcard_rbac(self, db_session, other_user, client_user2):
+        """A user with a non-wildcard RBAC permission (e.g. todos:read) must NOT pass require_admin."""
+        from portal_core.crud.role import assign_user_role, create_role, set_role_permissions
+        from portal_core.schemas.role import RoleCreate
+
+        # Create role with limited permission (NOT wildcard)
+        role = create_role(db_session, RoleCreate(name="limited_role", display_name="Limited role"))
+        db_session.flush()
+        set_role_permissions(db_session, role.id, [("todos", "read", 1)])
+        assign_user_role(db_session, other_user.id, role.id)
+        db_session.flush()
+
+        # Non-wildcard RBAC should NOT grant admin access
+        resp = client_user2.post(
+            "/api/users/",
+            json={
+                "email": "another@example.com",
+                "display_name": "Another",
+                "password": "Password123",
+            },
+        )
+        assert resp.status_code == 403

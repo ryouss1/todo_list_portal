@@ -5,19 +5,12 @@ def test_require_permission_allows_legacy_admin(client, db_session):
     assert r.status_code == 200
 
 
-def test_require_permission_allows_role_based_user(client, db_session, test_user, other_user):
-    """User with the required role permission passes."""
-    from portal_core.crud.role import assign_user_role, create_role, set_role_permissions
-    from portal_core.schemas.role import RoleCreate
-
-    role = create_role(db_session, RoleCreate(name="menu_reader", display_name="Menu Reader"))
-    db_session.flush()
-    set_role_permissions(db_session, role.id, [("menus", "view", 1)])
-    assign_user_role(db_session, other_user.id, role.id)
-    db_session.flush()
-
-    # client_user2 should be able to access menus list
-    # (tested via client_user2 fixture in full role test)
+def test_require_permission_blocks_user_without_permission(db_session, other_user, client_user2):
+    """User without the required permission is blocked by require_permission."""
+    # other_user has no roles assigned, so has no permissions
+    # GET /api/roles/ requires 'roles:read' or admin
+    r = client_user2.get("/api/roles/")
+    assert r.status_code == 403
 
 
 def test_require_permission_blocks_unauthenticated(raw_client):
