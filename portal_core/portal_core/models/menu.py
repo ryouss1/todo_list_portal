@@ -1,5 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, SmallInteger, String
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, SmallInteger, String, func
 
 from portal_core.database import Base
 
@@ -11,7 +10,7 @@ class Menu(Base):
     name = Column(String(100), nullable=False, unique=True)
     label = Column(String(200), nullable=False)
     path = Column(String(500), nullable=False)
-    icon = Column(String(100), nullable=False, default="")
+    icon = Column(String(100), nullable=False, server_default="")
     badge_id = Column(String(100), nullable=True)
     parent_id = Column(Integer, ForeignKey("menus.id", ondelete="SET NULL"), nullable=True, index=True)
     sort_order = Column(Integer, nullable=False, default=100)

@@ -50,7 +50,8 @@ def test_role_menu_model(db_session):
     rm = RoleMenu(role_id=role.id, menu_id=menu.id, kino_kbn=1)
     db_session.add(rm)
     db_session.flush()
-    # no error = success
+    assert rm.role_id is not None
+    assert rm.menu_id is not None
 
 
 def test_user_menu_model(db_session, test_user):
@@ -60,4 +61,5 @@ def test_user_menu_model(db_session, test_user):
     um = UserMenu(user_id=test_user.id, menu_id=menu.id, kino_kbn=1)
     db_session.add(um)
     db_session.flush()
-    # no error = success
+    assert um.user_id is not None
+    assert um.menu_id is not None
