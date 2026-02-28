@@ -114,7 +114,7 @@ def test_upsert_menu_from_nav_item(db_session):
     assert len([m for m in get_menus(db_session) if m.name == "nav_item"]) == 1
 
 
-def test_department_menu_model_can_be_created(db_session, test_user):
+def test_department_menu_model_can_be_created(db_session):
     """DepartmentMenu model can be created and queried."""
     from portal_core.crud.menu import create_menu
     from portal_core.models.department import Department

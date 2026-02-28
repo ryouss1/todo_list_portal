@@ -28,7 +28,7 @@ class RoleMenu(Base):
     __tablename__ = "role_menus"
 
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True)
+    menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True, index=True)
     kino_kbn = Column(SmallInteger, nullable=False, default=1)
 
 
@@ -38,7 +38,7 @@ class UserMenu(Base):
     __tablename__ = "user_menus"
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True)
+    menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True, index=True)
     kino_kbn = Column(SmallInteger, nullable=False, default=1)
 
 
