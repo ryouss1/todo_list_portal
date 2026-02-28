@@ -1,8 +1,11 @@
 # ログファイル収集機能 設計書 (v2)
 
 > 本ドキュメントは [spec.md](./spec.md) の補足資料です。
-> 質問事項は [spec_log_function_qa2.md](./spec_log_function_qa2.md) を参照してください。
-> 初版 Q&A の回答: [spec_log_function_qa.md](./spec_log_function_qa.md)
+>
+> **実装済み機能の権威仕様**: [api/log-sources/SPEC_log-sources.md](./api/log-sources/SPEC_log-sources.md) を参照してください。
+> 本ドキュメントはフェーズ別の設計方針・アーキテクチャの記録として保持します（Phase 6〜7 の未実装部分を含む）。
+>
+> 設計時の Q&A: `docs/archive/spec_log_function_qa.md` / `docs/archive/spec_log_function_qa2.md`（アーカイブ済み）
 
 ---
 

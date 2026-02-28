@@ -18,6 +18,11 @@
 
 ```bash
 cd /path/to/todo_list_portal
+
+# 共通基盤パッケージをインストール（編集可能モード）
+pip install -e portal_core/
+
+# アプリ依存パッケージをインストール
 pip install -r requirements.txt
 ```
 
@@ -161,6 +166,58 @@ ps aux | grep uvicorn
 kill <PID>
 ```
 
+### 2.5 WSL2環境でのアクセス
+
+WSL2（Windows Subsystem for Linux 2）上でサーバーを起動した場合、`0.0.0.0` でバインドしてもWindowsホスト側から直接アクセスできない場合があります。WSL2は仮想マシンとして動作するため、ネットワークが分離されています。
+
+#### 方法1: localhost経由（推奨）
+
+WSL2のデフォルト設定では `localhostForwarding` が有効になっており、Windowsホストから `localhost` でアクセスできます。
+
+```
+http://localhost:8000
+```
+
+#### 方法2: WSL2のIPアドレスを直接指定
+
+`localhost` でアクセスできない場合、WSL2のIPアドレスを確認して直接アクセスします。
+
+```bash
+# WSL2のIPアドレスを確認
+hostname -I
+# 例: 192.168.69.187
+```
+
+```
+http://192.168.69.187:8000
+```
+
+> **注意**: WSL2のIPアドレスはWSL再起動のたびに変わる可能性があります。
+
+#### 方法3: localhostForwardingの設定確認
+
+方法1で接続できない場合、Windowsホスト側の設定ファイル `%USERPROFILE%\.wslconfig` を確認・作成します。
+
+```ini
+[wsl2]
+localhostForwarding=true
+```
+
+設定変更後、PowerShellで以下を実行してWSLを再起動します。
+
+```powershell
+wsl --shutdown
+```
+
+#### 接続確認
+
+WSL2内部からサーバーが正常に動作しているか確認するには:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/login
+# 200 が返れば正常
+```
+
 ---
 
 ## 3. メンテナンス
@@ -212,16 +269,13 @@ DELETE FROM logs WHERE received_at < NOW() - INTERVAL '30 days';
 
 #### テーブル定義の確認
 
-テーブルの定義は `app/models/` ディレクトリ配下の各ファイルで管理されています。
+テーブルの定義は共通基盤（`portal_core/portal_core/models/`）とアプリ固有（`app/models/`）の二層で管理されています。詳細は [db-schema.md](./db-schema.md) を参照してください。
 
-| テーブル名 | モデルファイル |
-|-----------|--------------|
-| users | `app/models/user.py` |
-| todos | `app/models/todo.py` |
-| attendances | `app/models/attendance.py` |
-| tasks | `app/models/task.py` |
-| task_time_entries | `app/models/task_time_entry.py` |
-| logs | `app/models/log.py` |
+| 分類 | テーブル数 | モデル定義 |
+|------|----------|-----------|
+| 共通基盤（認証・ユーザー・グループ） | 8 | `portal_core/portal_core/models/` |
+| アプリ固有（Todo・勤怠・タスク等） | 26 | `app/models/` |
+| **合計** | **34** | |
 
 #### スキーマ変更時の対応
 
@@ -273,18 +327,21 @@ CREATE DATABASE todo_list_portal;
 テストはデータベースに接続して実行されますが、各テストはトランザクション内で実行され、テスト後にロールバックされるため、既存データには影響しません。
 
 ```bash
-# 全テスト実行
-pytest
+# portal_core 単体テスト（151件）
+cd portal_core && pytest tests/ -q
+
+# アプリテスト（500件）
+pytest tests/ -q
+
+# 全テスト（CI用）
+cd portal_core && pytest tests/ -q && cd .. && pytest tests/ -q
 
 # 詳細出力付き
-pytest -v
+pytest tests/ -v
 
 # 特定のテストファイルを実行
-pytest tests/test_auth.py
 pytest tests/test_todos.py
 pytest tests/test_attendances.py
-pytest tests/test_tasks.py
-pytest tests/test_logs.py
 
 # 特定のテストケースを実行
 pytest tests/test_todos.py::TestTodoAPI::test_create_todo

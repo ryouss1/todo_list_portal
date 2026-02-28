@@ -518,10 +518,34 @@ function showDesktopNotification(data) {
 
 ### 7.3 イベント作成フロー
 
-**方法 1: カレンダー上でドラッグ**
+**方法 1: カレンダー上でクリック / ドラッグ**
 
-1. Month ビュー: 日付範囲をドラッグ → 終日イベント作成モーダル
-2. Week/Day ビュー: 時間帯をドラッグ → 時間指定イベント作成モーダル
+FullCalendar の `select` コールバックで `info.allDay` とビュー種別を判定し、モーダルの初期状態を切り替える。
+
+| ビュー | 操作 | 動作 |
+|--------|------|------|
+| 月ビュー (`dayGridMonth`) | 日付セルをクリック / ドラッグ | `allDay=false`・開始 09:00 / 終了 10:00 でモーダルを開く（時間入力可） |
+| 週ビュー (`timeGridWeek`) 終日行 | クリック / ドラッグ | `allDay=true` でモーダルを開く（終日チェック ON、時間入力なし） |
+| 週ビュー (`timeGridWeek`) 時刻エリア | ドラッグ | 選択した時間範囲を `start` / `end` に反映してモーダルを開く |
+| 日ビュー (`timeGridDay`) 終日行 | クリック / ドラッグ | `allDay=true` でモーダルを開く（終日チェック ON、時間入力なし） |
+| 日ビュー (`timeGridDay`) 時刻エリア | ドラッグ | 選択した時間範囲を `start` / `end` に反映してモーダルを開く |
+
+```javascript
+// calendar.js select コールバック
+select: function(info) {
+    if (info.allDay && info.view.type === 'dayGridMonth') {
+        // 月ビュー: デフォルト時間 09:00-10:00 で時間入力モーダルを開く
+        const start = new Date(info.start);
+        start.setHours(9, 0, 0, 0);
+        const end = new Date(info.start);
+        end.setHours(10, 0, 0, 0);
+        openCreateModal(start, end, false);
+    } else {
+        // 週/日ビューの終日行 → allDay=true、時刻エリア → allDay=false
+        openCreateModal(info.start, info.end, info.allDay);
+    }
+},
+```
 
 **方法 2: 「+ 予定」ボタン**
 

@@ -1,6 +1,7 @@
 # ログ関連 問題点・技術的負債
 
-> 調査対象: 設計書（`spec_log_function.md`, `spec_log_function_qa.md`, `spec_log_function_qa2.md`）、実装コード、テスト
+> 調査対象: 設計書（`spec_log_function.md`）、実装コード、テスト
+> Q&A ドキュメント: `docs/archive/spec_log_function_qa.md` / `docs/archive/spec_log_function_qa2.md`（アーカイブ済み）
 >
 > 作成日: 2026-02-18
 
@@ -54,22 +55,9 @@
 
 **対応**: `scan_source()` 内のアラート作成を同期的な `crud_alert.create_alert()` に変更。WebSocket ブロードキャストは戻り値 `alert_broadcast` で呼び出し側（ルーター/スキャナー）に委譲。ルーターの scan エンドポイントを `async def` に変更。
 
-### 3.2 タイムゾーン不一致（当日フィルタ）— 中
+### ~~3.2 タイムゾーン不一致（当日フィルタ）— 中~~ **解決済み**
 
-**ファイル**: `app/services/log_source_service.py` 309, 330行
-
-```python
-today = date.today()  # ローカルタイムゾーン
-today_files = [f for f in remote_files if f.modified_at.date() == today]  # modified_at は UTC
-```
-
-**問題**:
-- `date.today()` はサーバーのローカルタイムゾーン（JST: UTC+9）
-- FTP の MLSD / SMB の stat から取得する `modified_at` は UTC
-- 日本時間 0:00〜9:00 の間にスキャンすると、UTC では前日のファイルが「今日」に含まれない
-- 逆に UTC 15:00〜24:00（JST 翌 0:00〜9:00）のファイルが「今日」に誤って含まれる
-
-**推奨**: `datetime.now(timezone.utc).date()` を使うか、JST に変換して比較。
+**対応**: `scan_source()` と `apply_default_preset()` 内の `date.today()` を `datetime.now(timezone.utc).date()` に統一。テストも UTC 日付に修正し、UTC/JST 境界テストを追加。
 
 ### ~~3.2b スキャンパフォーマンス（大量ファイルディレクトリ）— 中~~ **解決済み**
 
@@ -115,7 +103,7 @@ today_files = [f for f in remote_files if f.modified_at.date() == today]  # modi
 
 | ファイル | テスト数 | 備考 |
 |---------|---------|------|
-| `test_log_sources.py` | 90件 | v2 対応。モック使用 |
+| `test_log_sources.py` | 100件 | v2 対応。モック使用 |
 | `test_logs.py` | 7件 | 外部ログ投入 API |
 
 ---
@@ -144,7 +132,7 @@ today_files = [f for f in remote_files if f.modified_at.date() == today]  # modi
 
 2. **full_import モード未実装** — 設定しても metadata_only と同じ動作
 3. ~~**asyncio パターンが脆弱**~~ — **解決済み**（同期 `crud_alert.create_alert()` + 呼び出し側ブロードキャスト）
-4. **タイムゾーン不一致** — 当日フィルタが UTC/JST 境界で誤動作
+4. ~~**タイムゾーン不一致**~~ — **解決済み**（`date.today()` → `datetime.now(timezone.utc).date()` に統一）
 
 ### 低（将来の技術的負債）
 

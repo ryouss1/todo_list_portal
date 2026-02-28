@@ -1,358 +1,355 @@
 # 追加機能ロードマップ
 
 > 本ドキュメントは [spec.md](./spec.md) の補足資料です。
-> 今後追加を予定している機能の要件をまとめたものです。
+> 実装済み機能の一覧と、今後の作業計画をまとめたものです。
+>
+> 最終更新: 2026-02-26
 
 ---
 
-## 1. 機能追加の全体像
+## 1. 実装済み機能一覧
 
-### 1.1 追加機能一覧
+全機能が実装済みであり、692件のテスト（portal_core 151件 + アプリ 541件）でカバーされている。
 
-| # | 機能カテゴリ | 機能名 | 概要 | 既存機能への影響 | 状態 |
-|---|-------------|--------|------|----------------|------|
-| 1 | 認証 | ログイン機能 | ユーザー認証によるアクセス制御 | 全機能に影響（認証必須化） | **実装済み** |
-| 2 | 勤怠管理 | 出勤・退勤の拡張 | 現在の出勤管理を勤怠管理として拡張 | 既存Attendance機能を改修 | **実質完了** |
-| 3 | 勤怠管理 | 在籍記録 | ユーザーの在籍状態をリアルタイムに記録・表示 | 新規追加 | **実装済み** |
-| 4 | Todo管理 | プライベート/公開Todo | Todoをプライベート用と公開用に分離 | 既存Todo機能を改修 | **実装済み** |
-| 5 | 日報管理 | 日報登録 | 業務日報の作成・登録 | 新規追加 | **実装済み** |
-| 6 | 日報管理 | 業務サマリー画面 | 日報データに基づく業務サマリーの表示 | 新規追加 | **実装済み** |
-| 7 | ログ管理 | ログファイル収集 | 外部システムのログファイルを収集・取り込み | 既存Log機能を拡張 | **実装済み** |
-| 8 | アラート管理 | システムアラート表示 | DBに登録されたアラートを条件に基づき表示 | 新規追加 | **実装済み** |
-| 9 | タスク管理 | タスクリスト | 未来のタスクを含むバックログ管理、担当者割り当て | Tasks機能の拡張、Todo非表示 | **実装済み** |
+| # | 機能カテゴリ | 機能名 | 概要 | 状態 |
+|---|-------------|--------|------|------|
+| 1 | 認証 | ログイン機能 | セッションベース認証（メール+パスワード） | **実装済み** |
+| 2 | 認証 | 認証セキュリティ強化 | パスワードポリシー、レート制限、アカウントロックアウト、監査ログ | **実装済み** |
+| 3 | 認証 | OAuth2/SSO | Google/GitHub連携、PKCE、アカウントリンク | **実装済み** |
+| 4 | 認証 | パスワードリセット | トークンベース、SMTP送信 | **実装済み** |
+| 5 | ユーザー管理 | ユーザー CRUD + RBAC | admin/user ロール、グループ管理 | **実装済み** |
+| 6 | 勤怠管理 | 出勤・退勤・休憩 | マルチユーザー、プリセット、Excelエクスポート、手動入力 | **実装済み** |
+| 7 | 勤怠管理 | 在籍記録 | リアルタイム在籍状態（WebSocket）、Backlogチケット表示 | **実装済み** |
+| 8 | Todo管理 | プライベート/公開Todo | visibility制御、公開一覧 | **実装済み** |
+| 9 | タスク管理 | タスクタイマー | タイマー計測、Done時日報自動作成、一括完了 | **実装済み** |
+| 10 | タスク管理 | タスクリスト | バックログ管理、担当割り当て、Task連携、時間蓄積 | **実装済み** |
+| 11 | タスク管理 | タスク分類 | カテゴリマスタ管理（admin） | **実装済み** |
+| 12 | 日報管理 | 日報登録 | カテゴリ、作業時間、Backlogチケット対応 | **実装済み** |
+| 13 | 日報管理 | 業務サマリー | 日次/週次/月次集計、カテゴリ別分析、グループフィルタ | **実装済み** |
+| 14 | ログ管理 | ログ収集 | 外部API受信 + リモートサーバー収集（FTP/SMB） | **実装済み** |
+| 15 | ログ管理 | バックグラウンドスキャナー | 自動ポーリング、ファイル変更通知、フォルダリンク | **実装済み** |
+| 16 | アラート管理 | アラート + ルールエンジン | 条件マッチング、WebSocket通知、ナビバッジ | **実装済み** |
+| 17 | カレンダー | イベント管理 | CRUD、繰り返し、参加者、会議室予約、リマインダー | **実装済み** |
+| 18 | サイトリンク | サイト監視 | URL登録、バックグラウンドヘルスチェック、WebSocket更新 | **実装済み** |
+| 19 | 基盤 | portal_core分離 | 認証・ユーザー管理を再利用可能パッケージとして分離 | **実装済み** |
+| 20 | 基盤 | 国際化 (i18n) | ja/en切替、gettext + JSON翻訳 | **実装済み** |
+| 21 | 基盤 | テンプレート重複解消 | portal_core テンプレートをマスター化、`app_title` 動的注入、`register_head_script()` API、アプリ側重複5ファイル削除 | **実装済み** |
+| 22 | Wiki管理 | Wikiページ | Markdown編集（Toast UI Editor）、階層構造、タグ/カテゴリ、タスクリンク、ファイルパスコピー | **実装済み** |
 
-### 1.2 機能依存関係
+### 1.1 機能依存関係
 
 ```
-[1. ログイン機能]
-    ├──→ [2. 勤怠管理（出勤・退勤）]  ※ユーザー識別が必要
-    ├──→ [3. 在籍記録]                ※ユーザー識別が必要
-    ├──→ [4. プライベート/公開Todo]    ※所有者の識別が必要
-    └──→ [5. 日報登録]                ※投稿者の識別が必要
-             └──→ [6. 業務サマリー画面]
-
-[7. ログファイル収集] **[実装済み]**     ※ログイン不要（システム間連携）
-    └──→ [8. システムアラート表示] **[実装済み]**  ※アラート条件の定義が必要
-
-[タスク管理（Tasks）]
-    └──→ [9. タスクリスト] **[実装済み]**  ※バックログ→タスクコピー、時間蓄積
+[portal_core（共通基盤）]
+    ├── 認証（セッション + OAuth2 + パスワードリセット）
+    ├── ユーザー管理（CRUD + RBAC + グループ）
+    └── WebSocket基盤 / i18n / 暗号化
+        │
+        ├──→ [勤怠管理]（出勤/退勤/休憩 + プリセット + Excel）
+        ├──→ [在籍記録]（WebSocket リアルタイム配信）
+        ├──→ [Todo管理]（private/public）
+        ├──→ [タスク管理]（タイマー + タスクリスト + 分類）
+        │         └──→ [日報管理]（Task Done連携 → 自動作成）
+        │                   └──→ [業務サマリー]（集計・分析）
+        ├──→ [ログ管理]（API受信 + リモート収集）
+        │         └──→ [アラート管理]（ルールエンジン + WebSocket通知）
+        ├──→ [カレンダー]（イベント + 会議室 + リマインダー）
+        ├──→ [サイトリンク]（ヘルスチェック + WebSocket更新）
+        └──→ [Wiki]（Markdownページ + 階層 + タグ + タスクリンク）
 ```
 
 ---
 
-## 2. 各機能の要件
+## 2. 次の作業（優先度順）
 
-### 2.1 ログイン機能 **[実装済み]**
+### 2.1 テスト失敗の修正（6件） ✅ 修正完了
 
-#### 概要
-~~現在のシングルユーザーモード（デフォルトユーザー固定）を廃止し、~~ユーザー認証によるアクセス制御を実現。
+6件のテスト失敗を修正済み。651件全テストパス（portal_core 151件 + アプリ 500件）。
 
-#### 実装内容
-- メールアドレスとパスワードによるログイン（`POST /api/auth/login`）
-- セッション管理: Starlette `SessionMiddleware`（署名Cookie）
-- 未ログイン状態: ページアクセスは `/login` にリダイレクト、APIアクセスは 401
-- ログアウト機能（`POST /api/auth/logout`）
-- パスワードハッシュ: `passlib[bcrypt]`（`app/core/security.py`）
-- `users` テーブルに `password_hash` カラム追加（Alembicマイグレーション `7e3eabbd85e8`）
-- `get_current_user_id` をセッション読み取りに変更（`app/core/deps.py`）
-- ユーザー登録: 管理者のみ（既存 `POST /api/users/`、`email` + `password` フィールド）
+| # | テスト | 原因 | 修正内容 |
+|---|--------|------|----------|
+| 1 | `test_clock_in_after_clock_out_same_day_rejected` | `attendance_service.clock_in()` が `date.today()`（ローカル時間）を使用し、CRUD の `datetime.now(timezone.utc).date()` と不一致 | `date.today()` → `datetime.now(timezone.utc).date()` に統一（`attendance_service.py`） |
+| 2 | `test_polling_interval_too_high` | テストが `polling_interval_sec=999` を使用するが、上限は3600で範囲内 | テスト値を `999` → `7200`（上限超過）に修正 |
+| 3 | `test_summary_category_trends` | `date.today() - 1day` が月曜の場合、前週の日曜に該当し weekly 範囲外 | 固定日付 `date(2020, 1, 8)`（水曜）を使用し週内に収まるよう修正 |
+| 4 | `test_scan_alert_reads_content` | `db_session.query(LogEntry).all()` が既存DB上の全エントリを返却 | `source_id` でフィルタするよう `LogFile` JOIN を追加 |
+| 5 | `test_scan_content_parser_pattern` | 同上 | 同上 |
+| 6 | `test_scan_content_read_error_isolated` | 同上 | 同上 |
 
-#### 認証不要パス
-| パス | 理由 |
-|------|------|
-| `/login` | ログインページ |
-| `/static/*` | 静的ファイル |
-| `/api/auth/*` | 認証エンドポイント |
-| `/api/logs/*` | 外部システムからのログ受信 |
-| `/ws/*` | WebSocket（将来検討: トークン認証等の導入） |
+### 2.2 タイムゾーン不一致の修正（残り） ✅ 修正完了
 
-#### 決定事項
-| 項目 | 決定 | 理由 |
-|------|------|------|
-| 認証方式 | セッション + 署名Cookie | ブラウザアプリとの親和性、`itsdangerous`導入済み |
-| パスワードハッシュ | bcrypt（`passlib`） | 業界標準、導入済み |
-| ユーザー登録 | 管理者のみ | 単一マシン運用 |
+`date.today()`（ローカル時間）→ `datetime.now(timezone.utc).date()`（UTC）に統一済み。
 
----
+| # | 対象 | 修正内容 |
+|---|------|----------|
+| 1 | `log_source_service.py` `scan_source()` | 当日フィルタの `date.today()` を UTC に統一 |
+| 2 | `attendance_service.py` `apply_default_preset()` | プリセット適用時の `date.today()` を UTC に統一 |
+| 3 | `test_log_sources.py` | `modified_since` アサーションを UTC に修正 + UTC/JST 境界テスト追加 |
+| 4 | `test_attendances.py` | プリセットテスト3件の日付アサーションを UTC に修正 |
 
-### 2.2 勤怠管理（出勤・退勤の拡張）
+### 2.3 軽微な技術的負債
 
-#### 概要
-現在の出勤・退勤記録機能を、マルチユーザー対応の勤怠管理システムとして拡張する。
-
-#### 要件
-- ログインユーザーごとの出勤・退勤記録
-- 勤怠履歴の一覧表示（自分の勤怠のみ）
-- 管理者向けの全ユーザー勤怠閲覧機能（将来検討）
-
-#### 既存機能への影響
-- 現在の `attendances` テーブルは流用可能（`user_id` カラムが既に存在）
-- ~~ルーター層で `DEFAULT_USER_ID` をログインユーザーのIDに置き換え~~ **[完了済み]** `get_current_user_id` で解決済み
+| # | 項目 | 優先度 | 対象ファイル |
+|---|------|--------|-------------|
+| 1 | FTP `read_timeout` 未適用 | 低 | `remote_connector.py` |
+| 2 | FTP `read_lines()` メモリ問題 | 低 | `remote_connector.py`（full_import 実装時に対応） |
+| 3 | SMB `disconnect()` が no-op | 低 | `remote_connector.py` |
+| 4 | 自動クリーンアップ + ログ検索 API | 低 | crud/log_entry.py に実装済みだがルーター未接続 |
+| 5 | WebSocket DI化が不完全 | 低 | 5インスタンスがサービスから直接インポート |
+| 6 | 翻訳ファイルの分離 | 低 | 共通キーとアプリ固有キーが混在 |
+| 7 | Tasks→Reports の暗黙的依存 | 低 | Done時の日報自動作成がサービス間直接呼び出し |
+| 8 | テストカバレッジ不足 | 低 | CASCADE削除、エンコーディング、ファイル一覧フィルタ |
 
 ---
 
-### 2.3 在籍記録
+## 3. 実装済み機能の詳細
 
-#### 概要
-ユーザーの現在の在籍状態（在席・離席・外出・休憩など）をリアルタイムに記録・表示する機能を追加する。
+> 以下は各機能の要件・決定事項のアーカイブです。
 
-#### 要件
-- ユーザーが自身の在籍状態を更新できる
-- 全ユーザーの在籍状態を一覧で確認できる画面
-- 在籍状態の種別:
+### 3.1 ログイン機能
 
-| ステータス | 説明 |
+- メールアドレスとパスワードによるセッション認証
+- `SessionMiddleware`（署名Cookie）、`passlib[bcrypt]` によるパスワードハッシュ
+- 認証不要パス: `/login`, `/static/*`, `/api/auth/*`, `/api/logs/`, `/ws/*`
+- 設計書: [api/auth/security_enhancement.md](./api/auth/security_enhancement.md)
+
+### 3.2 認証セキュリティ強化
+
+- パスワードポリシー（最小8文字、大文字/小文字/数字必須）
+- ログインレート制限（15分間に5回失敗でブロック）
+- アカウントロックアウト（30分ロック、管理者アンロック可）
+- セッション無効化（パスワード変更/ロール変更時）
+- 認証監査ログ（`auth_audit_logs` テーブル）
+- 設計書: [api/auth/security_enhancement.md](./api/auth/security_enhancement.md)
+
+### 3.3 OAuth2/SSO
+
+- Authorization Code + PKCE フロー
+- Google/GitHub プロバイダ対応
+- メールアドレスによる既存アカウントとの自動リンク
+- プロバイダ管理（admin CRUD）、アカウントリンク/アンリンク
+- 設計書: [api/auth/oauth.md](./api/auth/oauth.md)
+
+### 3.4 パスワードリセット
+
+- トークンベース（SHA-256ハッシュのみDB保存）
+- SMTP送信、レート制限（15分間に3回まで）
+- リセット成功時にセッション・全トークン無効化
+- 設計書: [api/auth/password_reset.md](./api/auth/password_reset.md)
+
+### 3.5 ログファイル収集
+
+- リモートサーバー（FTP/SMB）からのファイルメタデータ収集
+- バックグラウンドスキャナー（`LOG_SCANNER_ENABLED=true`）
+- ファイル変更通知（`alert_on_change`）、フォルダリンク表示
+- 認証情報の暗号化保存（Fernet）
+- 設計書: [spec_log_function.md](./spec_log_function.md)
+- 技術的負債: [spec_log_problem.md](./spec_log_problem.md)
+
+### 3.6 タスクリスト
+
+- バックログ管理: タイトル、説明、予定日、カテゴリ、Backlogチケット
+- 担当割り当て/解除（Assign/Unassign）
+- Start: TaskListItem → Task コピー、時間蓄積（Done時に蓄積）
+- Todo はナビ非表示（URLアクセスは維持）
+
+### 3.7 カレンダー
+
+- FullCalendar 連携、イベント CRUD
+- 繰り返しルール（RRULE形式）、例外管理
+- 参加者管理（accept/decline/tentative）
+- 会議室予約、空き状況確認
+- リマインダー設定
+- ユーザー個別設定（デフォルト表示、色、勤務時間）
+
+### 3.8 サイトリンク
+
+- サイトURL登録、グループ管理
+- バックグラウンドヘルスチェック（`SITE_CHECKER_ENABLED=true`）
+- WebSocket (`/ws/sites`) でリアルタイム更新
+- SSL証明書検証、チェック間隔・タイムアウト設定
+- 設計書: [api/sites/SPEC_sites.md](./api/sites/SPEC_sites.md)
+
+### 3.9 portal_core 分離
+
+- 認証・ユーザー管理・グループ管理を `portal_core/` パッケージに分離
+- PortalApp ファクトリパターン（`setup_core()` → `register_*()` → `build()`）
+- 再エクスポートshimで後方互換維持
+- テスト分離（portal_core 151件 + アプリ 541件 = 692件）
+- 設計書: [spec_common_separation.md](./spec_common_separation.md)
+
+### 3.11 Wiki管理
+
+- **エディタ**: Toast UI Editor（WYSIWYG + Markdownモード切替）
+- **コンテンツ形式**: Markdown テキスト（`wiki_pages.content`: TEXT型）
+- **階層構造**: `parent_id` 自己参照による親子ページ管理、パンくずナビ
+- **タグ管理**: 多対多（`wiki_page_tags` 中間テーブル）、タグ名検索対応
+- **カテゴリ管理**: 単一分類（管理者操作）
+- **全文検索**: PostgreSQL TSVECTOR + GINインデックス（タイトル対象）
+- **タスクリンク**: タスクリストアイテムへの永続リンク（`wiki_page_task_items`）、進行中タスクリンク（`wiki_page_tasks`、タイトルスナップショット付き）
+- **ファイルパスコピー機能**: エディタのツールバーからUNCパス等をページに挿入、ビューアーでクリックするとクリップボードにコピー（バッジ＋フォルダアイコン表示）
+- **公開範囲**: internal / public / private の3段階visibility制御
+- **ページ移動**: 親ページ変更（循環参照防止チェック）
+- **テスト**: 41件（`tests/test_wiki.py`）
+- **DB**: wiki_pages, wiki_categories, wiki_tags, wiki_page_tags, wiki_page_task_items, wiki_page_tasks（計6テーブル）
+- 設計書（旧計画）: [spec_wiki.md](./spec_wiki.md)
+
+### 3.10 テンプレート重複解消
+
+- portal_core テンプレート5ファイルをマスター化（`base.html`, `login.html`, `forgot_password.html`, `reset_password.html`, `users.html`）
+- ハードコードの `Portal` / `Todo List Portal` を `{{ app_title }}` に動的化（`PortalApp._render()` で自動注入）
+- `register_head_script()` API 追加（`app_common.js` 等のアプリ固有グローバルスクリプトを portal_core base.html に自動ループ挿入）
+- アプリ側の重複5テンプレートを削除、子テンプレート14ファイルのタイトルを `{{ app_title }}` に統一
+
+---
+
+## 4. portal_core 拡張指針（マルチアプリ対応）
+
+> 倉庫システム等の別アプリでも portal_core を共通基盤として利用できるよう拡張する方針。
+> 既存の Todo List Portal との後方互換を維持しつつ、ロール・メニュー・権限を柔軟に構成可能にする。
+
+### 4.1 現状の拡張ポイント（強み）
+
+portal_core は既に以下の拡張メカニズムを備えている:
+
+| メカニズム | 説明 |
 |-----------|------|
-| `available` | 在席 |
-| `away` | 離席 |
-| `out` | 外出 |
-| `break` | 休憩 |
-| `offline` | オフライン |
+| `PortalApp.register_router()` | アプリ固有 API ルーターの動的登録 |
+| `PortalApp.register_nav_item()` | ナビゲーション項目の動的登録（`sort_order`, `hidden`, `badge_id`） |
+| `PortalApp.register_page()` | HTML ページルートの動的登録 |
+| `PortalApp.register_head_script()` | アプリ固有グローバルスクリプトの登録 |
+| `PortalApp.register_websocket()` | WebSocket エンドポイントの動的登録 |
+| `PortalApp.register_public_prefix()` | 認証バイパスパスの動的登録 |
+| テンプレートオーバーライド | アプリ側 `templates/` が portal_core より優先 |
+| `CoreConfig` → `AppConfig` 継承 | アプリ固有設定の追加 |
+| `register_seed_hook()` | アプリ固有 DB 初期データの投入 |
+| `register_startup_hook()` / `shutdown_hook()` | バックグラウンドサービスの起動・停止 |
 
-- 状態変更履歴の保存
-- 在籍状態一覧画面でのリアルタイム更新（WebSocket検討）
+### 4.2 現状の制約
 
-#### 想定テーブル
+| 制約 | 詳細 |
+|------|------|
+| **ロールが2種固定** | `UserRole.ADMIN` / `UserRole.USER` のみ。`require_admin` DI で二値判定 |
+| **権限モデルがない** | ロールに紐づくパーミッション定義がなく、リソース単位のアクセス制御ができない |
+| **ナビの権限フィルタがない** | `NavItem` は全ユーザーに同じメニューを表示（`hidden` は静的） |
+| **アプリ識別がない** | ユーザーがどのアプリにアクセス可能かの概念がない |
+| **認証ミドルウェアが固定** | リダイレクト先 `/login`、公開パスが factory 内にハードコード |
 
-**presence_statuses テーブル（案）**
+### 4.3 拡張方針（フェーズ案）
 
-| カラム名 | 型 | 説明 |
-|----------|-----|------|
-| id | Integer | PK |
-| user_id | Integer | FK(users.id) |
-| status | String | 在籍ステータス |
-| message | Text | ステータスメッセージ（任意） |
-| updated_at | DateTime(TZ) | 更新日時 |
+#### Phase A: ロール拡張 + パーミッション基盤
 
-**presence_logs テーブル（案）**
+**目標:** `admin` / `user` の2値を超え、アプリごとにカスタムロールを定義可能にする。
 
-| カラム名 | 型 | 説明 |
-|----------|-----|------|
-| id | Integer | PK |
-| user_id | Integer | FK(users.id) |
-| status | String | 変更後のステータス |
-| changed_at | DateTime(TZ) | 変更日時 |
+**方針:**
 
----
+1. **ロールレジストリ** — `core/constants.py` のハードコードを廃止し、起動時にアプリがロールを登録
 
-### 2.4 プライベート/公開 Todo
-
-#### 概要
-現在のTodo管理を拡張し、Todoアイテムに「プライベート」と「公開」の2つの公開範囲を設ける。
-
-#### 要件
-- 各Todoに公開範囲（`private` / `public`）を設定できる
-- **プライベートTodo**: 作成者本人のみ閲覧・操作可能
-- **公開Todo**: 全ログインユーザーが閲覧可能（操作は作成者のみ）
-- Todo画面でプライベート/公開の切り替え表示
-- 公開Todoの一覧画面（全ユーザーの公開Todoを集約表示）
-
-#### 既存機能への影響
-- `todos` テーブルに公開範囲カラム（`visibility`）の追加が必要
-- デフォルト値は `private`（既存データとの互換性を確保）
-- Todo一覧取得APIにフィルタパラメータの追加
-- 公開Todo一覧用の新規エンドポイント追加
-
-#### 想定スキーマ変更
-
-```sql
-ALTER TABLE todos ADD COLUMN visibility VARCHAR(20) DEFAULT 'private';
+```python
+# 倉庫システムの例
+portal.register_role("warehouse_admin", display_name="倉庫管理者", inherits=["user"])
+portal.register_role("warehouse_operator", display_name="倉庫オペレーター", inherits=["user"])
+portal.register_role("viewer", display_name="閲覧のみ")
 ```
 
-| visibility値 | 説明 |
-|-------------|------|
-| `private` | プライベート（本人のみ） |
-| `public` | 公開（全員閲覧可） |
+2. **パーミッションチェッカー** — `require_admin` を汎用化
+
+```python
+# 現状: require_admin（admin/userの二値）
+@router.delete("/{id}")
+def delete(id: int, user_id: int = Depends(require_admin)):
+    ...
+
+# 拡張後: require_permission（リソース + アクション）
+@router.delete("/{id}")
+def delete(id: int, user_id: int = Depends(require_permission("users", "delete"))):
+    ...
+```
+
+3. **DB テーブル追加案**
+
+```
+roles (id, name, display_name, is_system, sort_order)
+role_permissions (id, role_id FK, resource, action)
+user_roles (id, user_id FK, role_id FK)  -- 多対多（1ユーザーに複数ロール可）
+```
+
+4. **既存システムとの互換性** — `users.role` カラムは維持し、`user_roles` テーブルを併用。マイグレーション時に `admin` → `roles` テーブルの `admin` レコードに紐付け。`require_admin` は `require_permission("*", "*")` のエイリアスとして動作。
+
+#### Phase B: ナビゲーション権限フィルタ
+
+**目標:** ユーザーのロール/権限に基づいてナビメニューを動的にフィルタリング。
+
+**方針:**
+
+1. `NavItem` に `required_permission` 属性を追加
+
+```python
+NavItem("Users", "/users", "bi-people-fill",
+        sort_order=900,
+        required_permission="users:read")  # この権限がないユーザーには非表示
+```
+
+2. `_render()` でリクエストユーザーの権限を取得し、`nav_items` をフィルタして渡す
+
+3. 権限なしの `NavItem` は全ユーザーに表示（後方互換）
+
+#### Phase C: マルチアプリ識別（将来）
+
+**目標:** 1つの portal_core インスタンスで複数アプリを区別して管理。
+
+**方針（検討段階）:**
+
+- `apps` テーブル（`id`, `name`, `slug`）でアプリを識別
+- `user_app_access` テーブルでユーザーのアプリアクセス権を管理
+- ナビバーにアプリ切替メニューを追加
+- ルーターにアプリスコープのプレフィックスを付与
+
+> この Phase は倉庫システムの要件が具体化してから設計を詰める。
+> 当面は Phase A・B で十分な拡張性を確保できる見込み。
+
+### 4.4 倉庫システム向けの想定ロール例
+
+| ロール | 権限概要 | 既存互換 |
+|--------|---------|---------|
+| `admin` | 全操作（ユーザー管理、マスタ管理、設定変更） | 既存 `admin` と同一 |
+| `warehouse_admin` | 倉庫マスタ管理 + 入出庫承認 + レポート閲覧 | 新規 |
+| `warehouse_operator` | 入出庫登録 + 在庫照会 | 新規 |
+| `viewer` | 閲覧のみ（レポート、在庫状況） | 新規 |
+| `user` | Todo/タスク/日報等の一般操作（既存アプリ機能） | 既存 `user` と同一 |
+
+### 4.5 既存 Todo List Portal への影響
+
+| 変更 | 後方互換 |
+|------|---------|
+| `users.role` カラム維持 | ✅ 既存のまま動作 |
+| `require_admin` → `require_permission` エイリアス | ✅ `require_admin` はそのまま使用可能 |
+| `NavItem` に `required_permission` 追加 | ✅ 未指定なら全ユーザーに表示 |
+| `roles` / `role_permissions` テーブル追加 | ✅ 既存テーブルに影響なし |
+| `user_roles` テーブル追加 | ✅ マイグレーションで既存ユーザーを自動紐付け |
 
 ---
 
-### 2.5 日報登録
+## 5. 画面一覧
 
-#### 概要
-ユーザーが業務日報を登録・管理する機能を追加する。
-
-#### 要件
-- 日報の作成・編集・削除
-- 日報に記載する項目:
-
-| 項目 | 型 | 必須 | 説明 |
-|------|-----|------|------|
-| 日付 | Date | Yes | 対象日 |
-| 業務内容 | Text | Yes | 本日行った業務の詳細 |
-| 成果・進捗 | Text | No | 成果や進捗状況 |
-| 課題・問題 | Text | No | 発生した課題や問題 |
-| 明日の予定 | Text | No | 翌営業日の予定 |
-| 備考 | Text | No | その他の連絡事項 |
-
-- 日報一覧の表示（自分の日報一覧）
-- 日報の閲覧（他ユーザーの日報も閲覧可能）
-- 日報へのタスク・勤怠データの自動取り込み（将来検討）
-
-#### 想定テーブル
-
-**daily_reports テーブル（案）**
-
-| カラム名 | 型 | 説明 |
-|----------|-----|------|
-| id | Integer | PK |
-| user_id | Integer | FK(users.id) |
-| report_date | Date | 対象日 |
-| work_content | Text | 業務内容 |
-| achievements | Text | 成果・進捗（NULL許可） |
-| issues | Text | 課題・問題（NULL許可） |
-| next_plan | Text | 明日の予定（NULL許可） |
-| remarks | Text | 備考（NULL許可） |
-| created_at | DateTime(TZ) | 作成日時 |
-| updated_at | DateTime(TZ) | 更新日時 |
-
----
-
-### 2.6 業務サマリー画面
-
-#### 概要
-日報データを集約し、チーム全体の業務状況を俯瞰できるサマリー画面を提供する。
-
-#### 要件
-- 期間（週次・月次）を指定してサマリーを表示
-- 表示内容:
-  - ユーザーごとの日報提出状況
-  - 日報登録数の推移
-  - 直近の日報一覧（全ユーザー分）
-  - 課題・問題の集約表示
-- Dashboard画面への日報サマリーウィジェット追加
-
----
-
-### 2.7 ログファイル収集 **[実装済み]**
-
-#### 概要
-現在のAPI経由のログ登録に加え、外部システムのログファイルを自動収集・取り込みする機能を追加する。
-
-#### 実装内容
-- `log_sources` テーブルで監視対象ファイル・パーサー設定・ポーリング間隔を管理
-- asyncio バックグラウンドタスクによるファイル監視（メインループ5秒間隔、各ソースは `polling_interval_sec` で制御）
-- 正規表現の名前付きグループ（`(?P<severity>...)` 等）で message, severity を抽出
-- ファイルローテーション検出: current_size < last_file_size → position=0 にリセット
-- `last_read_position` / `last_file_size` でファイルオフセットを追跡（重複取り込み防止）
-- `last_error` でエラー追跡、成功時にクリア
-- REST API: `GET/POST/PUT/DELETE /api/log-sources/`, `GET /api/log-sources/status`
-- ログ画面（`/logs`）内にLog Sources管理パネルを統合
-- Alembic: `6ee8442a6984` (log_sources テーブル追加)
-
-#### 決定事項
-
-| 項目 | 決定 | 理由 |
-|------|------|------|
-| 監視方式 | asyncio ポーリング | 依存ライブラリ不要、クロスプラットフォーム |
-| パーサー | 正規表現（名前付きグループ） | 柔軟性と設定の容易さ |
-| 重複防止 | ファイルオフセット追跡 | シンプルかつ確実 |
-| ローテーション | ファイルサイズ比較 | inode追跡より簡易で十分 |
-
----
-
-### 2.8 システムアラート表示 **[実装済み]**
-
-#### 概要
-DBに登録されたアラート情報を、一定の条件に基づきリアルタイムに画面表示する機能を追加する。
-
-#### 実装内容
-- `alert_rules` テーブル: 条件（JSON）、タイトル/メッセージテンプレート、重要度
-- `alerts` テーブル: タイトル、メッセージ、重要度、ルールFK、確認済みフラグ
-- ルール評価エンジン: ログ作成時に全ルールを評価し、マッチしたらアラート自動生成
-- 条件マッチング: 完全一致 / `$in`（リスト包含） / `$contains`（部分一致）、全条件AND
-- テンプレート展開: Python `str.format_map` でログフィールドを変数として展開
-- WebSocket `/ws/alerts` でリアルタイムアラート配信
-- ナビバーに未確認アラート数バッジ（WebSocketで自動更新）
-- 手動アラート作成 / 確認（acknowledge） / 非活性化（deactivate）
-- `/alerts` 専用画面: アラート一覧 + ルール管理
-- ダッシュボードにアラートカード追加
-- Alembic: `82739a6351f7` (alert_rules, alerts テーブル追加)
-
-#### 決定事項
-
-| 項目 | 決定 | 理由 |
-|------|------|------|
-| 配信方式 | WebSocket | 既存パターン踏襲、リアルタイム性 |
-| 条件定義 | DB上のルールテーブル（JSON条件） | API動的登録、柔軟性 |
-| 重要度分類 | critical / warning / info の3段階 | シンプルかつ実用的 |
-| 表示方法 | 専用画面 + ナビバッジ | 一覧性とリアルタイム通知の両立 |
-| 確認・消込 | 手動確認 + 確認履歴保存 | 運用上の追跡可能性 |
-| アラートソース | ログ連携（自動）+ 手動作成 | ログベース自動化と柔軟な手動運用 |
-
-### 2.9 タスクリスト **[実装済み]**
-
-#### 概要
-未来のタスクを含む作業項目（バックログ）を登録・管理し、必要な時にTasksにコピーして作業を開始する機能。担当者なしのアイテムは全員に公開され、取得して自分の担当にできる。
-
-#### 実装内容
-- `task_list_items` テーブル: タイトル、説明、予定日、担当者、作成者、ステータス、累計時間、カテゴリ、Backlogチケット
-- `tasks.source_item_id` FK追加: TaskからソースのTaskListItemへの参照
-- アクセス制御: 未割当アイテムは全員閲覧可、割当済みアイテムは担当者と作成者のみ
-- 担当割り当て/解除: Assign（自分に割当）/ Unassign（公開プールに返却）
-- Start: TaskListItem → Task コピー、ステータスをin_progressに変更（何度でも可能）
-- 時間蓄積: Task Done/Batch-Done時に作業時間をソースアイテムに蓄積
-- ナビバー: Todo/Public Todosを非表示（`d-none`）、Task Listナビアイテム追加
-- REST API: `GET/POST/PUT/DELETE /api/task-list/`, assign, unassign, start
-- Alembic: `72671cad997f` (task_list_items テーブル追加、tasks.source_item_id カラム追加)
-
-#### 決定事項
-
-| 項目 | 決定 | 理由 |
-|------|------|------|
-| データフロー | TaskListItem → Task コピー → Done時に時間蓄積 | バックログとタイマー管理の分離 |
-| 公開ルール | assignee_id=NULL は全員公開 | チーム内のタスク取得を容易に |
-| Todo代替 | ナビ非表示（コード残存） | 段階的移行、URLアクセスは維持 |
-
----
-
-## 3. 影響を受ける既存テーブルの変更案
-
-### 3.1 users テーブル
-
-ログイン機能追加に伴うカラム追加。
-
-| 追加カラム | 型 | 説明 | 状態 |
-|-----------|-----|------|------|
-| password_hash | String(255) | パスワードハッシュ | **追加済み** |
-| email | String(255) | メールアドレス（UNIQUE、旧 username を rename） | **追加済み** |
-| role | String(20) | ユーザー権限（user / admin） | **追加済み** |
-| default_preset_id | Integer | 勤怠プリセットFK | **追加済み** |
-
-### 3.2 todos テーブル
-
-公開範囲の追加。
-
-| 追加カラム | 型 | 説明 |
-|-----------|-----|------|
-| visibility | String(20) | 公開範囲（private / public）、DEFAULT 'private' |
-
----
-
-## 4. 追加画面一覧（予定）
-
-| 画面名 | パス（案） | 概要 | 状態 |
-|--------|-----------|------|------|
-| ログイン画面 | `/login` | ユーザー認証 | **実装済み** |
-| 在籍状態一覧 | `/presence` | 全ユーザーの在籍状態をリアルタイム表示 | **実装済み** |
-| 公開Todo一覧 | `/todos/public` | 全ユーザーの公開Todoを一覧表示 | **実装済み** |
-| 日報登録画面 | `/reports` | 日報の作成・編集・一覧 | **実装済み** |
-| 日報閲覧画面 | `/reports/{id}` | 日報の詳細閲覧 | **実装済み** |
-| 業務サマリー | `/summary` | 日報データに基づく業務状況の俯瞰 | **実装済み** |
-| アラート画面 | `/alerts` | システムアラートの一覧・確認 | **実装済み** |
-| タスクリスト | `/task-list` | バックログアイテムの管理・担当割り当て | **実装済み** |
-
----
-
-## 5. 実装優先度（案）
-
-| 優先度 | 機能 | 理由 | 状態 |
-|--------|------|------|------|
-| **高** | ~~ログイン機能~~ | 他の機能の前提となるため最優先 | **実装済み** |
-| **高** | 勤怠管理（出勤・退勤拡張） | 既存機能の改修で対応可能、ログイン後すぐに適用 | **実質完了** |
-| **高** | プライベート/公開 Todo | 既存テーブルへのカラム追加で対応可能 | **実装済み** |
-| **中** | 在籍記録 | 新規テーブル・画面の追加が必要 | **実装済み** |
-| **中** | 日報登録 | 新規テーブル・画面の追加が必要 | **実装済み** |
-| **中** | 業務サマリー画面 | 日報機能の実装後に対応 | **実装済み** |
-| **中** | ログファイル収集 | 既存ログ機能の拡張、設計検討が必要 | **実装済み** |
-| **低** | システムアラート表示 | リアルタイム配信方式の設計検討を別途実施後に実装 | **実装済み** |
-| **中** | タスクリスト | 既存Taskシステムとの統合、Todo代替 | **実装済み** |
+| 画面名 | パス | 提供元 |
+|--------|------|--------|
+| ログイン | `/login` | portal_core |
+| パスワードリセット要求 | `/forgot-password` | portal_core |
+| パスワード再設定 | `/reset-password` | portal_core |
+| ユーザー管理 | `/users` | portal_core |
+| Dashboard | `/` | アプリ |
+| Todo | `/todos` | アプリ（ナビ非表示） |
+| 公開Todo一覧 | `/todos/public` | アプリ（ナビ非表示） |
+| タスクリスト | `/task-list` | アプリ |
+| 勤怠管理 | `/attendance` | アプリ |
+| 在籍状態 | `/presence` | アプリ |
+| タスク | `/tasks` | アプリ |
+| 日報 | `/reports`, `/reports/{id}` | アプリ |
+| 業務サマリー | `/summary` | アプリ |
+| カレンダー | `/calendar` | アプリ |
+| サイトリンク | `/sites` | アプリ |
+| Wiki一覧 | `/wiki` | アプリ |
+| Wiki新規作成 | `/wiki/new` | アプリ |
+| Wikiページ閲覧 | `/wiki/{slug}` | アプリ |
+| Wikiページ編集 | `/wiki/{slug}/edit` | アプリ |
+| ログ | `/logs` | アプリ |
+| アラート | `/alerts` | アプリ |
