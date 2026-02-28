@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, SmallInteger, String, UniqueConstraint, func
+from sqlalchemy.orm import relationship
 
 from portal_core.database import Base
 
@@ -15,6 +16,8 @@ class Role(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    permissions = relationship("RolePermission", back_populates="role", cascade="all, delete-orphan", lazy="select")
+
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
@@ -26,6 +29,8 @@ class RolePermission(Base):
     kino_kbn = Column(SmallInteger, nullable=False, default=1)
 
     __table_args__ = (UniqueConstraint("role_id", "resource", "action"),)
+
+    role = relationship("Role", back_populates="permissions")
 
 
 class UserRole(Base):
