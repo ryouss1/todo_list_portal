@@ -88,3 +88,45 @@ class TestNavCache:
             portal._get_filtered_nav_items(1)
 
         assert mock_visible.call_count == 2
+
+
+def test_invalidate_specific_user_clears_cache():
+    """invalidate_nav_cache(user_ids=[1]) removes only that user's entry."""
+    portal = _make_portal()
+    mock_db = MagicMock()
+    with (
+        patch("portal_core.app_factory.get_menus", return_value=[MagicMock()]),
+        patch("portal_core.app_factory.get_visible_menus_for_user", return_value=[]) as mock_visible,
+        patch("portal_core.app_factory.SessionLocal", return_value=mock_db),
+    ):
+        portal._get_filtered_nav_items(1)
+        portal._get_filtered_nav_items(2)
+        assert mock_visible.call_count == 2
+
+        portal.invalidate_nav_cache([1])
+
+        portal._get_filtered_nav_items(1)  # should re-query
+        portal._get_filtered_nav_items(2)  # should use cache
+
+    assert mock_visible.call_count == 3  # user 1 re-queried, user 2 from cache
+
+
+def test_invalidate_all_clears_all_users():
+    """invalidate_nav_cache(user_ids=None) clears the entire cache."""
+    portal = _make_portal()
+    mock_db = MagicMock()
+    with (
+        patch("portal_core.app_factory.get_menus", return_value=[MagicMock()]),
+        patch("portal_core.app_factory.get_visible_menus_for_user", return_value=[]) as mock_visible,
+        patch("portal_core.app_factory.SessionLocal", return_value=mock_db),
+    ):
+        portal._get_filtered_nav_items(1)
+        portal._get_filtered_nav_items(2)
+        assert mock_visible.call_count == 2
+
+        portal.invalidate_nav_cache(None)  # clear all
+
+        portal._get_filtered_nav_items(1)
+        portal._get_filtered_nav_items(2)
+
+    assert mock_visible.call_count == 4

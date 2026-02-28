@@ -378,6 +378,18 @@ class PortalApp:
         self._nav_cache[user_id] = (now + 30, result)  # 30-second TTL
         return result
 
+    def invalidate_nav_cache(self, user_ids: Optional[List[int]]) -> None:
+        """Immediately evict cached nav items for the given users.
+
+        Args:
+            user_ids: list of user IDs to evict, or None to clear the entire cache.
+        """
+        if user_ids is None:
+            self._nav_cache.clear()
+        else:
+            for uid in user_ids:
+                self._nav_cache.pop(uid, None)
+
     def _fetch_nav_items_for_user(self, user_id: int) -> List[NavItem]:
         """Fetch nav items from DB for a specific user (no cache)."""
         try:

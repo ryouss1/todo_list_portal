@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from portal_core.core.deps import get_current_user_id, require_admin
@@ -62,6 +62,7 @@ def get_my_visibility(
 @router.put("/my-visibility", response_model=MyVisibilityEntry)
 def update_my_visibility(
     data: MyVisibilityUpdate,
+    request: Request,
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
@@ -69,18 +70,25 @@ def update_my_visibility(
     _get_menu_or_404(db, data.menu_id)
     set_my_menu_visibility(db, user_id=user_id, menu_id=data.menu_id, kino_kbn=data.kino_kbn)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache([user_id])
     return {"menu_id": data.menu_id, "kino_kbn": data.kino_kbn}
 
 
 @router.delete("/my-visibility/{menu_id}", status_code=204)
 def reset_my_visibility(
     menu_id: int,
+    request: Request,
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Delete current user's visibility override → falls back to dept/role/RBAC."""
     reset_my_menu_visibility(db, user_id=user_id, menu_id=menu_id)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache([user_id])
 
 
 @router.get("/", response_model=List[MenuResponse])
@@ -142,6 +150,7 @@ def get_role_visibility(
 def update_role_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
@@ -149,6 +158,9 @@ def update_role_visibility(
     for item in data.items:
         set_role_menu_visibility(db, menu_id=menu_id, role_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache(None)
     return get_role_menu_visibility(db, menu_id)
 
 
@@ -169,6 +181,7 @@ def get_department_visibility(
 def update_department_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
@@ -176,6 +189,9 @@ def update_department_visibility(
     for item in data.items:
         set_department_menu_visibility(db, menu_id=menu_id, department_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache(None)
     return get_department_menu_visibility(db, menu_id)
 
 
@@ -196,6 +212,7 @@ def get_user_visibility(
 def update_user_visibility(
     menu_id: int,
     data: VisibilityBatchUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
@@ -203,4 +220,7 @@ def update_user_visibility(
     for item in data.items:
         set_user_menu_visibility(db, menu_id=menu_id, user_id=item.id, kino_kbn=item.kino_kbn)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache([item.id for item in data.items])
     return get_user_menu_visibility(db, menu_id)
