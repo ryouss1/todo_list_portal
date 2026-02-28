@@ -1,5 +1,5 @@
-from portal_core.models.role import Role, RolePermission, UserRole
 from portal_core.models.menu import Menu, RoleMenu, UserMenu
+from portal_core.models.role import Role, RolePermission, UserRole
 
 
 def test_role_model_create(db_session):
@@ -49,5 +49,15 @@ def test_role_menu_model(db_session):
     db_session.flush()
     rm = RoleMenu(role_id=role.id, menu_id=menu.id, kino_kbn=1)
     db_session.add(rm)
+    db_session.flush()
+    # no error = success
+
+
+def test_user_menu_model(db_session, test_user):
+    menu = Menu(name="um_page", label="UM", path="/um", sort_order=0)
+    db_session.add(menu)
+    db_session.flush()
+    um = UserMenu(user_id=test_user.id, menu_id=menu.id, kino_kbn=1)
+    db_session.add(um)
     db_session.flush()
     # no error = success
