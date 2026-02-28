@@ -56,13 +56,26 @@ def get_current_user_id(request: Request, db: Session = Depends(get_db)) -> int:
 
 
 def require_admin(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)) -> int:
-    """Require admin role. Raises 403 for non-admin users."""
+    """Require admin role or wildcard RBAC permission.
+
+    Passes if EITHER condition is met:
+    1. user.role == 'admin' (legacy role-based check)
+    2. has_permission(db, user_id, '*', '*') — RBAC wildcard grant
+
+    This unifies the legacy role check with future-proof RBAC permission check.
+    Raises 403 for users who satisfy neither condition.
+    """
+    from portal_core.crud.role import has_permission
     from portal_core.models.user import User
 
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.role != UserRole.ADMIN:
+    if not user:
         raise ForbiddenError("Admin access required")
-    return user_id
+    if user.role == UserRole.ADMIN:
+        return user_id
+    if has_permission(db, user_id, "*", "*"):
+        return user_id
+    raise ForbiddenError("Admin access required")
 
 
 def require_permission(resource: str, action: str) -> Callable:
