@@ -38,10 +38,12 @@ from app.models.wiki_category import WikiCategory
 from app.models.wiki_page import WikiPage
 from app.models.wiki_tag import WikiTag, wiki_page_tags
 from app.models.wiki_task_link import WikiPageTask, wiki_page_task_items
+from portal_core.models.department import Department
 
 __all__ = [
     # Core models
     "User",
+    "Department",
     "LoginAttempt",
     "AuthAuditLog",
     "OAuthProvider",

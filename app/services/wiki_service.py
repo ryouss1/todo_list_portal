@@ -146,7 +146,7 @@ def _check_visibility(page: WikiPage, user_id: int, is_admin: bool, db: Session)
 
     Visibility values:
       public  – all authenticated users
-      local   – same group as page author (or admin / author themselves)
+      local   – same department as page author (or admin / author themselves)
       private – author or admin only
     """
     if is_admin:
@@ -156,7 +156,7 @@ def _check_visibility(page: WikiPage, user_id: int, is_admin: bool, db: Session)
     if page.visibility == WikiPageVisibility.LOCAL:
         if page.author_id == user_id:
             return
-        # Check if user is in same group as the page author
+        # Check if user is in same department as the page author
         if page.author_id is not None:
             from portal_core.models.user import User as UserModel
 

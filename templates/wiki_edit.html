@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki 編集 - {{ app_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
+<style>
+/* 右下の組み込みモード切替ボタンを非表示 */
+.toastui-editor-mode-switch { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="wiki-edit-container"
+     data-slug="{{ slug or '' }}"
+     data-page-id="{{ page_id or '' }}">
+
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <nav aria-label="breadcrumb" id="editor-breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/wiki">Wiki</a></li>
+                <li class="breadcrumb-item active" id="editor-breadcrumb-current">新規ページ</li>
+            </ol>
+        </nav>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" id="btn-toggle-mode" onclick="wikiEditor.toggleEditorMode()">
+                <i class="bi bi-code-slash"></i> Markdown
+            </button>
+            {% if slug %}
+            <button class="btn btn-outline-danger btn-sm" id="btn-delete" onclick="wikiEditor.delete()">
+                <i class="bi bi-trash"></i> 削除
+            </button>
+            {% endif %}
+            <button class="btn btn-outline-secondary btn-sm" id="btn-cancel" onclick="wikiEditor.cancel()">
+                <i class="bi bi-x-lg"></i> キャンセル
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-save" onclick="wikiEditor.save()">
+                <i class="bi bi-check-lg"></i> 保存
+            </button>
+        </div>
+    </div>
+
+    <!-- Title & meta row -->
+    <div class="row g-2 mb-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control" id="editor-title" placeholder="ページタイトル *" maxlength="500">
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="editor-visibility">
+                <option value="local">自部署</option>
+                <option value="public">他部署</option>
+                <option value="private">非公開</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="editor-category">
+                <option value="">カテゴリなし</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="text" class="form-control" id="editor-slug" placeholder="スラッグ (自動)">
+        </div>
+    </div>
+
+    <!-- Tags row -->
+    <div class="mb-3 d-flex flex-wrap gap-1 align-items-center" id="editor-tags-bar">
+        <span class="text-muted small me-1">タグ:</span>
+        <div id="editor-selected-tags" class="d-flex flex-wrap gap-1"></div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="wikiEditor.openTagPicker()">
+            <i class="bi bi-tag"></i> タグ追加
+        </button>
+    </div>
+
+    <!-- Toast UI Editor container -->
+    <div id="tiptap-editor"></div>
+</div>
+
+<!-- Tag Picker Modal -->
+<div class="modal fade" id="tagPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content modal-styled">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="bi bi-tag"></i> タグ選択</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <input type="text" class="form-control form-control-sm mb-2" id="tag-search" placeholder="タグ検索..." oninput="wikiEditor.searchTags(this.value)">
+                <div id="tag-picker-list" class="d-flex flex-wrap gap-1"></div>
+                <hr class="my-2">
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm" id="new-tag-name" placeholder="新しいタグ名">
+                    <button class="btn btn-sm btn-primary" onclick="wikiEditor.createAndAddTag()">作成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Wiki ページリンク挿入モーダル -->
+<div class="modal fade" id="wikiLinkPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content modal-styled">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="bi bi-journal-bookmark"></i> Wiki ページリンク挿入</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <input type="text" class="form-control form-control-sm mb-2"
+                       id="wiki-link-search" placeholder="ページ名で検索..."
+                       oninput="wikiEditor.filterWikiLinkPages(this.value)">
+                <div id="wiki-link-page-list" style="max-height:300px;overflow-y:auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ファイルパス（UNCパス）挿入モーダル -->
+<div class="modal fade" id="filePathModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content modal-styled">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="bi bi-folder2"></i> ファイルパス挿入</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <label class="form-label small text-muted mb-1">Windowsファイルサーバーのパスを入力してください</label>
+                <input type="text" class="form-control form-control-sm font-monospace" id="file-path-input"
+                       placeholder="例: \\server\share\folder"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();wikiEditor.insertFilePath();}">
+                <div class="text-muted small mt-2">
+                    <i class="bi bi-info-circle"></i> 閲覧時にクリップボードコピーボタンが表示されます
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">キャンセル</button>
+                <button class="btn btn-primary btn-sm" onclick="wikiEditor.insertFilePath()">
+                    <i class="bi bi-folder2"></i> 挿入
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ページ削除確認モーダル -->
+<div class="modal fade" id="deletePageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-styled">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle"></i> ページを削除
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">以下のページを削除しますか？<br><span class="text-danger small">この操作は元に戻せません。</span></p>
+                <p class="fw-bold mb-3" id="delete-page-title-display"></p>
+                <div class="alert alert-warning py-2 mb-0 small">
+                    <i class="bi bi-info-circle"></i>
+                    子ページがある場合、子ページは親なし（ルート）に昇格します。
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">キャンセル</button>
+                <button class="btn btn-danger btn-sm" id="btn-confirm-delete" onclick="wikiEditor.confirmDelete()">
+                    <i class="bi bi-trash"></i> 削除する
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script src="/static/js/wiki.js?v=5"></script>
+<script>
+    const wikiEditor = new WikiEditor();
+    wikiEditor.init().catch(e => {
+        console.error("Wiki editor init failed:", e);
+        const editorEl = document.getElementById("tiptap-editor");
+        if (editorEl) {
+            editorEl.innerHTML = `<div class="alert alert-danger m-3">エディタの初期化に失敗しました: ${escapeHtml(e.message)}</div>`;
+        }
+    });
+</script>
+{% endblock %}

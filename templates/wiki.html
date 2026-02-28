@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Wiki - {{ app_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi bi-book"></i> Wiki</h4>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm" onclick="wikiApp.openCategoryModal()">
+            <i class="bi bi-folder-plus"></i> カテゴリ管理
+        </button>
+        <a href="/wiki/new" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i> 新規ページ
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Left: Tree sidebar -->
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-header py-2 d-flex align-items-center justify-content-between">
+                <span class="fw-semibold small">ページ一覧</span>
+                <div class="d-flex gap-1">
+                    <select class="form-select form-select-sm w-auto" id="filter-category" onchange="wikiApp.filterByCategory(this.value)">
+                        <option value="">すべて</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body p-2" id="wiki-tree">
+                <div class="text-muted text-center py-3 small">読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Page list -->
+    <div class="col-md-9">
+        <!-- Tag filter bar -->
+        <div class="mb-2 d-flex flex-wrap gap-1 align-items-center" id="tag-filter-bar">
+            <span class="text-muted small me-1">タグ:</span>
+            <div id="tag-filter-list" class="d-flex flex-wrap gap-1"></div>
+        </div>
+
+        <div id="wiki-pages-container">
+            <div class="text-muted text-center py-5">読み込み中...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content modal-styled">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder"></i> カテゴリ管理</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="category-list" class="mb-3"></div>
+                <hr>
+                <h6 class="small fw-semibold">新しいカテゴリ</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="text" class="form-control form-control-sm" id="new-cat-name" placeholder="名前">
+                    </div>
+                    <div class="col-3">
+                        <input type="color" class="form-control form-control-sm form-control-color w-100" id="new-cat-color" value="#6c757d">
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-primary btn-sm w-100" onclick="wikiApp.createCategory()">追加</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/wiki.js"></script>
+<script>
+    const wikiApp = new WikiApp();
+    wikiApp.init();
+</script>
+{% endblock %}
