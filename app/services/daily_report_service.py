@@ -1,10 +1,12 @@
 import logging
 from datetime import date
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.config import DEFAULT_TASK_CATEGORY_ID
 from app.core.exceptions import NotFoundError
+from app.core.utils import seconds_to_hm
 from app.crud import daily_report as crud_report
 from app.models.daily_report import DailyReport
 from app.schemas.daily_report import DailyReportCreate, DailyReportUpdate
@@ -55,3 +57,31 @@ def delete_report(db: Session, report_id: int, user_id: int) -> None:
     report = get_own_report(db, report_id, user_id)
     crud_report.delete_report(db, report)
     logger.info("Report deleted: id=%d", report_id)
+
+
+def create_report_from_task(db: Session, task: Any, user_id: int, report_date: date) -> DailyReport:
+    """Hook: create a DailyReport from a completed Task (flush-only, no standalone commit).
+
+    Registered in main.py via task_service.register_on_task_done().
+    """
+    time_min = task.total_seconds // 60
+    hours, mins = seconds_to_hm(task.total_seconds)
+    time_str = f"{hours}h {mins}m" if task.total_seconds > 0 else ""
+    work_content = task.title
+    if time_str:
+        work_content += f" ({time_str})"
+    if task.description:
+        work_content += f"\n{task.description}"
+    data = DailyReportCreate(
+        report_date=report_date,
+        category_id=task.category_id or DEFAULT_TASK_CATEGORY_ID,
+        task_name=task.title,
+        backlog_ticket_id=task.backlog_ticket_id,
+        time_minutes=time_min,
+        work_content=work_content,
+    )
+    report = DailyReport(user_id=user_id, **data.model_dump())
+    db.add(report)
+    db.flush()
+    logger.info("Report created from task: task_id=%s, date=%s", getattr(task, "id", "?"), report_date)
+    return report

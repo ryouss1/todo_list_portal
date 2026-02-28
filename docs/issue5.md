@@ -10,11 +10,11 @@
 
 ## 未解決一覧
 
-| ID | 概要 | 優先度 | 種別 |
-|----|------|--------|------|
-| [ISSUE-5-01](#issue-5-01) | Task → DailyReport 密結合 | 高 | 技術的負債 |
-| [ISSUE-5-02](#issue-5-02) | Log → Alert 密結合 | 高 | 技術的負債 |
-| [ISSUE-5-03](#issue-5-03) | ページルート登録の拡張性欠如 | 低 | 技術的負債 |
+| ID | 概要 | 優先度 | 種別 | ステータス |
+|----|------|--------|------|-----------|
+| [ISSUE-5-01](#issue-5-01) | Task → DailyReport 密結合 | 高 | 技術的負債 | ✅ 解決済み |
+| [ISSUE-5-02](#issue-5-02) | Log → Alert 密結合 | 高 | 技術的負債 | ✅ 解決済み |
+| [ISSUE-5-03](#issue-5-03) | ページルート登録の拡張性欠如 | 低 | 技術的負債 | 未解決 |
 
 ---
 
@@ -23,11 +23,15 @@
 **元ID**: ISSUE-2-03
 **概要**: Task → DailyReport の密結合（技術的負債）
 **優先度**: 高
-**ステータス**: 未解決
+**ステータス**: ✅ 解決済み（2026-02-28）
 
-### 問題
+### 解決内容
 
-`app/services/task_service.py` の `done_task()` が `daily_report` 関連の CRUD・モデル・スキーマを直接インポートしている。
+コールバック/フック方式を実装。`task_service.py` から `DailyReport` 関連インポートをすべて除去し、`register_on_task_done()` フック登録APIを追加。`daily_report_service.py` に `create_report_from_task()` フック関数を追加し、`main.py` で登録。
+
+### 問題（解決前）
+
+`app/services/task_service.py` の `done_task()` が `daily_report` 関連の CRUD・モデル・スキーマを直接インポートしていた。
 
 ```python
 # task_service.py 内
@@ -85,11 +89,15 @@ register_on_task_done(create_report_from_task)
 **元ID**: ISSUE-2-04
 **概要**: Log → Alert 密結合（技術的負債）
 **優先度**: 高
-**ステータス**: 未解決
+**ステータス**: ✅ 解決済み（2026-02-28）
 
-### 問題
+### 解決内容
 
-`app/services/log_source_service.py`（または `app/routers/api_logs.py`）が Alert の CRUD・モデルを直接インポートしてアラートを生成している。
+コールバック/フック方式を実装。`log_source_service.py` の `scan_source()` 内の deferred inline Alert インポートをすべて除去し、`register_on_change_detected()` フック登録APIを追加。`alert_service.py` に `create_alert_from_scan()` フック関数を追加し、`main.py` で登録。
+
+### 問題（解決前）
+
+`app/services/log_source_service.py`（または `app/routers/api_logs.py`）が Alert の CRUD・モデルを直接インポートしてアラートを生成していた。
 
 ```python
 # log_source_service.py 内
@@ -206,10 +214,10 @@ portal.register_router(wiki_pages.router)
 
 ## 対応方針サマリー
 
-| ID | 対応方針 | 対応時期の目安 |
-|----|----------|--------------|
-| ISSUE-5-01 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 |
-| ISSUE-5-02 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 |
-| ISSUE-5-03 | 機能別ページルーター方式に移行 | 新機能追加時に順次対応 |
+| ID | 対応方針 | 対応時期の目安 | ステータス |
+|----|----------|--------------|-----------|
+| ISSUE-5-01 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 | ✅ 完了 |
+| ISSUE-5-02 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 | ✅ 完了 |
+| ISSUE-5-03 | 機能別ページルーター方式に移行 | 新機能追加時に順次対応 | 未対応 |
 
-ISSUE-5-01 と ISSUE-5-02 は同一パターンの問題であるため、コールバック/フック方式の基盤を共通化して一括対応することが効率的。
+ISSUE-5-01 と ISSUE-5-02 は同一パターンの問題であるため、コールバック/フック方式の基盤を共通化して一括対応した。

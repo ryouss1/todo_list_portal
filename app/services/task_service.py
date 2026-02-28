@@ -1,23 +1,33 @@
 import logging
 from datetime import date, datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.config import DEFAULT_TASK_CATEGORY_ID
 from app.constants import ItemStatus, TaskStatus
 from app.core.exceptions import ConflictError, NotFoundError
-from app.core.utils import parse_hhmm_to_utc, seconds_to_hm
-from app.crud import daily_report as crud_report
+from app.core.utils import parse_hhmm_to_utc
 from app.crud import task as crud_task
 from app.crud import task_list_item as crud_tli
-from app.models.daily_report import DailyReport
 from app.models.task import Task
 from app.models.task_time_entry import TaskTimeEntry
-from app.schemas.daily_report import DailyReportCreate
 from app.schemas.task import BatchDoneItem, BatchDoneResult, TaskCreate, TaskUpdate
 
 logger = logging.getLogger("app.services.task")
+
+# --- Hook registry: task completion callbacks ---
+
+_on_task_done_hooks: List[Callable] = []
+
+
+def register_on_task_done(hook: Callable) -> None:
+    """Register a hook called when a task is completed via done_task() or batch_done().
+
+    Hook signature: (db: Session, task: Task, user_id: int, report_date: date) -> Optional[Any]
+    The hook should return the created report model (or None if not applicable).
+    Registered hooks are called only when task.report is True.
+    """
+    _on_task_done_hooks.append(hook)
 
 
 def list_tasks(db: Session, user_id: int, limit: int = 200, offset: int = 0) -> List[Task]:
@@ -148,7 +158,7 @@ def stop_timer(db: Session, task_id: int, user_id: int) -> TaskTimeEntry:
     return entry
 
 
-def done_task(db: Session, task_id: int, user_id: int) -> Optional[DailyReport]:
+def done_task(db: Session, task_id: int, user_id: int) -> Optional[Any]:
     task = get_task(db, task_id, user_id)
 
     # Stop running timer if any
@@ -156,11 +166,14 @@ def done_task(db: Session, task_id: int, user_id: int) -> Optional[DailyReport]:
     if active:
         crud_task.stop_timer(db, task)
 
-    # Create daily report if report flag is set
+    # Create daily report if report flag is set (via registered hooks)
     report = None
     if task.report:
-        data = _build_daily_report_data(task, date.today())
-        report = crud_report.create_report(db, user_id, data)
+        for hook in _on_task_done_hooks:
+            result = hook(db, task, user_id, date.today())
+            if result is not None:
+                report = result
+                break
 
     # Accumulate time to source TaskListItem if linked
     source_item_id = task.source_item_id
@@ -183,26 +196,6 @@ def done_task(db: Session, task_id: int, user_id: int) -> Optional[DailyReport]:
 def get_time_entries(db: Session, task_id: int, user_id: int) -> List[TaskTimeEntry]:
     get_task(db, task_id, user_id)  # Validate task exists and belongs to user
     return crud_task.get_time_entries(db, task_id)
-
-
-def _build_daily_report_data(task: Task, report_date: date) -> DailyReportCreate:
-    """Build DailyReportCreate from a completed task (shared by done_task and batch_done)."""
-    time_min = task.total_seconds // 60
-    hours, mins = seconds_to_hm(task.total_seconds)
-    time_str = f"{hours}h {mins}m" if task.total_seconds > 0 else ""
-    work_content = task.title
-    if time_str:
-        work_content += f" ({time_str})"
-    if task.description:
-        work_content += f"\n{task.description}"
-    return DailyReportCreate(
-        report_date=report_date,
-        category_id=task.category_id or DEFAULT_TASK_CATEGORY_ID,
-        task_name=task.title,
-        backlog_ticket_id=task.backlog_ticket_id,
-        time_minutes=time_min,
-        work_content=work_content,
-    )
 
 
 def _get_task_local_date(task: Task) -> date:
@@ -241,15 +234,14 @@ def batch_done(db: Session, user_id: int, items: List[BatchDoneItem]) -> List[Ba
         if task.id in active_entries:
             crud_task.stop_timer_at(db, task, end_time_utc)
 
-        # Create daily report if report flag is set
+        # Create daily report if report flag is set (via registered hooks, flush-only)
         report_id = None
         if task.report:
-            data = _build_daily_report_data(task, task_date)
-            # Use flush-only to avoid partial commits
-            report = DailyReport(user_id=user_id, **data.model_dump())
-            db.add(report)
-            db.flush()
-            report_id = report.id
+            for hook in _on_task_done_hooks:
+                result = hook(db, task, user_id, task_date)
+                if result is not None:
+                    report_id = result.id
+                    break
 
         # Capture source info before delete
         source_item_id = task.source_item_id

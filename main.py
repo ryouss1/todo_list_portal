@@ -20,10 +20,18 @@ from app.routers.api_todos import router as api_todos_router
 from app.routers.api_wiki import category_router as api_wiki_category_router
 from app.routers.api_wiki import router as api_wiki_router
 from app.routers.api_wiki import tag_router as api_wiki_tag_router
+from app.services.alert_service import create_alert_from_scan
+from app.services.daily_report_service import create_report_from_task
 from app.services.log_scanner import start_scanner, stop_scanner
+from app.services.log_source_service import register_on_change_detected
 from app.services.site_checker import start_checker, stop_checker
+from app.services.task_service import register_on_task_done
 from app.services.websocket_manager import alert_ws_manager, log_ws_manager, presence_ws_manager, site_ws_manager
 from portal_core.app_factory import NavItem, PortalApp
+
+# --- Register service hooks ---
+register_on_task_done(create_report_from_task)
+register_on_change_detected(create_alert_from_scan)
 
 # --- Build application ---
 config = AppConfig()

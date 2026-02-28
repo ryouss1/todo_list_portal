@@ -1,6 +1,6 @@
 import logging
 import string
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -146,6 +146,62 @@ def _safe_substitute(template_str: str, data: Dict[str, Any]) -> str:
         return string.Template(converted).safe_substitute(safe_data)
     except (ValueError, KeyError):
         return template_str
+
+
+def create_alert_from_scan(
+    db: Session,
+    source: Any,
+    changed_paths: list,
+    all_read_entries: list,
+) -> Optional[dict]:
+    """Hook: create an alert when log source file changes are detected.
+
+    Registered in main.py via log_source_service.register_on_change_detected().
+    Returns alert broadcast dict for WebSocket notification, or None on failure.
+    """
+    from app.config import LOG_ALERT_CONTENT_DISPLAY_LINES
+    from app.constants import AlertSeverity as AlertSeverityConst
+
+    try:
+        total_new = sum(len(cp.get("new_files", [])) for cp in changed_paths)
+        total_updated = sum(len(cp.get("updated_files", [])) for cp in changed_paths)
+
+        detail_lines = []
+        for cp in changed_paths:
+            all_files = cp["new_files"] + cp["updated_files"]
+            file_list = ", ".join(all_files)
+            detail_lines.append(f"{cp['base_path']}: {file_list}")
+        detail_text = "\n".join(detail_lines) if detail_lines else ""
+
+        alert_msg = f"Source '{source.name}': {total_new} new, {total_updated} updated files.\n{detail_text}"
+
+        if all_read_entries:
+            alert_msg += "\n\n--- Log Content ---\n"
+            content_lines = [e["message"] for e in all_read_entries[-LOG_ALERT_CONTENT_DISPLAY_LINES:]]
+            alert_msg += "\n".join(content_lines)
+
+        alert_data = AlertCreate(
+            title=f"[{source.name}] File changes detected",
+            message=alert_msg,
+            severity=AlertSeverityConst.WARNING,
+            source=f"log_source:{source.id}",
+        )
+        alert = crud_alert.create_alert(db, alert_data)
+        logger.info("Alert created from scan: source=%s, id=%d", source.name, alert.id)
+        return {
+            "id": alert.id,
+            "title": alert.title,
+            "message": alert.message,
+            "severity": alert.severity,
+            "source": alert.source,
+            "rule_id": alert.rule_id,
+            "is_active": alert.is_active,
+            "acknowledged": alert.acknowledged,
+            "created_at": alert.created_at.isoformat(),
+        }
+    except Exception as e:
+        logger.warning("Failed to create scan alert: %s", e)
+        return None
 
 
 async def _broadcast_alert(alert: Alert) -> None:
