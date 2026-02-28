@@ -44,41 +44,77 @@ def delete_menu(db: Session, menu_id: int) -> None:
 def get_visible_menus_for_user(db: Session, user_id: int) -> List[Menu]:
     """Return menus visible to the user based on permissions.
 
-    Visibility priority:
-    1. Per-user UserMenu override (highest)
-    2. No restriction required = visible to all authenticated users
-    3. Admin legacy role bypass
-    4. Role-based permission (required_resource + required_action)
+    Visibility priority (highest to lowest):
+    1. per-user UserMenu override (kino_kbn=1 show, 0=hide)
+    2. per-department DepartmentMenu override (user's department_id)
+    3. per-role RoleMenu override (any role assigned to user, OR=1 wins)
+    4. required_resource is None → visible to all authenticated users
+    5. admin legacy role bypass
+    6. Role-based permission check (role_permissions table)
     """
     from portal_core.crud.role import has_permission
+    from portal_core.models.menu import DepartmentMenu, RoleMenu
+    from portal_core.models.role import UserRole
 
     user = db.query(User).filter(User.id == user_id).first()
     is_admin = user and user.role == UserRoleEnum.ADMIN
+    dept_id = user.department_id if user else None
 
     all_menus = db.query(Menu).filter(Menu.is_active.is_(True)).order_by(Menu.sort_order, Menu.name).all()
 
-    # Pre-fetch user overrides for efficiency
+    # Pre-fetch all overrides for efficiency
     user_overrides = {um.menu_id: um.kino_kbn for um in db.query(UserMenu).filter(UserMenu.user_id == user_id).all()}
+
+    dept_overrides: dict = {}
+    if dept_id is not None:
+        dept_overrides = {
+            dm.menu_id: dm.kino_kbn
+            for dm in db.query(DepartmentMenu).filter(DepartmentMenu.department_id == dept_id).all()
+        }
+
+    # Collect role_ids for this user
+    user_role_ids = [ur.role_id for ur in db.query(UserRole).filter(UserRole.user_id == user_id).all()]
+    role_show_menus: set = set()
+    role_hide_menus: set = set()
+    if user_role_ids:
+        for rm in db.query(RoleMenu).filter(RoleMenu.role_id.in_(user_role_ids)).all():
+            if rm.kino_kbn == 1:
+                role_show_menus.add(rm.menu_id)
+            else:
+                role_hide_menus.add(rm.menu_id)
 
     visible = []
     for menu in all_menus:
-        # 1. Per-user override takes precedence
+        # 1. Per-user override takes absolute precedence
         if menu.id in user_overrides:
             if user_overrides[menu.id] == 1:
                 visible.append(menu)
             continue
 
-        # 2. No restriction = visible to all
+        # 2. Department-level override
+        if menu.id in dept_overrides:
+            if dept_overrides[menu.id] == 1:
+                visible.append(menu)
+            continue
+
+        # 3. Role-level override (OR evaluation — any role with kino_kbn=1 wins)
+        if menu.id in role_show_menus:
+            visible.append(menu)
+            continue
+        if menu.id in role_hide_menus:
+            continue
+
+        # 4. No restriction → visible to all authenticated users
         if menu.required_resource is None:
             visible.append(menu)
             continue
 
-        # 3. Admin bypass
+        # 5. Admin bypass
         if is_admin:
             visible.append(menu)
             continue
 
-        # 4. Check role-based permission
+        # 6. Role-based permission check
         required_action = menu.required_action or "view"
         if has_permission(db, user_id, menu.required_resource, required_action):
             visible.append(menu)

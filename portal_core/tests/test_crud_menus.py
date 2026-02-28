@@ -135,3 +135,68 @@ def test_department_menu_model_can_be_created(db_session):
     fetched = db_session.query(DepartmentMenu).filter(DepartmentMenu.menu_id == menu.id).first()
     assert fetched is not None
     assert fetched.kino_kbn == 1
+
+
+def test_role_menu_override_grants_restricted_menu(db_session, other_user):
+    """role_menus kino_kbn=1 makes a restricted menu visible to user via role."""
+    from portal_core.crud.menu import create_menu, get_visible_menus_for_user
+    from portal_core.crud.role import create_role
+    from portal_core.models.menu import RoleMenu
+    from portal_core.models.role import UserRole
+    from portal_core.schemas.menu import MenuCreate
+    from portal_core.schemas.role import RoleCreate
+
+    menu = create_menu(
+        db_session,
+        MenuCreate(name="role_vis_menu", label="R", path="/r-vis", required_resource="r", sort_order=0),
+    )
+    role = create_role(db_session, RoleCreate(name="role_vis_test", display_name="Test"))
+    db_session.flush()
+    db_session.add(RoleMenu(role_id=role.id, menu_id=menu.id, kino_kbn=1))
+    db_session.add(UserRole(user_id=other_user.id, role_id=role.id))
+    db_session.flush()
+
+    menus = get_visible_menus_for_user(db_session, other_user.id)
+    assert any(m.name == "role_vis_menu" for m in menus)
+
+
+def test_department_menu_override_grants_restricted_menu(db_session, other_user):
+    """department_menus kino_kbn=1 makes a restricted menu visible to dept members."""
+    from portal_core.crud.menu import create_menu, get_visible_menus_for_user
+    from portal_core.models.department import Department
+    from portal_core.models.menu import DepartmentMenu
+    from portal_core.schemas.menu import MenuCreate
+
+    dept = Department(name="dept_vis_test")
+    db_session.add(dept)
+    menu = create_menu(
+        db_session,
+        MenuCreate(name="dept_vis_menu", label="D", path="/d-vis", required_resource="d", sort_order=0),
+    )
+    db_session.flush()
+    other_user.department_id = dept.id
+    db_session.add(DepartmentMenu(department_id=dept.id, menu_id=menu.id, kino_kbn=1))
+    db_session.flush()
+
+    menus = get_visible_menus_for_user(db_session, other_user.id)
+    assert any(m.name == "dept_vis_menu" for m in menus)
+
+
+def test_user_menu_overrides_department_menu(db_session, other_user):
+    """user_menus kino_kbn=0 hides a menu even if department_menus allows it."""
+    from portal_core.crud.menu import create_menu, get_visible_menus_for_user
+    from portal_core.models.department import Department
+    from portal_core.models.menu import DepartmentMenu, UserMenu
+    from portal_core.schemas.menu import MenuCreate
+
+    dept = Department(name="dept_override_test")
+    db_session.add(dept)
+    menu = create_menu(db_session, MenuCreate(name="user_over_dept_menu", label="X", path="/uod", sort_order=0))
+    db_session.flush()
+    other_user.department_id = dept.id
+    db_session.add(DepartmentMenu(department_id=dept.id, menu_id=menu.id, kino_kbn=1))
+    db_session.add(UserMenu(user_id=other_user.id, menu_id=menu.id, kino_kbn=0))
+    db_session.flush()
+
+    menus = get_visible_menus_for_user(db_session, other_user.id)
+    assert not any(m.name == "user_over_dept_menu" for m in menus)
