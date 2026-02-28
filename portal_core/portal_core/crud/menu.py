@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from portal_core.core.constants import UserRole as UserRoleEnum
-from portal_core.models.menu import Menu, RoleMenu, UserMenu
+from portal_core.models.menu import DepartmentMenu, Menu, RoleMenu, UserMenu
 from portal_core.models.user import User
 from portal_core.schemas.menu import MenuCreate, MenuUpdate
 
@@ -38,6 +38,7 @@ def update_menu(db: Session, menu_id: int, data: MenuUpdate) -> Optional[Menu]:
 def delete_menu(db: Session, menu_id: int) -> None:
     db.query(RoleMenu).filter(RoleMenu.menu_id == menu_id).delete()
     db.query(UserMenu).filter(UserMenu.menu_id == menu_id).delete()
+    db.query(DepartmentMenu).filter(DepartmentMenu.menu_id == menu_id).delete()
     db.query(Menu).filter(Menu.id == menu_id).delete()
 
 
@@ -53,7 +54,7 @@ def get_visible_menus_for_user(db: Session, user_id: int) -> List[Menu]:
     6. Role-based permission check (role_permissions table)
     """
     from portal_core.crud.role import has_permission
-    from portal_core.models.menu import DepartmentMenu, RoleMenu
+    from portal_core.models.menu import DepartmentMenu
     from portal_core.models.role import UserRole
 
     user = db.query(User).filter(User.id == user_id).first()
@@ -98,6 +99,7 @@ def get_visible_menus_for_user(db: Session, user_id: int) -> List[Menu]:
             continue
 
         # 3. Role-level override (OR evaluation — any role with kino_kbn=1 wins)
+        # show wins over hide when menu_id appears in both sets (OR-grants semantics)
         if menu.id in role_show_menus:
             visible.append(menu)
             continue
