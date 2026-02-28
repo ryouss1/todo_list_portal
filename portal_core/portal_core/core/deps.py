@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
@@ -63,3 +63,29 @@ def require_admin(user_id: int = Depends(get_current_user_id), db: Session = Dep
     if not user or user.role != UserRole.ADMIN:
         raise ForbiddenError("Admin access required")
     return user_id
+
+
+def require_permission(resource: str, action: str) -> Callable:
+    """Factory returning a FastAPI dependency that checks resource+action permission.
+
+    Precedence:
+    1. Legacy admin role (user.role == 'admin') — always passes (backward compat)
+    2. has_permission() via user_roles + role_permissions
+    """
+
+    def _check(
+        user_id: int = Depends(get_current_user_id),
+        db: Session = Depends(get_db),
+    ) -> int:
+        from portal_core.crud.role import has_permission
+        from portal_core.models.user import User
+
+        user = db.query(User).filter(User.id == user_id).first()
+        # Legacy admin bypass
+        if user and user.role == UserRole.ADMIN:
+            return user_id
+        if not has_permission(db, user_id, resource, action):
+            raise ForbiddenError(f"Permission required: {resource}:{action}")
+        return user_id
+
+    return _check
