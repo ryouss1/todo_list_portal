@@ -115,6 +115,7 @@ def get_menu_by_id(menu_id: int, db: Session = Depends(get_db), _: int = Depends
 def update_menu(
     menu_id: int,
     data: MenuUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
@@ -123,14 +124,25 @@ def update_menu(
         raise NotFoundError("Menu not found")
     db.commit()
     db.refresh(menu)
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache(None)
     return menu
 
 
 @router.delete("/{menu_id}", status_code=204)
-def delete_menu(menu_id: int, db: Session = Depends(get_db), _: int = Depends(require_admin)):
+def delete_menu(
+    menu_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    _: int = Depends(require_admin),
+):
     _get_menu_or_404(db, menu_id)
     crud_menu.delete_menu(db, menu_id)
     db.commit()
+    portal = getattr(request.app.state, "portal", None)
+    if portal:
+        portal.invalidate_nav_cache(None)
 
 
 # ----- Admin: role visibility -----
