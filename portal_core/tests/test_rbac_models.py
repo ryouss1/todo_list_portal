@@ -32,7 +32,7 @@ def test_user_role_model(db_session, test_user):
 
 
 def test_menu_model_create(db_session):
-    menu = Menu(name="dashboard", label="Dashboard", path="/", icon="bi-speedometer2", sort_order=0)
+    menu = Menu(name="test_menu_unique", label="Test Menu", path="/test-menu", icon="bi-gear", sort_order=99)
     db_session.add(menu)
     db_session.flush()
     assert menu.id is not None

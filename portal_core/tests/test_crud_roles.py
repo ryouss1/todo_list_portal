@@ -8,10 +8,12 @@ def test_create_and_get_role(db_session):
     assert fetched.name == "get_role"
 
 
-def test_get_roles_empty(db_session):
+def test_get_roles_contains_system_admin(db_session):
     from portal_core.crud.role import get_roles
 
-    assert get_roles(db_session) == []
+    roles = get_roles(db_session)
+    names = [r.name for r in roles]
+    assert "system_admin" in names
 
 
 def test_get_role_by_name(db_session):

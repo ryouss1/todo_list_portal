@@ -88,6 +88,7 @@ class PortalApp:
 
         # Registration lists
         self._nav_items: List[NavItem] = []
+        self._seed_hooks_nav: List[NavItem] = []
         self._startup_hooks: List[Callable] = []
         self._shutdown_hooks: List[Callable] = []
         self._ws_handlers: Dict[str, WebSocketManager] = {}
@@ -125,8 +126,33 @@ class PortalApp:
         async def lifespan(app: FastAPI):
             logger.info("Application starting up...")
             seed_default_user()
+            from portal_core.init_db import seed_default_roles
+
+            seed_default_roles()
             for hook in portal._seed_hooks:
                 hook()
+
+            # NavItem → menus DB sync
+            from portal_core.crud.menu import upsert_menu_from_nav_item as _upsert_menu
+            from portal_core.database import SessionLocal
+
+            _db = SessionLocal()
+            try:
+                for nav in portal._seed_hooks_nav:
+                    name = nav.path.lstrip("/").replace("/", "_") or "dashboard"
+                    _upsert_menu(
+                        _db,
+                        name=name,
+                        label=nav.label,
+                        path=nav.path,
+                        icon=getattr(nav, "icon", None),
+                        sort_order=getattr(nav, "sort_order", 0),
+                        badge_id=getattr(nav, "badge_id", None),
+                    )
+                _db.commit()
+            finally:
+                _db.close()
+
             for hook in portal._startup_hooks:
                 await hook(app)
             logger.info("Application startup complete.")
@@ -141,8 +167,12 @@ class PortalApp:
         self._register_core_routers()
 
         # Core nav items
-        self._nav_items.append(NavItem("Dashboard", "/", "bi-speedometer2", sort_order=0))
-        self._nav_items.append(NavItem("Users", "/users", "bi-people-fill", sort_order=900))
+        _dashboard = NavItem("Dashboard", "/", "bi-speedometer2", sort_order=0)
+        _users = NavItem("Users", "/users", "bi-people-fill", sort_order=900)
+        self._nav_items.append(_dashboard)
+        self._nav_items.append(_users)
+        self._seed_hooks_nav.append(_dashboard)
+        self._seed_hooks_nav.append(_users)
 
     def _setup_middleware(self):
         """Register session, auth, CSRF, and locale middleware."""
@@ -214,6 +244,7 @@ class PortalApp:
     def register_nav_item(self, item: NavItem):
         """Add a navigation bar item."""
         self._nav_items.append(item)
+        self._seed_hooks_nav.append(item)
 
     def register_page(self, path: str, template: str, **extra_context):
         """Register an HTML page route."""

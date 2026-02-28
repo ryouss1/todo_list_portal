@@ -45,3 +45,52 @@ def seed_default_user():
             logger.info("Default user already exists.")
     finally:
         db.close()
+
+
+def seed_default_roles(db=None):
+    """Seed system_admin role with wildcard permissions. Idempotent."""
+    from portal_core.models.role import Role, RolePermission
+
+    close_after = False
+    if db is None:
+        db = SessionLocal()
+        close_after = True
+
+    try:
+        admin_role = db.query(Role).filter(Role.name == "system_admin").first()
+        if not admin_role:
+            admin_role = Role(
+                name="system_admin",
+                display_name="システム管理者",
+                description="全権限を持つシステム管理者ロール",
+                sort_order=0,
+            )
+            db.add(admin_role)
+            db.flush()
+            logger.info("system_admin role created.")
+
+        wildcard = (
+            db.query(RolePermission)
+            .filter(
+                RolePermission.role_id == admin_role.id,
+                RolePermission.resource == "*",
+                RolePermission.action == "*",
+            )
+            .first()
+        )
+        if not wildcard:
+            db.add(
+                RolePermission(
+                    role_id=admin_role.id,
+                    resource="*",
+                    action="*",
+                    kino_kbn=1,
+                )
+            )
+            logger.info("system_admin wildcard permission created.")
+
+        if close_after:
+            db.commit()
+    finally:
+        if close_after:
+            db.close()

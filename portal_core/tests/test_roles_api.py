@@ -1,7 +1,8 @@
-def test_list_roles_empty(client):
+def test_list_roles_contains_system_admin(client):
     r = client.get("/api/roles/")
     assert r.status_code == 200
-    assert r.json() == []
+    names = [role["name"] for role in r.json()]
+    assert "system_admin" in names
 
 
 def test_create_role(client):
