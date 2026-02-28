@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Logs") }} - Todo List Portal{% endblock %}
+{% block title %}{{ _("Logs") }} - {{ app_title }}{% endblock %}
 {% block content %}
 
 <!-- ===== Section 1: Source Dashboard (Table) ===== -->
@@ -119,7 +119,7 @@
                                 <div class="col-6">
                                     <div class="stl-field">
                                         <label class="stl-label"><i class="bi bi-people"></i> {{ _("Group") }}</label>
-                                        <select class="form-select form-select-sm" id="source-group-id" required>
+                                        <select class="form-select form-select-sm" id="source-department-id" required>
                                             <option value="">{{ _("Select Group") }}</option>
                                         </select>
                                     </div>

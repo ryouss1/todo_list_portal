@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Calendar") }} - Todo List Portal{% endblock %}
+{% block title %}{{ _("Calendar") }} - {{ app_title }}{% endblock %}
 {% block content %}
 <link href="/static/css/calendar.css?v=5" rel="stylesheet">
 
@@ -14,7 +14,7 @@
 
         <div class="sidebar-section">
             <h6>{{ _("Users") }}</h6>
-            <select id="group-filter" class="form-select form-select-sm mb-2" onchange="filterByGroup()">
+            <select id="department-filter" class="form-select form-select-sm mb-2" onchange="filterByDepartment()">
                 <option value="">{{ _("All") }}</option>
             </select>
             <div id="user-filters"></div>
@@ -108,7 +108,7 @@
                                     <label class="evt-label"><i class="bi bi-play-circle"></i> {{ _("Start") }}</label>
                                     <div class="d-flex gap-1">
                                         <input type="date" class="form-control form-control-sm evt-date" id="evt-start-date">
-                                        <input type="time" class="form-control form-control-sm evt-time" id="evt-start-time" value="09:00">
+                                        <input type="time" class="form-control form-control-sm evt-time" id="evt-start-time" value="09:00" onchange="onStartTimeChange()">
                                     </div>
                                 </div>
                                 <div class="col">
@@ -273,5 +273,5 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ fullcalendar_js_url }}"></script>
-<script src="/static/js/calendar.js?v=9"></script>
+<script src="/static/js/calendar.js?v=11"></script>
 {% endblock %}

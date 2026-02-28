@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ _("Attendance") }} - Todo List Portal{% endblock %}
+{% block title %}{{ _("Attendance") }} - {{ app_title }}{% endblock %}
 {% block content %}
 <h2 class="mb-3">{{ _("Attendance") }}</h2>
 
@@ -34,9 +34,9 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">{{ _("History") }}</h4>
     <div class="d-flex align-items-center gap-2">
-        <input type="month" class="form-control form-control-sm" id="filter-month" style="width:170px;">
-        <button class="btn btn-outline-primary btn-sm" onclick="searchByMonth()">
-            <i class="bi bi-search"></i>
+        <input type="month" class="form-control form-control-sm" id="filter-month" style="width:170px;" onchange="loadHistory()">
+        <button class="btn btn-outline-secondary btn-sm" onclick="resetMonth()" title="{{ _('今月に戻す') }}">
+            <i class="bi bi-calendar-check"></i>
         </button>
         <button class="btn btn-outline-success btn-sm" onclick="downloadExcel()">
             <i class="bi bi-file-earmark-excel"></i> {{ _("Excel") }}
@@ -209,6 +209,47 @@
     </div>
 </div>
 
+<!-- Previous Day Clock-Out Modal -->
+<div class="modal fade" id="prevDayClockOutModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content modal-styled">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-warning"></i> {{ _("前日の退勤が未記録") }}</h5>
+            </div>
+            <div class="modal-body py-2 px-3">
+                <input type="hidden" id="prevday-id">
+                <p class="text-warning small mb-2"><i class="bi bi-info-circle"></i> {{ _("前日の出勤記録に退勤が登録されていません。退勤時刻を入力してください。") }}</p>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-calendar3"></i> {{ _("日付") }}</label>
+                            <p id="prevday-date" class="form-control-plaintext form-control-sm mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stl-field">
+                            <label class="stl-label"><i class="bi bi-box-arrow-in-right"></i> {{ _("Clock In") }}</label>
+                            <p id="prevday-clock-in" class="form-control-plaintext form-control-sm mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stl-field">
+                    <label class="stl-label"><i class="bi bi-box-arrow-right"></i> {{ _("Clock Out") }} *</label>
+                    <input type="time" class="form-control form-control-sm" id="prevday-clock-out">
+                </div>
+                <div class="stl-field">
+                    <label class="stl-label"><i class="bi bi-chat-left-text"></i> {{ _("Note") }}</label>
+                    <input type="text" class="form-control form-control-sm" id="prevday-note">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("後で") }}</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="savePrevDayClockOut()">{{ _("退勤を記録") }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Preset Select Modal -->
 <div class="modal fade" id="presetModal" tabindex="-1">
     <div class="modal-dialog">
@@ -229,5 +270,5 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="/static/js/attendance.js?v=11"></script>
+<script src="/static/js/attendance.js?v=13"></script>
 {% endblock %}

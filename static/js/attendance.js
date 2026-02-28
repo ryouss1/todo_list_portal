@@ -16,6 +16,13 @@ async function loadStatus() {
         clockedIn = data.is_clocked_in;
         currentAttendance = data.current_attendance;
         updateUI();
+        // 前日の退勤未記録チェック
+        if (clockedIn && currentAttendance && !currentAttendance.clock_out) {
+            const today = todayStr();
+            if (currentAttendance.date && currentAttendance.date < today) {
+                openPrevDayClockOutModal();
+            }
+        }
     } catch (e) {
         console.error("[attendance] loadStatus error:", e);
         showToast(e.message || i18n.t("Failed to load status"), "danger");
@@ -213,6 +220,11 @@ function currentMonthStr() {
 }
 
 function searchByMonth() {
+    loadHistory();
+}
+
+function resetMonth() {
+    document.getElementById("filter-month").value = currentMonthStr();
     loadHistory();
 }
 
@@ -551,6 +563,39 @@ function fillEditBreakFromPreset() {
     const container = document.getElementById("edit-breaks");
     container.innerHTML = "";
     addBreakRow(preset.break_start, preset.break_end || "");
+}
+
+// ---- Previous Day Clock-Out Dialog ----
+
+function openPrevDayClockOutModal() {
+    document.getElementById("prevday-id").value = currentAttendance.id;
+    document.getElementById("prevday-date").textContent = currentAttendance.date;
+    document.getElementById("prevday-clock-in").textContent = formatTimeLocal(currentAttendance.clock_in);
+    // プリセットの退勤時刻をデフォルト入力（未ロード時は空欄）
+    const preset = presets.find(p => p.id === userPresetId) || (presets.length > 0 ? presets[0] : null);
+    document.getElementById("prevday-clock-out").value = preset ? preset.clock_out : "";
+    document.getElementById("prevday-note").value = "";
+    new bootstrap.Modal(document.getElementById("prevDayClockOutModal")).show();
+}
+
+async function savePrevDayClockOut() {
+    const id = document.getElementById("prevday-id").value;
+    const clockOut = document.getElementById("prevday-clock-out").value;
+    if (!clockOut) {
+        showToast(i18n.t("Clock Outの時刻を入力してください"), "warning");
+        return;
+    }
+    const note = document.getElementById("prevday-note").value;
+    const payload = { clock_out: clockOut };
+    if (note) payload.note = note;
+    try {
+        await api.put(`/api/attendances/${id}`, payload);
+        bootstrap.Modal.getInstance(document.getElementById("prevDayClockOutModal")).hide();
+        showToast(i18n.t("退勤を記録しました"), "success");
+        loadStatus();
+    } catch (e) {
+        showToast(e.message || i18n.t("退勤の記録に失敗しました"), "danger");
+    }
 }
 
 // Render preset options when modal opens

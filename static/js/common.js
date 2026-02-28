@@ -13,16 +13,6 @@ function formatTime(totalSeconds) {
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-// カテゴリキャッシュ
-let _categoryCache = null;
-
-async function getCategories() {
-    if (!_categoryCache) {
-        _categoryCache = await api.get('/api/task-categories/');
-    }
-    return _categoryCache;
-}
-
 // トースト通知
 function showToast(message, type = 'info') {
     // Create toast container if not exists
