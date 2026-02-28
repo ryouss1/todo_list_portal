@@ -33,10 +33,10 @@ SQLの単体テストも将来行えるようにしてください。
 # Dev server
 python main.py
 
-# Tests (app-specific: ~584 tests)
+# Tests (app-specific: ~598 tests)
 pytest tests/ -q
 
-# Tests (portal_core: ~244 tests)
+# Tests (portal_core: ~248 tests)
 cd portal_core && pytest tests/ -q && cd ..
 
 # Tests (all)
@@ -111,7 +111,7 @@ alembic upgrade head
 - 設計書: @docs/spec_common_separation.md
 - フェーズ1（準備リファクタリング）: ✅ 完了
 - フェーズ2（portal_core パッケージ作成）: ✅ 完了
-- フェーズ3（テスト分離・安定化）: ✅ 完了（コア244テスト + アプリ584テスト = 828テスト）
+- フェーズ3（テスト分離・安定化）: ✅ 完了（コア244テスト + アプリ590テスト = 834テスト）
 - テンプレート重複解消: ✅ 完了（portal_core マスター化、アプリ側の重複5ファイル削除）
 - エントリーポイント: `main.py` → `PortalApp(config).setup_core()` → `register_*()` → `build()`
 - 後方互換: `app/` 配下に再エクスポートshimを配置、既存の `from app.xxx import` は全て動作継続

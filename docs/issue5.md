@@ -17,7 +17,7 @@
 | [ISSUE-5-03](#issue-5-03) | ページルート登録の拡張性欠如 | 低 | 技術的負債 | 未解決 |
 | [ISSUE-5-04](#issue-5-04) | NavItem と menus DB の二重管理 | 低 | 技術的負債 | 未解決 |
 | [ISSUE-5-05](#issue-5-05) | `require_admin` と `require_permission` の並存 | 低 | 技術的負債 | 未解決 |
-| [ISSUE-5-06](#issue-5-06) | `_render()` でのリクエストごとの DB セッション生成 | 低 | 技術的負債 | 未解決 |
+| [ISSUE-5-06](#issue-5-06) | `_render()` でのリクエストごとの DB セッション生成 | 低 | 技術的負債 | ✅ 解決済み |
 
 ---
 
@@ -263,11 +263,15 @@ portal.register_router(wiki_pages.router)
 
 **概要**: `_render()` でのリクエストごとの DB セッション生成
 **優先度**: 低
-**ステータス**: 未解決（暫定措置中）
+**ステータス**: ✅ 解決済み（2026-02-28）
 
-### 問題
+### 解決内容
 
-`app_factory.py` の `_get_filtered_nav_items()` がリクエストごとに `SessionLocal()` を新規取得してメニュー権限を照会している。高負荷時のコネクションプール枯渇リスクがある。
+`_get_filtered_nav_items()` に per-user 30秒 TTL キャッシュを実装。`_nav_cache: dict` を `PortalApp.__init__` で初期化し、`time.monotonic()` ベースで有効期限を管理。同一ユーザーは 30秒以内であれば DB クエリを発行しない。別ユーザー・TTL 期限切れ時のみ `_fetch_nav_items_for_user()` 経由でセッションを取得。
+
+### 問題（解決前）
+
+`app_factory.py` の `_get_filtered_nav_items()` がリクエストごとに `SessionLocal()` を新規取得してメニュー権限を照会していた。高負荷時のコネクションプール枯渇リスクがあった。
 
 ### 影響範囲
 
@@ -288,7 +292,7 @@ portal.register_router(wiki_pages.router)
 | ISSUE-5-03 | 機能別ページルーター方式に移行 | 新機能追加時に順次対応 | 未対応 |
 | ISSUE-5-04 | `register_nav_item()` 廃止、DB 管理に統一 | 次フェーズのナビゲーション整理時 | 未対応 |
 | ISSUE-5-05 | `require_admin` を RBAC 経由に統一 | RBAC 移行完了後 | 未対応 |
-| ISSUE-5-06 | メニュー権限クエリのキャッシュ化 | パフォーマンス問題が顕在化した時点 | 未対応 |
+| ISSUE-5-06 | メニュー権限クエリのキャッシュ化 | パフォーマンス問題が顕在化した時点 | ✅ 完了 |
 
 ISSUE-5-01 と ISSUE-5-02 は同一パターンの問題であるため、コールバック/フック方式の基盤を共通化して一括対応した。
 ISSUE-5-04〜5-06 は RBAC + メニュー管理機能（2026-02-28 実装）に伴い追加された技術的負債。

@@ -277,7 +277,7 @@
 | ✅ 完了 | FTP アクセス | ~~MLSD/LIST フォールバックの手動実装が複雑~~ | **`ftputil`** 5.1.0 導入済み（2026-02-26） |
 | ✅ 完了 | CSRF 対策 | ~~Origin/Referer のみでは限定的~~ | **`fastapi-csrf-protect`** 1.0.7 導入済み（2026-02-27） |
 | ✅ 完了 | メール送信 | ~~smtplib は同期処理（送信中ブロック）~~ | `BackgroundTasks.add_task()` によるバックグラウンド実行に変更（2026-02-27） |
-| 🟡 中 | バックグラウンドタスク | ジョブ可視化・リトライが困難 | ジョブ増加時に **`APScheduler`** 導入 |
+| 🟡 中 | バックグラウンドタスク | ~~ジョブ可視化なし~~（`GET /api/jobs/status` 追加済み）。エラー履歴・手動再実行は未対応 | ジョブ増加時に **`APScheduler`** 導入 |
 | 🟡 中 | パスワードポリシー | 辞書攻撃耐性の検証がない | 必要なら **`zxcvbn`** 追加 |
 | 🟢 低 | フロントエンド i18n | 複数形対応なし | 必要なら **`i18next`** へ移行 |
 | 🟢 低 | レート制限 | DB ベースは十分（Redis 不要） | 現状維持 |
@@ -309,6 +309,7 @@
 - **場所:** `app/services/log_scanner.py`, `site_checker.py`, `reminder_checker.py`
 - **問題:** ジョブの実行状況・エラー履歴・手動再実行の手段がない。`app.state` に保持したタスクが無言で失敗する可能性がある
 - **対策:** ジョブごとのステータス記録 or `APScheduler` 導入
+- **2026-02-28 部分対応:** `GET /api/jobs/status` エンドポイントを追加（`app/routers/api_jobs.py`）。enabled/running/last_run_at の3フィールドをリアルタイムで返す（admin のみ）。ウォッチドッグも実装済み（タスクが突然終了した場合に自動再起動）。エラー履歴・手動再実行は未対応。
 
 ### TD-04: CSRF 対策の方式 ✅ **解消済み（2026-02-27）**
 - **場所:** `portal_core/portal_core/app_factory.py`
