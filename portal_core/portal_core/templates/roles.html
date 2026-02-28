@@ -44,10 +44,10 @@ async function loadRoles() {
       <td>${escapeHtml(r.name)}</td>
       <td>${escapeHtml(r.display_name)}</td>
       <td>${r.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
-      <td>${r.permissions ? r.permissions.length : 0}</td>
+      <td>${Array.isArray(r.permissions) ? r.permissions.length : 0}</td>
       <td>
-        <button class="btn btn-sm btn-outline-secondary" onclick="editRole(${r.id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteRole(${r.id})">Delete</button>
+        <button class="btn btn-sm btn-outline-secondary" data-id="${r.id}" data-action="edit">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" data-id="${r.id}" data-action="delete">Delete</button>
       </td>
     </tr>
   `).join("");
@@ -95,6 +95,15 @@ async function deleteRole(id) {
   loadRoles();
 }
 
-document.addEventListener("DOMContentLoaded", loadRoles);
+document.addEventListener("DOMContentLoaded", function() {
+  loadRoles();
+  document.getElementById("rolesBody").addEventListener("click", function(e) {
+    const btn = e.target.closest("button[data-id]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id);
+    if (btn.dataset.action === "edit") { editRole(id); }
+    else if (btn.dataset.action === "delete") { deleteRole(id); }
+  });
+});
 </script>
 {% endblock %}

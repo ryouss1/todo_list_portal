@@ -48,8 +48,8 @@ async function loadMenus() {
       <td>${escapeHtml(m.path)}</td>
       <td>${m.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
       <td>
-        <button class="btn btn-sm btn-outline-secondary" onclick="editMenu(${m.id})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteMenu(${m.id})">Delete</button>
+        <button class="btn btn-sm btn-outline-secondary" data-id="${m.id}" data-action="edit">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" data-id="${m.id}" data-action="delete">Delete</button>
       </td>
     </tr>
   `).join("");
@@ -103,6 +103,15 @@ async function deleteMenu(id) {
   loadMenus();
 }
 
-document.addEventListener("DOMContentLoaded", loadMenus);
+document.addEventListener("DOMContentLoaded", function() {
+  loadMenus();
+  document.getElementById("menusBody").addEventListener("click", function(e) {
+    const btn = e.target.closest("button[data-id]");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.id);
+    if (btn.dataset.action === "edit") { editMenu(id); }
+    else if (btn.dataset.action === "delete") { deleteMenu(id); }
+  });
+});
 </script>
 {% endblock %}
