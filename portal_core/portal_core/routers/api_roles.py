@@ -1,10 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from portal_core.core.deps import require_admin
-from portal_core.core.exceptions import NotFoundError
+from portal_core.core.exceptions import DuplicateError, NotFoundError
 from portal_core.crud import role as crud_role
 from portal_core.database import get_db
 from portal_core.models.role import RolePermission
@@ -40,7 +40,7 @@ def create_role(
     _: int = Depends(require_admin),
 ):
     if crud_role.get_role_by_name(db, data.name):
-        raise HTTPException(status_code=409, detail=f"Role '{data.name}' already exists")
+        raise DuplicateError(f"Role '{data.name}' already exists")
     role = crud_role.create_role(db, data)
     db.commit()
     db.refresh(role)

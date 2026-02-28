@@ -15,6 +15,13 @@ class ConflictError(AppError):
         super().__init__(message=message, status_code=400)
 
 
+class DuplicateError(AppError):
+    """Resource already exists (409)."""
+
+    def __init__(self, message: str = "Resource already exists"):
+        super().__init__(message=message, status_code=409)
+
+
 class AuthenticationError(AppError):
     def __init__(self, message: str = "Not authenticated"):
         super().__init__(message=message, status_code=401)
