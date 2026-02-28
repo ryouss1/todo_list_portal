@@ -124,6 +124,76 @@ def get_visible_menus_for_user(db: Session, user_id: int) -> List[Menu]:
     return visible
 
 
+# ---------------------------------------------------------------------------
+# Visibility management helpers
+# ---------------------------------------------------------------------------
+
+
+def get_role_menu_visibility(db: Session, menu_id: int) -> List[dict]:
+    """Return all role_menus rows for this menu as list of dicts."""
+    rows = db.query(RoleMenu).filter(RoleMenu.menu_id == menu_id).all()
+    return [{"role_id": r.role_id, "menu_id": r.menu_id, "kino_kbn": r.kino_kbn} for r in rows]
+
+
+def set_role_menu_visibility(db: Session, menu_id: int, role_id: int, kino_kbn: int) -> None:
+    """Upsert a role_menus entry."""
+    existing = db.query(RoleMenu).filter(RoleMenu.menu_id == menu_id, RoleMenu.role_id == role_id).first()
+    if existing:
+        existing.kino_kbn = kino_kbn
+    else:
+        db.add(RoleMenu(role_id=role_id, menu_id=menu_id, kino_kbn=kino_kbn))
+
+
+def get_department_menu_visibility(db: Session, menu_id: int) -> List[dict]:
+    """Return all department_menus rows for this menu as list of dicts."""
+    rows = db.query(DepartmentMenu).filter(DepartmentMenu.menu_id == menu_id).all()
+    return [{"department_id": r.department_id, "menu_id": r.menu_id, "kino_kbn": r.kino_kbn} for r in rows]
+
+
+def set_department_menu_visibility(db: Session, menu_id: int, department_id: int, kino_kbn: int) -> None:
+    """Upsert a department_menus entry."""
+    existing = (
+        db.query(DepartmentMenu)
+        .filter(DepartmentMenu.menu_id == menu_id, DepartmentMenu.department_id == department_id)
+        .first()
+    )
+    if existing:
+        existing.kino_kbn = kino_kbn
+    else:
+        db.add(DepartmentMenu(department_id=department_id, menu_id=menu_id, kino_kbn=kino_kbn))
+
+
+def get_user_menu_visibility(db: Session, menu_id: int) -> List[dict]:
+    """Return all user_menus rows for this menu as list of dicts (admin view)."""
+    rows = db.query(UserMenu).filter(UserMenu.menu_id == menu_id).all()
+    return [{"user_id": r.user_id, "menu_id": r.menu_id, "kino_kbn": r.kino_kbn} for r in rows]
+
+
+def set_user_menu_visibility(db: Session, menu_id: int, user_id: int, kino_kbn: int) -> None:
+    """Upsert a user_menus entry (admin-facing)."""
+    existing = db.query(UserMenu).filter(UserMenu.menu_id == menu_id, UserMenu.user_id == user_id).first()
+    if existing:
+        existing.kino_kbn = kino_kbn
+    else:
+        db.add(UserMenu(user_id=user_id, menu_id=menu_id, kino_kbn=kino_kbn))
+
+
+def get_my_menu_visibility(db: Session, user_id: int) -> List[dict]:
+    """Return the current user's user_menus rows as list of dicts."""
+    rows = db.query(UserMenu).filter(UserMenu.user_id == user_id).all()
+    return [{"menu_id": r.menu_id, "user_id": r.user_id, "kino_kbn": r.kino_kbn} for r in rows]
+
+
+def set_my_menu_visibility(db: Session, user_id: int, menu_id: int, kino_kbn: int) -> None:
+    """Upsert a user_menus entry for self-service."""
+    set_user_menu_visibility(db, menu_id=menu_id, user_id=user_id, kino_kbn=kino_kbn)
+
+
+def reset_my_menu_visibility(db: Session, user_id: int, menu_id: int) -> None:
+    """Delete the user's user_menus entry (falls back to dept/role/RBAC)."""
+    db.query(UserMenu).filter(UserMenu.user_id == user_id, UserMenu.menu_id == menu_id).delete()
+
+
 def upsert_menu_from_nav_item(
     db: Session,
     name: str,

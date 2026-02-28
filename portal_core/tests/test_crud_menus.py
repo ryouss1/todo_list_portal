@@ -200,3 +200,100 @@ def test_user_menu_overrides_department_menu(db_session, other_user):
 
     menus = get_visible_menus_for_user(db_session, other_user.id)
     assert not any(m.name == "user_over_dept_menu" for m in menus)
+
+
+def test_get_set_role_visibility(db_session):
+    """get/set role visibility round-trips correctly."""
+    from portal_core.crud.menu import (
+        create_menu,
+        get_role_menu_visibility,
+        set_role_menu_visibility,
+    )
+    from portal_core.crud.role import create_role
+    from portal_core.schemas.menu import MenuCreate
+    from portal_core.schemas.role import RoleCreate
+
+    menu = create_menu(db_session, MenuCreate(name="rv_menu", label="RV", path="/rv", sort_order=0))
+    role = create_role(db_session, RoleCreate(name="rv_role", display_name="RV"))
+    db_session.flush()
+
+    set_role_menu_visibility(db_session, menu_id=menu.id, role_id=role.id, kino_kbn=0)
+    db_session.flush()
+
+    rows = get_role_menu_visibility(db_session, menu_id=menu.id)
+    match = next((r for r in rows if r["role_id"] == role.id), None)
+    assert match is not None
+    assert match["kino_kbn"] == 0
+
+
+def test_get_set_department_visibility(db_session):
+    """get/set department visibility round-trips correctly."""
+    from portal_core.crud.menu import (
+        create_menu,
+        get_department_menu_visibility,
+        set_department_menu_visibility,
+    )
+    from portal_core.models.department import Department
+    from portal_core.schemas.menu import MenuCreate
+
+    dept = Department(name="dv_dept_test")
+    db_session.add(dept)
+    menu = create_menu(db_session, MenuCreate(name="dv_menu", label="DV", path="/dv", sort_order=0))
+    db_session.flush()
+
+    set_department_menu_visibility(db_session, menu_id=menu.id, department_id=dept.id, kino_kbn=1)
+    db_session.flush()
+
+    rows = get_department_menu_visibility(db_session, menu_id=menu.id)
+    match = next((r for r in rows if r["department_id"] == dept.id), None)
+    assert match is not None
+    assert match["kino_kbn"] == 1
+
+
+def test_get_set_user_visibility(db_session, other_user):
+    """get/set user visibility (admin-facing) round-trips correctly."""
+    from portal_core.crud.menu import (
+        create_menu,
+        get_user_menu_visibility,
+        set_user_menu_visibility,
+    )
+    from portal_core.schemas.menu import MenuCreate
+
+    menu = create_menu(db_session, MenuCreate(name="uv_menu", label="UV", path="/uv", sort_order=0))
+    db_session.flush()
+
+    set_user_menu_visibility(db_session, menu_id=menu.id, user_id=other_user.id, kino_kbn=0)
+    db_session.flush()
+
+    rows = get_user_menu_visibility(db_session, menu_id=menu.id)
+    match = next((r for r in rows if r["user_id"] == other_user.id), None)
+    assert match is not None
+    assert match["kino_kbn"] == 0
+
+
+def test_get_set_my_visibility(db_session, test_user):
+    """get/set self-service visibility round-trips correctly."""
+    from portal_core.crud.menu import (
+        create_menu,
+        get_my_menu_visibility,
+        reset_my_menu_visibility,
+        set_my_menu_visibility,
+    )
+    from portal_core.schemas.menu import MenuCreate
+
+    menu = create_menu(db_session, MenuCreate(name="mv_menu", label="MV", path="/mv", sort_order=0))
+    db_session.flush()
+
+    set_my_menu_visibility(db_session, user_id=test_user.id, menu_id=menu.id, kino_kbn=0)
+    db_session.flush()
+
+    rows = get_my_menu_visibility(db_session, user_id=test_user.id)
+    match = next((r for r in rows if r["menu_id"] == menu.id), None)
+    assert match is not None
+    assert match["kino_kbn"] == 0
+
+    # Reset removes the override
+    reset_my_menu_visibility(db_session, user_id=test_user.id, menu_id=menu.id)
+    db_session.flush()
+    rows_after = get_my_menu_visibility(db_session, user_id=test_user.id)
+    assert not any(r["menu_id"] == menu.id for r in rows_after)
