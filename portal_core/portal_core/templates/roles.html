@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Roles - {{ app_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Role Management</h4>
+    <button class="btn btn-primary btn-sm" onclick="openCreateModal()">
+      <i class="bi bi-plus-circle"></i> New Role
+    </button>
+  </div>
+  <table class="table table-striped table-hover" id="rolesTable">
+    <thead><tr><th>ID</th><th>Name</th><th>Display Name</th><th>Active</th><th>Permissions</th><th>Actions</th></tr></thead>
+    <tbody id="rolesBody"></tbody>
+  </table>
+</div>
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="roleModalTitle">New Role</h5></div>
+      <div class="modal-body">
+        <input type="hidden" id="roleId">
+        <div class="mb-3"><label>Name</label><input class="form-control" id="roleName"></div>
+        <div class="mb-3"><label>Display Name</label><input class="form-control" id="roleDisplayName"></div>
+        <div class="mb-3"><label>Description</label><textarea class="form-control" id="roleDesc"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveRole()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadRoles() {
+  const resp = await api.get("/api/roles/");
+  const roles = await resp.json();
+  const tbody = document.getElementById("rolesBody");
+  tbody.innerHTML = roles.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.display_name)}</td>
+      <td>${r.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
+      <td>${r.permissions ? r.permissions.length : 0}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary" onclick="editRole(${r.id})">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteRole(${r.id})">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function openCreateModal() {
+  document.getElementById("roleId").value = "";
+  document.getElementById("roleName").value = "";
+  document.getElementById("roleDisplayName").value = "";
+  document.getElementById("roleDesc").value = "";
+  document.getElementById("roleModalTitle").textContent = "New Role";
+  new bootstrap.Modal(document.getElementById("roleModal")).show();
+}
+
+async function editRole(id) {
+  const resp = await api.get(`/api/roles/${id}`);
+  const r = await resp.json();
+  document.getElementById("roleId").value = r.id;
+  document.getElementById("roleName").value = r.name;
+  document.getElementById("roleDisplayName").value = r.display_name;
+  document.getElementById("roleDesc").value = r.description || "";
+  document.getElementById("roleModalTitle").textContent = "Edit Role";
+  new bootstrap.Modal(document.getElementById("roleModal")).show();
+}
+
+async function saveRole() {
+  const id = document.getElementById("roleId").value;
+  const data = {
+    name: document.getElementById("roleName").value,
+    display_name: document.getElementById("roleDisplayName").value,
+    description: document.getElementById("roleDesc").value || null,
+  };
+  if (id) {
+    await api.put(`/api/roles/${id}`, data);
+  } else {
+    await api.post("/api/roles/", data);
+  }
+  bootstrap.Modal.getInstance(document.getElementById("roleModal")).hide();
+  loadRoles();
+}
+
+async function deleteRole(id) {
+  if (!confirm("Delete this role?")) return;
+  await api.del(`/api/roles/${id}`);
+  loadRoles();
+}
+
+document.addEventListener("DOMContentLoaded", loadRoles);
+</script>
+{% endblock %}

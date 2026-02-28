@@ -183,6 +183,8 @@ class PortalApp:
         self._nav_items.append(_users)
         self._seed_hooks_nav.append(_dashboard)
         self._seed_hooks_nav.append(_users)
+        self.register_nav_item(NavItem("Roles", "/roles", "bi-shield-fill", sort_order=910))
+        self.register_nav_item(NavItem("Menus", "/menus", "bi-list-ul", sort_order=920))
 
     def _setup_middleware(self):
         """Register session, auth, CSRF, and locale middleware."""
@@ -451,6 +453,14 @@ class PortalApp:
         @self.app.get("/users")
         def users_page(request: Request):
             return self._render("users.html", request)
+
+        @self.app.get("/roles")
+        def roles_page(request: Request):
+            return self._render("roles.html", request)
+
+        @self.app.get("/menus")
+        def menus_page(request: Request):
+            return self._render("menus.html", request)
 
         @self.app.get("/")
         def dashboard(request: Request):

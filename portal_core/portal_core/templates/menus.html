@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Menus - {{ app_title }}{% endblock %}
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Menu Management</h4>
+    <button class="btn btn-primary btn-sm" onclick="openCreateMenuModal()">
+      <i class="bi bi-plus-circle"></i> New Menu
+    </button>
+  </div>
+  <table class="table table-striped table-hover" id="menusTable">
+    <thead><tr><th>ID</th><th>Name</th><th>Label</th><th>Path</th><th>Active</th><th>Actions</th></tr></thead>
+    <tbody id="menusBody"></tbody>
+  </table>
+</div>
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="menuModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title" id="menuModalTitle">New Menu</h5></div>
+      <div class="modal-body">
+        <input type="hidden" id="menuId">
+        <div class="mb-3"><label>Name</label><input class="form-control" id="menuName"></div>
+        <div class="mb-3"><label>Label</label><input class="form-control" id="menuLabel"></div>
+        <div class="mb-3"><label>Path</label><input class="form-control" id="menuPath"></div>
+        <div class="mb-3"><label>Icon</label><input class="form-control" id="menuIcon" placeholder="bi-link"></div>
+        <div class="mb-3"><label>Sort Order</label><input class="form-control" type="number" id="menuSort" value="100"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMenu()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadMenus() {
+  const resp = await api.get("/api/menus/");
+  const menus = await resp.json();
+  const tbody = document.getElementById("menusBody");
+  tbody.innerHTML = menus.map(m => `
+    <tr>
+      <td>${m.id}</td>
+      <td>${escapeHtml(m.name)}</td>
+      <td>${escapeHtml(m.label)}</td>
+      <td>${escapeHtml(m.path)}</td>
+      <td>${m.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary" onclick="editMenu(${m.id})">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteMenu(${m.id})">Delete</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function openCreateMenuModal() {
+  document.getElementById("menuId").value = "";
+  document.getElementById("menuName").value = "";
+  document.getElementById("menuLabel").value = "";
+  document.getElementById("menuPath").value = "";
+  document.getElementById("menuIcon").value = "";
+  document.getElementById("menuSort").value = "100";
+  document.getElementById("menuModalTitle").textContent = "New Menu";
+  new bootstrap.Modal(document.getElementById("menuModal")).show();
+}
+
+async function editMenu(id) {
+  const resp = await api.get(`/api/menus/${id}`);
+  const m = await resp.json();
+  document.getElementById("menuId").value = m.id;
+  document.getElementById("menuName").value = m.name;
+  document.getElementById("menuLabel").value = m.label;
+  document.getElementById("menuPath").value = m.path;
+  document.getElementById("menuIcon").value = m.icon || "";
+  document.getElementById("menuSort").value = m.sort_order;
+  document.getElementById("menuModalTitle").textContent = "Edit Menu";
+  new bootstrap.Modal(document.getElementById("menuModal")).show();
+}
+
+async function saveMenu() {
+  const id = document.getElementById("menuId").value;
+  const data = {
+    name: document.getElementById("menuName").value,
+    label: document.getElementById("menuLabel").value,
+    path: document.getElementById("menuPath").value,
+    icon: document.getElementById("menuIcon").value || "",
+    sort_order: parseInt(document.getElementById("menuSort").value) || 100,
+  };
+  if (id) {
+    await api.put(`/api/menus/${id}`, data);
+  } else {
+    await api.post("/api/menus/", data);
+  }
+  bootstrap.Modal.getInstance(document.getElementById("menuModal")).hide();
+  loadMenus();
+}
+
+async function deleteMenu(id) {
+  if (!confirm("Delete this menu?")) return;
+  await api.del(`/api/menus/${id}`);
+  loadMenus();
+}
+
+document.addEventListener("DOMContentLoaded", loadMenus);
+</script>
+{% endblock %}
