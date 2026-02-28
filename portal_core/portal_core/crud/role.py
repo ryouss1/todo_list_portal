@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from portal_core.models.role import Role, RolePermission, UserRole
-from portal_core.schemas.role import RoleCreate, RoleUpdate
+from portal_core.schemas.role import PermissionItem, RoleCreate, RoleResponse, RoleUpdate
 
 
 def create_role(db: Session, data: RoleCreate) -> Role:
@@ -50,11 +50,27 @@ def get_role_permissions(db: Session, role_id: int) -> List[RolePermission]:
     return db.query(RolePermission).filter(RolePermission.role_id == role_id).all()
 
 
-def set_role_permissions(db: Session, role_id: int, permissions: List[Tuple[str, str]]) -> None:
-    """Replace all permissions for a role. permissions = [(resource, action), ...]"""
+def build_role_response(db: Session, role: Role) -> RoleResponse:
+    """Build a RoleResponse including permissions from the DB."""
+    perms = db.query(RolePermission).filter(RolePermission.role_id == role.id).all()
+    return RoleResponse(
+        id=role.id,
+        name=role.name,
+        display_name=role.display_name,
+        description=role.description,
+        sort_order=role.sort_order,
+        is_active=role.is_active,
+        created_at=role.created_at,
+        updated_at=role.updated_at,
+        permissions=[PermissionItem(resource=p.resource, action=p.action, kino_kbn=p.kino_kbn) for p in perms],
+    )
+
+
+def set_role_permissions(db: Session, role_id: int, permissions: List[Tuple[str, str, int]]) -> None:
+    """Replace all permissions for a role. permissions = [(resource, action, kino_kbn), ...]"""
     db.query(RolePermission).filter(RolePermission.role_id == role_id).delete()
-    for resource, action in permissions:
-        db.add(RolePermission(role_id=role_id, resource=resource, action=action, kino_kbn=1))
+    for resource, action, kino_kbn in permissions:
+        db.add(RolePermission(role_id=role_id, resource=resource, action=action, kino_kbn=kino_kbn))
 
 
 def get_user_permissions(db: Session, user_id: int) -> List[Tuple[str, str]]:

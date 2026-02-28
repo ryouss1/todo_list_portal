@@ -53,7 +53,7 @@ def test_set_and_get_permissions(db_session):
 
     role = create_role(db_session, RoleCreate(name="perm_role", display_name="Perm"))
     db_session.flush()
-    set_role_permissions(db_session, role.id, [("users", "view"), ("users", "delete")])
+    set_role_permissions(db_session, role.id, [("users", "view", 1), ("users", "delete", 1)])
     db_session.flush()
     perms = get_role_permissions(db_session, role.id)
     assert {(p.resource, p.action) for p in perms} == {("users", "view"), ("users", "delete")}
@@ -65,7 +65,7 @@ def test_has_permission_via_role(db_session, test_user):
 
     role = create_role(db_session, RoleCreate(name="viewer", display_name="Viewer"))
     db_session.flush()
-    set_role_permissions(db_session, role.id, [("reports", "view")])
+    set_role_permissions(db_session, role.id, [("reports", "view", 1)])
     assign_user_role(db_session, test_user.id, role.id)
     db_session.flush()
     assert has_permission(db_session, test_user.id, "reports", "view")
@@ -78,7 +78,7 @@ def test_wildcard_permission(db_session, test_user):
 
     role = create_role(db_session, RoleCreate(name="superadmin", display_name="Super"))
     db_session.flush()
-    set_role_permissions(db_session, role.id, [("*", "*")])
+    set_role_permissions(db_session, role.id, [("*", "*", 1)])
     assign_user_role(db_session, test_user.id, role.id)
     db_session.flush()
     assert has_permission(db_session, test_user.id, "anything", "delete")
@@ -97,7 +97,7 @@ def test_revoke_user_role(db_session, test_user):
     role = create_role(db_session, RoleCreate(name="revoke_me", display_name="Revoke"))
     db_session.flush()
     assign_user_role(db_session, test_user.id, role.id)
-    set_role_permissions(db_session, role.id, [("tasks", "view")])
+    set_role_permissions(db_session, role.id, [("tasks", "view", 1)])
     db_session.flush()
     assert has_permission(db_session, test_user.id, "tasks", "view")
     revoke_user_role(db_session, test_user.id, role.id)

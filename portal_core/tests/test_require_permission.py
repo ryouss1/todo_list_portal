@@ -12,7 +12,7 @@ def test_require_permission_allows_role_based_user(client, db_session, test_user
 
     role = create_role(db_session, RoleCreate(name="menu_reader", display_name="Menu Reader"))
     db_session.flush()
-    set_role_permissions(db_session, role.id, [("menus", "view")])
+    set_role_permissions(db_session, role.id, [("menus", "view", 1)])
     assign_user_role(db_session, other_user.id, role.id)
     db_session.flush()
 

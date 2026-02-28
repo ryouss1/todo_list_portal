@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from portal_core.core.deps import get_current_user_id, require_admin
+from portal_core.core.exceptions import NotFoundError
 from portal_core.crud import role as crud_role
 from portal_core.database import get_db
-from portal_core.models.role import RolePermission
-from portal_core.schemas.role import PermissionItem, RoleResponse
+from portal_core.schemas.role import RoleResponse
 from portal_core.schemas.user import PasswordChange, PasswordReset, UserCreate, UserResponse, UserUpdate
 from portal_core.services import user_service as svc_user
 
@@ -83,23 +83,7 @@ def list_user_roles(
     _: int = Depends(require_admin),
 ):
     roles = crud_role.get_user_roles(db, user_id)
-    result = []
-    for r in roles:
-        perms = db.query(RolePermission).filter(RolePermission.role_id == r.id).all()
-        result.append(
-            RoleResponse(
-                id=r.id,
-                name=r.name,
-                display_name=r.display_name,
-                description=r.description,
-                sort_order=r.sort_order,
-                is_active=r.is_active,
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-                permissions=[PermissionItem(resource=p.resource, action=p.action, kino_kbn=p.kino_kbn) for p in perms],
-            )
-        )
-    return result
+    return [crud_role.build_role_response(db, r) for r in roles]
 
 
 @router.post("/{user_id}/roles")
@@ -109,6 +93,9 @@ def assign_user_role(
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
+    role = crud_role.get_role(db, data.role_id)
+    if not role:
+        raise NotFoundError(f"Role {data.role_id} not found")
     crud_role.assign_user_role(db, user_id, data.role_id)
     db.commit()
     return {"detail": "Role assigned"}
@@ -121,5 +108,7 @@ def revoke_user_role(
     db: Session = Depends(get_db),
     _: int = Depends(require_admin),
 ):
-    crud_role.revoke_user_role(db, user_id, role_id)
+    removed = crud_role.revoke_user_role(db, user_id, role_id)
+    if not removed:
+        raise NotFoundError(f"Role {role_id} not assigned to user {user_id}")
     db.commit()
