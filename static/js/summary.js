@@ -18,12 +18,12 @@ function buildColorMap(categories) {
 
 async function init() {
     try {
-        const groups = await api.get('/api/groups/');
-        const sel = document.getElementById('group-filter');
-        groups.forEach(g => {
+        const departments = await api.get('/api/departments/');
+        const sel = document.getElementById('department-filter');
+        departments.forEach(dept => {
             const opt = document.createElement('option');
-            opt.value = g.id;
-            opt.textContent = g.name;
+            opt.value = dept.id;
+            opt.textContent = dept.name;
             sel.appendChild(opt);
         });
     } catch (e) {
@@ -34,8 +34,8 @@ async function init() {
 
 async function loadSummary() {
     let url = `/api/summary/?period=${currentPeriod}&ref_date=${currentRefDate}`;
-    const groupId = document.getElementById('group-filter').value;
-    if (groupId) url += `&group_id=${groupId}`;
+    const departmentId = document.getElementById('department-filter').value;
+    if (departmentId) url += `&department_id=${departmentId}`;
     const data = await api.get(url);
     renderSummary(data);
 }

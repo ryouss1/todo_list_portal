@@ -7,23 +7,23 @@ let selectedUserIds = new Set();
 let allRooms = [];
 
 async function init() {
-    const [me, users, settingsData, rooms, groups] = await Promise.all([
+    const [me, users, settingsData, rooms, departments] = await Promise.all([
         api.get('/api/auth/me'),
         api.get('/api/users/'),
         api.get('/api/calendar/settings'),
         api.get('/api/calendar/rooms'),
-        api.get('/api/groups/'),
+        api.get('/api/departments/'),
     ]);
     currentUserId = me.user_id;
     settings = settingsData;
     allRooms = rooms;
 
     users.forEach(u => {
-        allUsers[u.id] = { name: u.display_name || u.email, group_id: u.group_id };
+        allUsers[u.id] = { name: u.display_name || u.email, department_id: u.department_id };
         selectedUserIds.add(u.id);
     });
 
-    buildGroupFilter(groups);
+    buildDepartmentFilter(departments);
     buildUserFilters(users);
     buildAttendeeOptions(users);
     buildRoomOptions(rooms);
@@ -48,19 +48,19 @@ function toggleLocationType() {
     document.getElementById('evt-location').classList.toggle('d-none', isRoom);
 }
 
-function buildGroupFilter(groups) {
-    const sel = document.getElementById('group-filter');
-    groups.forEach(g => {
+function buildDepartmentFilter(departments) {
+    const sel = document.getElementById('department-filter');
+    departments.forEach(dept => {
         const opt = document.createElement('option');
-        opt.value = g.id;
-        opt.textContent = g.name;
+        opt.value = dept.id;
+        opt.textContent = dept.name;
         sel.appendChild(opt);
     });
 }
 
-function filterByGroup() {
-    const sel = document.getElementById('group-filter');
-    const groupId = sel.value ? parseInt(sel.value) : null;
+function filterByDepartment() {
+    const sel = document.getElementById('department-filter');
+    const departmentId = sel.value ? parseInt(sel.value) : null;
     const container = document.getElementById('user-filters');
     const labels = container.querySelectorAll('label.user-filter-item');
 
@@ -69,9 +69,9 @@ function filterByGroup() {
     labels.forEach(label => {
         const checkbox = label.querySelector('input[type="checkbox"]');
         const userId = parseInt(checkbox.dataset.userId);
-        const userGroupId = allUsers[userId] ? allUsers[userId].group_id : null;
+        const userDepartmentId = allUsers[userId] ? allUsers[userId].department_id : null;
 
-        if (groupId === null || userGroupId === groupId) {
+        if (departmentId === null || userDepartmentId === departmentId) {
             label.classList.remove('d-none');
             checkbox.checked = true;
             selectedUserIds.add(userId);
@@ -186,7 +186,17 @@ function initCalendar() {
         },
 
         select: function(info) {
-            openCreateModal(info.start, info.end, info.allDay);
+            if (info.allDay && info.view.type === 'dayGridMonth') {
+                // Month view: default to time input 09:00-10:00
+                const start = new Date(info.start);
+                start.setHours(9, 0, 0, 0);
+                const end = new Date(info.start);
+                end.setHours(10, 0, 0, 0);
+                openCreateModal(start, end, false);
+            } else {
+                // Week/Day all-day row: all-day event; time grid: use selected time
+                openCreateModal(info.start, info.end, info.allDay);
+            }
         },
 
         eventClick: function(info) {
@@ -404,6 +414,10 @@ async function saveEvent() {
     } else {
         startAt = startDate + 'T' + startTime + ':00';
         endAt = endDate + 'T' + endTime + ':00';
+        if (startAt >= endAt) {
+            showToast(i18n.t('End time must be after start time'), 'danger');
+            return;
+        }
     }
 
     const useDefaultColor = document.getElementById('evt-color-default').checked;
@@ -539,6 +553,31 @@ function toggleAllDay() {
     const allDay = document.getElementById('evt-allday').checked;
     document.getElementById('evt-start-time').classList.toggle('d-none', allDay);
     document.getElementById('evt-end-time').classList.toggle('d-none', allDay);
+}
+
+function onStartTimeChange() {
+    const startTimeEl = document.getElementById('evt-start-time');
+    const endTimeEl = document.getElementById('evt-end-time');
+    const startDateEl = document.getElementById('evt-start-date');
+    const endDateEl = document.getElementById('evt-end-date');
+
+    const startTime = startTimeEl.value;
+    if (!startTime) return;
+
+    const [hours, minutes] = startTime.split(':').map(Number);
+    let endHours = hours + 1;
+    let dayOffset = 0;
+    if (endHours >= 24) {
+        endHours -= 24;
+        dayOffset = 1;
+    }
+    endTimeEl.value = String(endHours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+
+    if (dayOffset > 0 && startDateEl.value) {
+        const d = new Date(startDateEl.value + 'T00:00:00');
+        d.setDate(d.getDate() + 1);
+        endDateEl.value = formatDateInput(d);
+    }
 }
 
 function toggleColorPicker() {

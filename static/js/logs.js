@@ -6,7 +6,7 @@ let allLogs = [];
 let currentFilter = "all";
 let ws = null;
 let editingSourceId = null;
-let allGroups = [];
+let allDepartments = [];
 
 // ===== Initialisation =====
 
@@ -44,36 +44,36 @@ async function init() {
         });
     }
 
-    await loadGroups();
+    await loadDepartments();
     await loadSources();
     loadLogs();
     connectWebSocket();
 }
 
-// ===== Groups =====
+// ===== Departments =====
 
-async function loadGroups() {
+async function loadDepartments() {
     try {
-        allGroups = await api.get("/api/groups/");
+        allDepartments = await api.get("/api/departments/");
     } catch (e) {
-        allGroups = [];
+        allDepartments = [];
     }
-    var sel = document.getElementById("source-group-id");
+    var sel = document.getElementById("source-department-id");
     if (sel) {
         // Keep first placeholder option, remove the rest
         while (sel.options.length > 1) sel.remove(1);
-        for (var i = 0; i < allGroups.length; i++) {
+        for (var i = 0; i < allDepartments.length; i++) {
             var opt = document.createElement("option");
-            opt.value = allGroups[i].id;
-            opt.textContent = allGroups[i].name;
+            opt.value = allDepartments[i].id;
+            opt.textContent = allDepartments[i].name;
             sel.appendChild(opt);
         }
     }
 }
 
-function getGroupName(groupId) {
-    for (var i = 0; i < allGroups.length; i++) {
-        if (allGroups[i].id === groupId) return allGroups[i].name;
+function getDepartmentName(deptId) {
+    for (var i = 0; i < allDepartments.length; i++) {
+        if (allDepartments[i].id === deptId) return allDepartments[i].name;
     }
     return "";
 }
@@ -164,7 +164,7 @@ function renderSourceTable(list) {
             + "<td>" + statusDot + "</td>"
             + "<td><strong>" + escapeHtml(s.name) + "</strong>"
             + ' <span class="badge bg-info text-dark" style="font-size:0.65rem">' + escapeHtml(s.source_type) + "</span></td>"
-            + "<td><small>" + escapeHtml(s.group_name || "") + '</small> <small class="font-monospace text-muted">' + escapeHtml(s.host) + "</small></td>"
+            + "<td><small>" + escapeHtml(s.department_name || "") + '</small> <small class="font-monospace text-muted">' + escapeHtml(s.host) + "</small></td>"
             + "<td>" + methodBadge + "</td>"
             + '<td class="text-center">' + (s.path_count || 0) + "</td>"
             + '<td><small class="text-muted">' + escapeHtml(s.collection_mode) + "</small></td>"
@@ -240,7 +240,7 @@ async function openEditSource(id) {
         '<i class="bi bi-hdd-network"></i> ' + i18n.t("Edit Source");
     document.getElementById("source-id").value = source.id;
     document.getElementById("source-name").value = source.name;
-    document.getElementById("source-group-id").value = source.group_id;
+    document.getElementById("source-department-id").value = source.department_id;
     document.getElementById("source-access-method").value = source.access_method;
     document.getElementById("source-host").value = source.host;
     document.getElementById("source-port").value = source.port || "";
@@ -279,7 +279,7 @@ async function openEditSource(id) {
 function resetSourceForm() {
     document.getElementById("source-id").value = "";
     document.getElementById("source-name").value = "";
-    document.getElementById("source-group-id").value = "";
+    document.getElementById("source-department-id").value = "";
     document.getElementById("source-access-method").value = "ftp";
     document.getElementById("source-host").value = "";
     document.getElementById("source-port").value = "";
@@ -412,7 +412,7 @@ async function saveSource() {
 
     var data = {
         name: document.getElementById("source-name").value,
-        group_id: parseInt(document.getElementById("source-group-id").value),
+        department_id: parseInt(document.getElementById("source-department-id").value),
         access_method: document.getElementById("source-access-method").value,
         host: document.getElementById("source-host").value,
         port: portVal ? parseInt(portVal) : null,
