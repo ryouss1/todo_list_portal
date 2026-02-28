@@ -41,6 +41,7 @@ class AppConfig(CoreConfig):
     # Calendar
     CALENDAR_REMINDER_ENABLED: bool = os.environ.get("CALENDAR_REMINDER_ENABLED", "true").lower() == "true"
     CALENDAR_REMINDER_INTERVAL: int = int(os.environ.get("CALENDAR_REMINDER_INTERVAL", "60"))
+    CALENDAR_REMINDER_STALE_MINUTES: int = int(os.environ.get("CALENDAR_REMINDER_STALE_MINUTES", "10"))
 
     # Log scanner (background)
     LOG_SCANNER_ENABLED: bool = os.environ.get("LOG_SCANNER_ENABLED", "false").lower() == "true"

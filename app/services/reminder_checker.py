@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from app.config import CALENDAR_REMINDER_ENABLED, CALENDAR_REMINDER_INTERVAL
+from app.config import CALENDAR_REMINDER_ENABLED, CALENDAR_REMINDER_INTERVAL, CALENDAR_REMINDER_STALE_MINUTES
 from app.crud import calendar_event as crud_event
 from app.crud import calendar_reminder as crud_reminder
 from app.database import SessionLocal
@@ -12,7 +12,6 @@ from app.services.websocket_manager import calendar_ws_manager
 logger = logging.getLogger("app.services.reminder_checker")
 
 _WATCHDOG_INTERVAL = 120  # seconds between watchdog checks
-_STALE_MINUTES = 5  # treat reminder loop as stale after this many minutes of inactivity
 
 _last_check_at: Optional[datetime] = None
 
@@ -75,11 +74,11 @@ async def _watchdog_step(app) -> None:
         need_restart = True
     elif _last_check_at is not None:
         age_minutes = (now - _last_check_at).total_seconds() / 60
-        if age_minutes > _STALE_MINUTES:
+        if age_minutes > CALENDAR_REMINDER_STALE_MINUTES:
             logger.warning(
                 "Reminder loop stale (%.1f min > %d) — restarting",
                 age_minutes,
-                _STALE_MINUTES,
+                CALENDAR_REMINDER_STALE_MINUTES,
             )
             task.cancel()
             try:
@@ -89,7 +88,7 @@ async def _watchdog_step(app) -> None:
             need_restart = True
 
     if need_restart:
-        _last_check_at = None
+        _last_check_at = None  # Reset before create_task so stale-check skips "not yet started" state
         app.state.reminder_task = asyncio.create_task(_reminder_loop())
 
 
