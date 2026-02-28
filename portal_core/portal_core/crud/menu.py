@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from portal_core.core.constants import UserRole as UserRoleEnum
 from portal_core.models.menu import Menu, RoleMenu, UserMenu
 from portal_core.models.user import User
+from portal_core.schemas.menu import MenuCreate, MenuUpdate
 
 
-def create_menu(db: Session, data) -> Menu:
+def create_menu(db: Session, data: MenuCreate) -> Menu:
     menu = Menu(**data.model_dump())
     db.add(menu)
     return menu
@@ -25,7 +26,7 @@ def get_menus(db: Session) -> List[Menu]:
     return db.query(Menu).order_by(Menu.sort_order, Menu.name).all()
 
 
-def update_menu(db: Session, menu_id: int, data) -> Optional[Menu]:
+def update_menu(db: Session, menu_id: int, data: MenuUpdate) -> Optional[Menu]:
     menu = get_menu(db, menu_id)
     if not menu:
         return None
@@ -104,6 +105,8 @@ def upsert_menu_from_nav_item(
         existing.icon = icon
         existing.sort_order = sort_order
         existing.badge_id = badge_id
+        existing.required_resource = required_resource
+        existing.required_action = required_action
         return existing
     menu = Menu(
         name=name,

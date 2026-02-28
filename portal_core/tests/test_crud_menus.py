@@ -18,7 +18,7 @@ def test_menu_without_restriction_visible_to_all(db_session, test_user):
     assert any(m.name == "public_page" for m in menus)
 
 
-def test_menu_with_permission_hidden_if_no_role(db_session, test_user):
+def test_admin_bypass_grants_restricted_menu(db_session, test_user):
     from portal_core.crud.menu import create_menu, get_visible_menus_for_user
     from portal_core.schemas.menu import MenuCreate
 
@@ -35,8 +35,8 @@ def test_menu_with_permission_hidden_if_no_role(db_session, test_user):
     )
     db_session.flush()
     menus = get_visible_menus_for_user(db_session, test_user.id)
-    # test_user is admin via legacy role=admin, so should see it
-    # (admin bypass)
+    # test_user has role=admin, so the admin bypass applies and the
+    # restricted menu is visible even without an explicit role permission
     assert any(m.name == "admin_only_page" for m in menus)
 
 
@@ -83,6 +83,22 @@ def test_user_menu_override_grants_access(db_session, other_user):
     db_session.flush()
     menus = get_visible_menus_for_user(db_session, other_user.id)
     assert any(m.name == "override_menu" for m in menus)
+
+
+def test_user_menu_override_denies_access(db_session, test_user):
+    from portal_core.crud.menu import create_menu, get_visible_menus_for_user
+    from portal_core.models.menu import UserMenu
+    from portal_core.schemas.menu import MenuCreate
+
+    # Create an unrestricted menu (normally visible to all)
+    menu = create_menu(db_session, MenuCreate(name="deny_override_menu", label="Deny", path="/deny", sort_order=0))
+    db_session.flush()
+    # Add explicit deny override for test_user (who is admin)
+    db_session.add(UserMenu(user_id=test_user.id, menu_id=menu.id, kino_kbn=0))
+    db_session.flush()
+    menus = get_visible_menus_for_user(db_session, test_user.id)
+    # Even though user is admin and menu has no restriction, override denies it
+    assert not any(m.name == "deny_override_menu" for m in menus)
 
 
 def test_upsert_menu_from_nav_item(db_session):
