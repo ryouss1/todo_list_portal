@@ -16,6 +16,7 @@ Usage::
 import asyncio
 import logging
 import logging.config
+import re
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -480,20 +481,74 @@ class PortalApp:
     # App-specific pages
     # =================================================================
 
+    @staticmethod
+    def _get_param_type(name: str) -> str:
+        """Return 'int' for *_id params, 'str' for others."""
+        return "int" if name.endswith("_id") else "str"
+
     def _register_app_pages(self):
-        """Register app-specific page routes from register_page() calls."""
+        """Register app-specific page routes from register_page() calls.
+
+        Supports both simple routes (e.g. ``/todos``) and routes with path
+        parameters (e.g. ``/wiki/{slug}`` or ``/reports/{report_id}``).
+        Integer path parameters are detected by the ``_id`` suffix convention;
+        all other path parameters are treated as ``str``.
+        """
         for route in self._page_routes:
             path = route["path"]
             template = route["template"]
             extra = route["extra_context"]
 
-            def make_handler(_template, _extra):
-                def handler(request: Request):
-                    return self._render(_template, request, **_extra)
+            # Detect path parameter names, e.g. {slug}, {report_id}
+            param_names = re.findall(r"\{(\w+)\}", path)
 
-                return handler
+            if not param_names:
+                # Simple route — no path parameters
+                def make_handler(_template, _extra):
+                    def handler(request: Request):
+                        return self._render(_template, request, **_extra)
 
-            self.app.get(path)(make_handler(template, extra))
+                    return handler
+
+                self.app.add_api_route(
+                    path,
+                    make_handler(template, extra),
+                    methods=["GET"],
+                    include_in_schema=False,
+                )
+            else:
+                # Route with path parameters — build handler dynamically so
+                # FastAPI can introspect the correct parameter signatures.
+                portal_ref = self
+                tmpl_ref = template
+                extra_ref = extra
+
+                # Build typed parameter list, e.g. "report_id: int, slug: str"
+                params_str = ", ".join(f"{p}: {self._get_param_type(p)}" for p in param_names)
+                # Build kwargs dict to forward params to _render
+                kwargs_str = ", ".join(f"{p}={p}" for p in param_names)
+
+                func_code = (
+                    f"def _handler(request: Request, {params_str}):\n"
+                    f"    kw = dict({kwargs_str})\n"
+                    f"    kw.update(extra_ref)\n"
+                    f"    return portal_ref._render(tmpl_ref, request, **kw)\n"
+                )
+                local_ns: Dict[str, Any] = {
+                    "Request": Request,
+                    "portal_ref": portal_ref,
+                    "tmpl_ref": tmpl_ref,
+                    "extra_ref": extra_ref,
+                }
+                exec(func_code, local_ns)  # noqa: S102
+                handler = local_ns["_handler"]
+
+                self.app.add_api_route(
+                    path,
+                    handler,
+                    methods=["GET"],
+                    include_in_schema=False,
+                )
 
     # =================================================================
     # WebSocket

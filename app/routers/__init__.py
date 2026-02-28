@@ -21,12 +21,10 @@ from app.routers import (
     api_task_list,
     api_tasks,
     api_todos,
-    pages,
 )
 
 # App-specific routers (core routers are registered by PortalApp)
 _app_routers = [
-    pages.router,
     api_todos.router,
     api_attendances.router,
     api_attendance_presets.router,

@@ -1,6 +1,5 @@
-from app.config import AppConfig
+from app.config import FULLCALENDAR_JS_URL, AppConfig
 from app.init_db import seed_default_categories, seed_default_presets
-from app.routers import pages
 from app.routers.api_alert_rules import router as api_alert_rules_router
 from app.routers.api_alerts import router as api_alerts_router
 from app.routers.api_attendance_presets import router as api_attendance_presets_router
@@ -46,8 +45,26 @@ config = AppConfig()
 portal = PortalApp(config, title="Todo List Portal")
 portal.setup_core()
 
-# === App-specific pages router ===
-portal.register_router(pages.router)
+# === App-specific page routes ===
+# NOTE: fixed routes must be registered BEFORE parameterized routes so that
+# FastAPI matches "/wiki/new" before treating "new" as a {slug} value.
+portal.register_page("/todos", "todos.html")
+portal.register_page("/todos/public", "todos_public.html")
+portal.register_page("/presence", "presence.html")
+portal.register_page("/attendance", "attendance.html")
+portal.register_page("/summary", "summary.html")
+portal.register_page("/reports", "reports.html")
+portal.register_page("/reports/{report_id}", "report_detail.html")
+portal.register_page("/tasks", "tasks.html")
+portal.register_page("/task-list", "task_list.html")
+portal.register_page("/sites", "sites.html")
+portal.register_page("/logs", "logs.html")
+portal.register_page("/alerts", "alerts.html")
+portal.register_page("/calendar", "calendar.html", fullcalendar_js_url=FULLCALENDAR_JS_URL)
+portal.register_page("/wiki", "wiki.html")
+portal.register_page("/wiki/new", "wiki_edit.html", page_id=None, slug=None)
+portal.register_page("/wiki/{slug}/edit", "wiki_edit.html")
+portal.register_page("/wiki/{slug}", "wiki_page.html")
 
 # === App-specific API routers ===
 portal.register_router(api_todos_router)
