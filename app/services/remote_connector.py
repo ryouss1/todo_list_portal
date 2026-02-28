@@ -1,11 +1,15 @@
 """Remote file access abstraction for FTP and SMB connections."""
 
+import fnmatch
 import ftplib
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import List, Optional
+
+from app.config import LOG_FTP_CONNECT_TIMEOUT, LOG_FTP_READ_TIMEOUT
+from app.constants import AccessMethod
 
 logger = logging.getLogger("app.services.remote_connector")
 
@@ -49,8 +53,21 @@ class RemoteConnector(ABC):
         self.disconnect()
 
 
+def _make_ftp_session_class(port: int, timeout: int) -> type:
+    """ftputil 用カスタム FTP セッションクラスを生成する。"""
+
+    class _FTPSession(ftplib.FTP):
+        def __init__(self, host: str, user: str, passwd: str):
+            super().__init__(timeout=timeout)
+            self.connect(host, port, timeout=timeout)
+            self.login(user, passwd)
+            self.set_pasv(True)
+
+    return _FTPSession
+
+
 class FTPConnector(RemoteConnector):
-    """FTP connection using ftplib (passive mode)."""
+    """FTP connection using ftputil (high-level ftplib wrapper)."""
 
     def __init__(
         self,
@@ -67,75 +84,57 @@ class FTPConnector(RemoteConnector):
         self.password = password
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
-        self._ftp: Optional[ftplib.FTP] = None
+        self._ftp: Optional[object] = None
 
     def connect(self) -> None:
-        self._ftp = ftplib.FTP()
-        self._ftp.connect(self.host, self.port, timeout=self.connect_timeout)
-        self._ftp.login(self.username, self.password)
-        self._ftp.set_pasv(True)
+        import ftputil
+
+        session_cls = _make_ftp_session_class(self.port, self.connect_timeout)
+        self._ftp = ftputil.FTPHost(
+            self.host,
+            self.username,
+            self.password,
+            session_factory=session_cls,
+        )
         logger.info("FTP connected to %s:%d", self.host, self.port)
 
     def disconnect(self) -> None:
         if self._ftp:
             try:
-                self._ftp.quit()
+                self._ftp.close()
             except Exception:
-                try:
-                    self._ftp.close()
-                except Exception:
-                    pass
+                pass
             self._ftp = None
 
     def list_files(self, path: str, pattern: str, modified_since: Optional[date] = None) -> List[RemoteFileInfo]:
-        import fnmatch
-
         if not self._ftp:
             raise RuntimeError("Not connected")
         files = []
         skipped = 0
         try:
-            # Iterate MLSD as generator (avoid loading all entries into memory)
-            for name, facts in self._ftp.mlsd(path):
-                if facts.get("type", "") != "file":
-                    continue
-                if not fnmatch.fnmatch(name, pattern):
-                    continue
-                size = int(facts.get("size", 0))
-                modify = facts.get("modify", "")
-                mod_dt = None
-                if modify:
-                    try:
-                        mod_dt = datetime.strptime(modify, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
-                    except ValueError:
-                        pass
-                # Early date filter: skip files older than modified_since
-                if modified_since is not None:
-                    if mod_dt is None or mod_dt.date() < modified_since:
-                        skipped += 1
-                        continue
-                files.append(RemoteFileInfo(name=name, size=size, modified_at=mod_dt))
-        except ftplib.error_perm:
-            # Fallback to LIST if MLSD not supported
-            logger.warning("MLSD not supported, falling back to LIST for %s", path)
-            dir_lines: List[str] = []
-            self._ftp.dir(path, dir_lines.append)
+            names = self._ftp.listdir(path)
+        except Exception as e:
+            logger.warning("FTP: cannot list %s: %s", path, e)
+            return files
 
-            for line in dir_lines:
-                parts = line.split()
-                if len(parts) < 9:
+        for name in names:
+            if not fnmatch.fnmatch(name, pattern):
+                continue
+            full_path = f"{path.rstrip('/')}/{name}"
+            try:
+                if not self._ftp.path.isfile(full_path):
                     continue
-                name = parts[-1]
-                if not line.startswith("-"):
+                stat = self._ftp.stat(full_path)
+                size = stat.st_size
+                mod_dt = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc) if stat.st_mtime else None
+            except Exception:
+                size = 0
+                mod_dt = None
+            if modified_since is not None:
+                if mod_dt is None or mod_dt.date() < modified_since:
+                    skipped += 1
                     continue
-                if not fnmatch.fnmatch(name, pattern):
-                    continue
-                try:
-                    size = int(parts[4])
-                except ValueError:
-                    size = 0
-                # LIST doesn't provide reliable timestamps, include all
-                files.append(RemoteFileInfo(name=name, size=size, modified_at=None))
+            files.append(RemoteFileInfo(name=name, size=size, modified_at=mod_dt))
 
         if skipped > 0:
             logger.debug(
@@ -155,15 +154,12 @@ class FTPConnector(RemoteConnector):
         limit: Optional[int] = None,
         encoding: str = "utf-8",
     ) -> List[str]:
-        import io
-
         if not self._ftp:
             raise RuntimeError("Not connected")
         full_path = f"{path.rstrip('/')}/{file_name}" if path else file_name
-        data = io.BytesIO()
-        self._ftp.retrbinary(f"RETR {full_path}", data.write)
-        data.seek(0)
-        text = data.read().decode(encoding, errors="replace")
+        with self._ftp.open(full_path, "rb") as f:
+            data = f.read()
+        text = data.decode(encoding, errors="replace")
         all_lines = text.splitlines()
         start = offset
         end = start + limit if limit else len(all_lines)
@@ -286,9 +282,7 @@ def create_connector(
     domain: Optional[str] = None,
 ) -> RemoteConnector:
     """Factory to create the appropriate connector."""
-    if access_method == "ftp":
-        from app.config import LOG_FTP_CONNECT_TIMEOUT, LOG_FTP_READ_TIMEOUT
-
+    if access_method == AccessMethod.FTP:
         return FTPConnector(
             host=host,
             port=port or 21,
@@ -297,7 +291,7 @@ def create_connector(
             connect_timeout=LOG_FTP_CONNECT_TIMEOUT,
             read_timeout=LOG_FTP_READ_TIMEOUT,
         )
-    elif access_method == "smb":
+    elif access_method == AccessMethod.SMB:
         return SMBConnector(
             host=host,
             port=port or 445,
@@ -306,4 +300,4 @@ def create_connector(
             domain=domain,
         )
     else:
-        raise ValueError(f"Unsupported access method: {access_method}")
+        raise ValueError(f"Unsupported access method: {access_method!r}. Expected one of: ftp, smb")

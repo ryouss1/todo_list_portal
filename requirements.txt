@@ -11,6 +11,7 @@ alembic==1.14.1
 pytest==8.4.2
 pytest-asyncio==0.25.3
 httpx==0.28.1
+httpx-oauth>=0.15.0
 passlib[bcrypt]==1.7.4
 bcrypt<4.1
 itsdangerous==2.2.0
@@ -19,3 +20,5 @@ Babel==2.16.0
 polib==1.2.0
 cryptography==46.0.5
 smbprotocol==1.16.0
+ftputil>=5.0.0
+fastapi-csrf-protect>=1.0.7

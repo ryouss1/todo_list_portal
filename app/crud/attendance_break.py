@@ -40,3 +40,9 @@ def end_break(db: Session, brk: AttendanceBreak, break_end: datetime) -> Attenda
     db.commit()
     db.refresh(brk)
     return brk
+
+
+def delete_breaks_by_attendance_id(db: Session, attendance_id: int) -> None:
+    """Delete all breaks for the given attendance record."""
+    db.query(AttendanceBreak).filter(AttendanceBreak.attendance_id == attendance_id).delete()
+    db.flush()

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.core.constants import ItemStatusType
+from app.constants import ItemStatusType
 
 
 class TaskListItemCreate(BaseModel):

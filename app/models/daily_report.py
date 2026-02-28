@@ -7,7 +7,7 @@ class DailyReport(Base):
     __tablename__ = "daily_reports"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     report_date = Column(Date, nullable=False)
     category_id = Column(Integer, ForeignKey("task_categories.id"), nullable=False)
     task_name = Column(String(200), nullable=False)

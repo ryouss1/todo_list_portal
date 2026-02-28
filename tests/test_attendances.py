@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from app.models.attendance import Attendance
 from app.models.attendance_break import AttendanceBreak
+from portal_core.core.utils import parse_hhmm_to_utc
 
 
 class TestAttendanceAPI:
@@ -401,7 +402,7 @@ class TestAttendancePresets:
         resp = client.post("/api/attendances/default-set")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["date"] == date.today().isoformat()
+        assert data["date"] == datetime.now(timezone.utc).date().isoformat()
         assert data["clock_in"] is not None
         assert data["clock_out"] is not None
         # Break from preset (preset 1: 12:00-13:00)
@@ -413,7 +414,7 @@ class TestAttendancePresets:
 
     def test_default_set_overwrites_existing(self, client):
         """Default set updates existing record (same id) with all preset values."""
-        today_str = date.today().isoformat()
+        today_str = datetime.now(timezone.utc).date().isoformat()
         create_resp = client.post(
             "/api/attendances/",
             json={"date": today_str, "clock_in": "10:00", "clock_out": "19:00"},
@@ -492,7 +493,7 @@ class TestAttendanceInputType:
         """Cannot overwrite admin-entered attendance via default-set."""
         att = Attendance(
             user_id=1,
-            date=date.today(),
+            date=datetime.now(timezone.utc).date(),
             clock_in="2025-02-04T00:00:00+00:00",
             input_type="admin",
         )
@@ -820,3 +821,111 @@ class TestAttendanceMinDuration:
             },
         )
         assert resp.status_code == 201
+
+
+class TestPreviousDayIncomplete:
+    """前日の退勤が未記録の場合の動作テスト。
+
+    ユーザーが前日に出勤したまま退勤を忘れた場合、
+    翌日に status エンドポイントが前日の未完了レコードを返すことを確認する。
+    """
+
+    def _yesterday_attendance(self, db_session):
+        """前日の未退勤レコードを作成して返す。"""
+        yesterday = date.today() - timedelta(days=1)
+        att = Attendance(
+            user_id=1,
+            date=yesterday,
+            clock_in=parse_hhmm_to_utc(yesterday, "09:00"),
+            clock_out=None,
+        )
+        db_session.add(att)
+        db_session.flush()
+        return att
+
+    def test_status_detects_previous_day_incomplete(self, client, db_session):
+        """前日の未退勤がある場合、status は is_clocked_in=True を返す。"""
+        self._yesterday_attendance(db_session)
+        resp = client.get("/api/attendances/status")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["is_clocked_in"] is True
+        assert data["current_attendance"] is not None
+
+    def test_status_previous_day_date_is_not_today(self, client, db_session):
+        """前日の未退勤の status レスポンスに含まれる date が前日である。"""
+        att = self._yesterday_attendance(db_session)
+        resp = client.get("/api/attendances/status")
+        data = resp.json()
+        returned_date = data["current_attendance"]["date"]
+        assert returned_date == str(att.date)
+        assert returned_date < str(date.today())
+
+    def test_previous_day_clock_out_via_update(self, client, db_session):
+        """前日の未退勤レコードに PUT で退勤時刻を追加できる。"""
+        att = self._yesterday_attendance(db_session)
+        resp = client.put(
+            f"/api/attendances/{att.id}",
+            json={"clock_out": "18:00"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["clock_out"] is not None
+        assert data["id"] == att.id
+
+    def test_previous_day_clock_out_with_note(self, client, db_session):
+        """前日の未退勤レコードに退勤時刻とメモを同時に追加できる。"""
+        att = self._yesterday_attendance(db_session)
+        resp = client.put(
+            f"/api/attendances/{att.id}",
+            json={"clock_out": "18:00", "note": "忘れていた退勤"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["clock_out"] is not None
+        assert data["note"] == "忘れていた退勤"
+
+    def test_today_clock_in_blocked_when_previous_day_incomplete(self, client, db_session):
+        """前日が未退勤のまま当日の出勤は拒否される。"""
+        self._yesterday_attendance(db_session)
+        resp = client.post("/api/attendances/clock-in", json={})
+        assert resp.status_code == 400
+        assert "Already clocked in" in resp.json()["detail"]
+
+    def test_today_clock_in_allowed_after_previous_day_completed(self, client, db_session):
+        """前日の退勤を完了した後、当日の出勤が可能になる。"""
+        att = self._yesterday_attendance(db_session)
+        # 前日の退勤を完了
+        client.put(f"/api/attendances/{att.id}", json={"clock_out": "18:00"})
+        # 当日の出勤
+        resp = client.post("/api/attendances/clock-in", json={})
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["date"] == str(date.today())
+
+    def test_status_clears_after_previous_day_completed(self, client, db_session):
+        """前日の退勤完了後、status は当日の出勤状態を正しく反映する。"""
+        att = self._yesterday_attendance(db_session)
+        # 前日退勤を完了
+        client.put(f"/api/attendances/{att.id}", json={"clock_out": "18:00"})
+        # 当日未出勤の状態を確認
+        resp = client.get("/api/attendances/status")
+        data = resp.json()
+        assert data["is_clocked_in"] is False
+        assert data["current_attendance"] is None
+
+    def test_multi_day_gap_incomplete_also_detected(self, client, db_session):
+        """2日以上前の未退勤も検出される。"""
+        two_days_ago = date.today() - timedelta(days=2)
+        att = Attendance(
+            user_id=1,
+            date=two_days_ago,
+            clock_in=parse_hhmm_to_utc(two_days_ago, "09:00"),
+            clock_out=None,
+        )
+        db_session.add(att)
+        db_session.flush()
+        resp = client.get("/api/attendances/status")
+        data = resp.json()
+        assert data["is_clocked_in"] is True
+        assert data["current_attendance"]["date"] == str(two_days_ago)

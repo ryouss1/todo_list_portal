@@ -41,10 +41,16 @@ def update_report(db: Session, report: DailyReport, data: DailyReportUpdate) -> 
 delete_report = _crud.delete
 
 
-def get_reports_by_date_range(db: Session, start_date: date, end_date: date) -> List[DailyReport]:
-    return (
-        db.query(DailyReport)
-        .filter(DailyReport.report_date >= start_date, DailyReport.report_date <= end_date)
-        .order_by(DailyReport.report_date.desc())
-        .all()
+def get_reports_by_date_range(
+    db: Session,
+    start_date: date,
+    end_date: date,
+    user_ids: Optional[List[int]] = None,
+) -> List[DailyReport]:
+    q = db.query(DailyReport).filter(
+        DailyReport.report_date >= start_date,
+        DailyReport.report_date <= end_date,
     )
+    if user_ids is not None:
+        q = q.filter(DailyReport.user_id.in_(user_ids))
+    return q.order_by(DailyReport.report_date.desc()).all()

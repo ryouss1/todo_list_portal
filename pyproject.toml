@@ -12,7 +12,7 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["app", "portal_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

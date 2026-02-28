@@ -1,20 +1,20 @@
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.config import MAX_ATTENDANCE_BREAKS
-from app.core.constants import InputType
+from app.constants import InputType
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
-from app.core.utils import parse_hhmm_to_utc
+from app.core.utils import parse_hhmm_to_utc, seconds_to_hm
 from app.crud import attendance as crud_att
 from app.crud import attendance_break as crud_break
 from app.crud import attendance_preset as crud_preset
+from app.crud import user as crud_user
 from app.models.attendance import Attendance
-from app.models.user import User
 from app.schemas.attendance import AttendanceCreate, AttendanceUpdate
 
 logger = logging.getLogger("app.services.attendance")
@@ -42,7 +42,8 @@ def clock_in(db: Session, user_id: int, note: Optional[str] = None) -> Attendanc
         raise ConflictError("Already clocked in")
 
     # 1日1回制限: 同日に既に出退勤記録がある場合は拒否
-    today = date.today()
+    # CRUDが datetime.now(timezone.utc).date() で日付を設定するため、ここもUTCに統一
+    today = datetime.now(timezone.utc).date()
     existing = crud_att.get_attendance_by_date(db, user_id, today)
     if existing:
         logger.warning("Clock-in rejected: user_id=%d already has attendance for today", user_id)
@@ -172,10 +173,7 @@ def update_attendance(db: Session, attendance_id: int, user_id: int, data: Atten
     result = crud_att.update_attendance(db, att, update_data)
 
     if data.breaks is not None:
-        from app.models.attendance_break import AttendanceBreak
-
-        db.query(AttendanceBreak).filter(AttendanceBreak.attendance_id == result.id).delete()
-        db.flush()
+        crud_break.delete_breaks_by_attendance_id(db, result.id)
         for brk in data.breaks[:MAX_BREAKS]:
             break_start_dt = parse_hhmm_to_utc(result.date, brk.start)
             brk_obj = crud_break.create_break(db, result.id, break_start_dt)
@@ -242,7 +240,7 @@ def end_break(db: Session, attendance_id: int, user_id: int) -> Attendance:
 
 
 def get_user_preset_id(db: Session, user_id: int) -> Optional[int]:
-    user = db.query(User).filter(User.id == user_id).first()
+    user = crud_user.get_user(db, user_id)
     return user.default_preset_id if user else None
 
 
@@ -250,7 +248,7 @@ def set_user_preset_id(db: Session, user_id: int, preset_id: int) -> None:
     preset = crud_preset.get_preset(db, preset_id)
     if not preset:
         raise NotFoundError("Preset not found")
-    user = db.query(User).filter(User.id == user_id).first()
+    user = crud_user.get_user(db, user_id)
     if not user:
         raise NotFoundError("User not found")
     user.default_preset_id = preset_id
@@ -265,13 +263,14 @@ def default_set(db: Session, user_id: int) -> Attendance:
     A single break is created from the preset's break_start/break_end.
     If a record already exists for today, it is updated.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = crud_user.get_user(db, user_id)
     preset_id = user.default_preset_id if user and user.default_preset_id else 1
     preset = crud_preset.get_preset(db, preset_id)
     if not preset:
         raise NotFoundError("Preset not found")
 
-    today = date.today()
+    # Use UTC date to match CRUD layer's datetime.now(timezone.utc).date()
+    today = datetime.now(timezone.utc).date()
     clock_in_dt = parse_hhmm_to_utc(today, preset.clock_in)
     clock_out_dt = parse_hhmm_to_utc(today, preset.clock_out)
     break_start_dt = parse_hhmm_to_utc(today, preset.break_start) if preset.break_start else None
@@ -287,10 +286,7 @@ def default_set(db: Session, user_id: int) -> Attendance:
         result = crud_att.update_attendance(db, existing, update_data)
 
         # Replace existing breaks with preset break
-        from app.models.attendance_break import AttendanceBreak
-
-        db.query(AttendanceBreak).filter(AttendanceBreak.attendance_id == result.id).delete()
-        db.flush()
+        crud_break.delete_breaks_by_attendance_id(db, result.id)
         if break_start_dt:
             brk = crud_break.create_break(db, result.id, break_start_dt)
             if break_end_dt:
@@ -380,8 +376,7 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
             if work_seconds < 0:
                 work_seconds = 0
             total_work_seconds += work_seconds
-            h = work_seconds // 3600
-            m = (work_seconds % 3600) // 60
+            h, m = seconds_to_hm(work_seconds)
             work_str = f"{h}h {m}m"
 
         input_type_map = {"web": "WEB", "ic_card": "IC", "admin": "管理者"}
@@ -397,8 +392,7 @@ def generate_monthly_excel(db: Session, user_id: int, year: int, month: int) -> 
         row += 1
 
     # Total row
-    total_h = total_work_seconds // 3600
-    total_m = (total_work_seconds % 3600) // 60
+    total_h, total_m = seconds_to_hm(total_work_seconds)
     ws.cell(row=row, column=1, value="合計")
     ws.cell(row=row, column=1).font = Font(bold=True)
     ws.cell(row=row, column=5, value=f"{total_h}h {total_m}m")

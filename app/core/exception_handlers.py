@@ -1,11 +1,3 @@
-from fastapi import Request
-from fastapi.responses import JSONResponse
+"""Re-export from portal_core for backward compatibility."""
 
-from app.core.exceptions import AppError
-from app.core.i18n import translate
-
-
-async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-    locale = getattr(request.state, "locale", "ja")
-    translated = translate(exc.message, locale)
-    return JSONResponse(status_code=exc.status_code, content={"detail": translated})
+from portal_core.core.exception_handlers import app_error_handler  # noqa: F401

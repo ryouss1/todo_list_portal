@@ -2,7 +2,8 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
-import app.models  # noqa: F401 — ensure all models are registered
+import app.models  # noqa: F401 — ensure all app models are registered
+import portal_core.models  # noqa: F401 — ensure core models are registered
 from alembic import context
 from app.config import DATABASE_URL
 from app.database import Base

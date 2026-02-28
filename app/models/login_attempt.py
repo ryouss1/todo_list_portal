@@ -1,13 +1,3 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, func
+"""Re-export from portal_core for backward compatibility."""
 
-from app.database import Base
-
-
-class LoginAttempt(Base):
-    __tablename__ = "login_attempts"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    email = Column(String(255), nullable=False, index=True)
-    ip_address = Column(String(45), nullable=True)
-    success = Column(Boolean, nullable=False)
-    attempted_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+from portal_core.models.login_attempt import LoginAttempt  # noqa: F401

@@ -1,11 +1,3 @@
-from passlib.context import CryptContext
+"""Re-export from portal_core for backward compatibility."""
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+from portal_core.core.security import hash_password, pwd_context, verify_password  # noqa: F401

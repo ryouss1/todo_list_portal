@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from app.core.constants import PresenceStatusType
+from app.constants import PresenceStatusType
 
 PRESENCE_STATUSES = PresenceStatusType
 

@@ -1,12 +1,20 @@
-from datetime import date, datetime, time, timezone
+"""Re-export from portal_core for backward compatibility."""
+
+from typing import Tuple
+
+from portal_core.core.utils import parse_hhmm_to_utc  # noqa: F401
 
 
-def parse_hhmm_to_utc(target_date: date, time_str: str) -> datetime:
-    """Parse 'HH:MM' string + date into a timezone-aware UTC datetime.
+def seconds_to_hm(seconds: int) -> Tuple[int, int]:
+    """Convert seconds to an (hours, minutes) tuple.
 
-    The time string is interpreted as local time (server timezone),
-    then converted to UTC for storage.
+    Returns:
+        Tuple of (hours, minutes) with sub-minute fractions truncated.
+
+    Example:
+        >>> seconds_to_hm(3725)
+        (1, 2)
     """
-    t = time.fromisoformat(time_str)
-    local_dt = datetime.combine(target_date, t)
-    return local_dt.astimezone(timezone.utc)
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    return h, m

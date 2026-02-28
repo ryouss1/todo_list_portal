@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -131,6 +131,82 @@ def count_files_by_source(db: Session, source_id: int) -> dict:
         "deleted": counts.get("deleted", 0),
         "error": counts.get("error", 0),
     }
+
+
+def count_files_all_sources(db: Session, source_ids: List[int]) -> Dict[int, dict]:
+    """Return file counts by source_id for multiple sources in a single query."""
+    if not source_ids:
+        return {}
+    rows = (
+        db.query(LogFile.source_id, LogFile.status, func.count(LogFile.id))
+        .filter(LogFile.source_id.in_(source_ids))
+        .group_by(LogFile.source_id, LogFile.status)
+        .all()
+    )
+    result: Dict[int, dict] = {}
+    for source_id, status, count in rows:
+        if source_id not in result:
+            result[source_id] = {"total": 0, "new": 0, "updated": 0, "unchanged": 0, "deleted": 0, "error": 0}
+        result[source_id][status] = count
+        result[source_id]["total"] += count
+    return result
+
+
+def get_changed_files_by_path_ids(db: Session, path_ids: List[int]) -> Dict[int, List[LogFile]]:
+    """Get new or updated files grouped by path_id in a single query."""
+    if not path_ids:
+        return {}
+    files = (
+        db.query(LogFile)
+        .filter(
+            LogFile.path_id.in_(path_ids),
+            LogFile.status.in_(["new", "updated"]),
+        )
+        .order_by(LogFile.path_id, LogFile.file_name)
+        .all()
+    )
+    result: Dict[int, List[LogFile]] = {}
+    for f in files:
+        result.setdefault(f.path_id, []).append(f)
+    return result
+
+
+def create_file(
+    db: Session,
+    source_id: int,
+    path_id: int,
+    file_name: str,
+    file_size: int,
+    file_modified_at: Optional[datetime],
+    status: str,
+) -> LogFile:
+    """Create a new LogFile record (caller guarantees it does not exist)."""
+    log_file = LogFile(
+        source_id=source_id,
+        path_id=path_id,
+        file_name=file_name,
+        file_size=file_size,
+        file_modified_at=file_modified_at,
+        status=status,
+    )
+    db.add(log_file)
+    db.flush()
+    return log_file
+
+
+def update_file(
+    db: Session,
+    log_file: LogFile,
+    file_size: int,
+    file_modified_at: Optional[datetime],
+    status: str,
+) -> LogFile:
+    """Update an existing LogFile record."""
+    log_file.file_size = file_size
+    log_file.file_modified_at = file_modified_at
+    log_file.status = status
+    db.flush()
+    return log_file
 
 
 def reset_files_for_reread(db: Session, source_id: int) -> int:

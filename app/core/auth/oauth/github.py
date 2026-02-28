@@ -1,14 +1,3 @@
-"""GitHub OAuth provider configuration."""
+"""Re-export from portal_core for backward compatibility."""
 
-from app.core.auth.oauth.provider import OAuthProviderConfig, OAuthUserInfo
-
-
-class GitHubProviderConfig(OAuthProviderConfig):
-    name = "github"
-
-    def parse_userinfo(self, data: dict) -> OAuthUserInfo:
-        return OAuthUserInfo(
-            provider_user_id=str(data.get("id", "")),
-            email=data.get("email"),
-            display_name=data.get("name") or data.get("login"),
-        )
+from portal_core.core.auth.oauth.github import GitHubProviderConfig  # noqa: F401

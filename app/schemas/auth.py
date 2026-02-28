@@ -1,29 +1,9 @@
-from pydantic import BaseModel, EmailStr
+"""Re-export from portal_core for backward compatibility."""
 
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class LoginResponse(BaseModel):
-    user_id: int
-    email: str
-    display_name: str
-    role: str = "user"
-    preferred_locale: str = "ja"
-
-    model_config = {"from_attributes": True}
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-
-class ValidateTokenRequest(BaseModel):
-    token: str
+from portal_core.schemas.auth import (  # noqa: F401
+    ForgotPasswordRequest,
+    LoginRequest,
+    LoginResponse,
+    ResetPasswordRequest,
+    ValidateTokenRequest,
+)

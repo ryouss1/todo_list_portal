@@ -3,9 +3,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_validator
 
-from app.core.constants import AlertSeverityType
+from app.constants import AlertSeverityType
 
-ALERT_SEVERITIES = ("info", "warning", "critical")
 AlertSeverity = AlertSeverityType
 
 # --- Alert Rules ---

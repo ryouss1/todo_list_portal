@@ -1,36 +1,7 @@
-from datetime import datetime
-from typing import Optional
+"""Re-export from portal_core for backward compatibility."""
 
-from sqlalchemy.orm import Session
-
-from app.models.login_attempt import LoginAttempt
-
-
-def create_attempt(
-    db: Session,
-    email: str,
-    success: bool,
-    ip_address: Optional[str] = None,
-) -> LoginAttempt:
-    attempt = LoginAttempt(email=email, ip_address=ip_address, success=success)
-    db.add(attempt)
-    db.flush()
-    return attempt
-
-
-def count_recent_failures(db: Session, email: str, since: datetime) -> int:
-    return (
-        db.query(LoginAttempt)
-        .filter(
-            LoginAttempt.email == email,
-            LoginAttempt.success.is_(False),
-            LoginAttempt.attempted_at >= since,
-        )
-        .count()
-    )
-
-
-def delete_old_attempts(db: Session, before: datetime) -> int:
-    count = db.query(LoginAttempt).filter(LoginAttempt.attempted_at < before).delete(synchronize_session=False)
-    db.flush()
-    return count
+from portal_core.crud.login_attempt import (  # noqa: F401
+    count_recent_failures,
+    create_attempt,
+    delete_old_attempts,
+)
