@@ -1,0 +1,167 @@
+body {
+    background-color: #f5f6fa;
+}
+
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.todo-completed .todo-title {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+.timer-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.log-row-ERROR, .log-row-CRITICAL {
+    background-color: #f8d7da !important;
+}
+
+.log-row-WARNING {
+    background-color: #fff3cd !important;
+}
+
+.navbar-brand i {
+    margin-right: 0.3rem;
+}
+
+.presence-available {
+    background-color: #198754 !important;
+}
+
+.presence-away {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.presence-out {
+    background-color: #0d6efd !important;
+}
+
+.presence-break {
+    background-color: #fd7e14 !important;
+}
+
+.presence-offline {
+    background-color: #6c757d !important;
+}
+
+.presence-meeting {
+    background-color: #6f42c1 !important;
+}
+
+.presence-remote {
+    background-color: #20c997 !important;
+}
+
+.alert-severity-critical {
+    border-left: 4px solid #dc3545 !important;
+}
+
+.alert-severity-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.alert-severity-info {
+    border-left: 4px solid #0dcaf0 !important;
+}
+
+#alert-badge {
+    font-size: 0.65em;
+    vertical-align: top;
+    margin-left: 2px;
+}
+
+.cursor-pointer { cursor: pointer; }
+#user-status-table .detail-row td { padding-top: 0; border-top: none; }
+
+/* ── Wiki: code block ──────────────────────────────────────────────────────── */
+.wiki-content pre,
+#tiptap-editor pre {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border: 1px solid #313244;
+}
+
+.wiki-content pre code,
+#tiptap-editor pre code {
+    color: inherit;
+    background: none;
+    padding: 0;
+    font-size: inherit;
+    border-radius: 0;
+}
+
+/* Inline code */
+.wiki-content code:not(pre code),
+#tiptap-editor code:not(pre code) {
+    background-color: #f0f0f0;
+    color: #c0392b;
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-size: 0.875em;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+/* Wiki: links in rendered content */
+.wiki-content a {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+/* Wiki internal links (wiki pages) */
+.wiki-content .wiki-link-internal,
+#tiptap-editor .wiki-link-internal {
+    color: #0891b2;
+    text-decoration: underline;
+}
+
+/* Wiki external links (URLs) */
+.wiki-content .wiki-link-external,
+#tiptap-editor .wiki-link-external {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+.wiki-content .wiki-link-external::after,
+#tiptap-editor .wiki-link-external::after {
+    content: " \2197";
+    font-size: 0.75em;
+    vertical-align: super;
+}
+
+/* Toast UI Viewer: internal wiki links */
+.toastui-editor-contents a[href^="/"] {
+    color: #0891b2;
+    text-decoration: underline;
+}
+
+/* Toast UI Viewer: external links */
+.toastui-editor-contents a[href^="http"],
+.toastui-editor-contents a[href^="https"] {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+.toastui-editor-contents a[href^="http"]::after,
+.toastui-editor-contents a[href^="https"]::after {
+    content: " \2197";
+    font-size: 0.75em;
+    vertical-align: super;
+}
+
+/* Wiki page selector item hover */
+.link-page-option:hover {
+    background-color: #e9ecef;
+}

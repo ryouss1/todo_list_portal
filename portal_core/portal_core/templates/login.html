@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ _("Login") }} - {{ app_title }}</title>
+    <link href="{{ bootstrap_css_url }}" rel="stylesheet">
+    <link href="{{ bootstrap_icons_url }}" rel="stylesheet">
+    <style>
+        body { background-color: #f5f5f5; }
+        .login-card { max-width: 400px; margin: 100px auto; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h4 class="card-title text-center mb-4">
+                    <i class="bi bi-check2-square"></i> {{ app_title }}
+                </h4>
+                <div id="alert-container"></div>
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">{{ _("Email") }}</label>
+                        <input type="email" class="form-control" id="email" name="email" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">{{ _("Password") }}</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="login-btn">
+                        <i class="bi bi-box-arrow-in-right"></i> {{ _("Login") }}
+                    </button>
+                </form>
+                <div class="text-center mt-2">
+                    <a href="/forgot-password" class="text-muted small">{{ _("Forgot your password?") }}</a>
+                </div>
+                <div id="oauth-providers" class="mt-3" style="display:none;">
+                    <hr>
+                    <p class="text-center text-muted mb-2">{{ _("Or sign in with") }}</p>
+                    <div id="oauth-buttons" class="d-grid gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load OAuth providers
+        (async () => {
+            try {
+                const res = await fetch('/api/auth/oauth/providers');
+                if (res.ok) {
+                    const providers = await res.json();
+                    if (providers.length > 0) {
+                        const container = document.getElementById('oauth-buttons');
+                        providers.forEach(p => {
+                            const btn = document.createElement('a');
+                            btn.href = '/api/auth/oauth/' + encodeURIComponent(p.name) + '/authorize';
+                            btn.className = 'btn btn-outline-secondary';
+                            btn.textContent = 'Sign in with ' + p.display_name;
+                            container.appendChild(btn);
+                        });
+                        document.getElementById('oauth-providers').style.display = 'block';
+                    }
+                }
+            } catch (e) { /* ignore - OAuth is optional */ }
+        })();
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.innerHTML = '';
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value,
+                    }),
+                });
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alertContainer.innerHTML =
+                        '<div class="alert alert-danger">' +
+                        (data.detail || 'Login failed') +
+                        '</div>';
+                }
+            } catch (err) {
+                alertContainer.innerHTML =
+                    '<div class="alert alert-danger">Network error</div>';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
