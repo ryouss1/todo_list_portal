@@ -371,3 +371,33 @@ def test_scanner_stale_config_exists():
     assert hasattr(config, "LOG_SCANNER_STALE_MINUTES")
     assert isinstance(config.LOG_SCANNER_STALE_MINUTES, int)
     assert config.LOG_SCANNER_STALE_MINUTES > 0
+
+
+# ---------------------------------------------------------------------------
+# Error history and restart tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_jobs_status_has_error_fields(client):
+    """Job status response includes error_count and last_error fields."""
+    resp = client.get("/api/jobs/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    for job in data["jobs"]:
+        assert "error_count" in job
+        assert "last_error" in job
+
+
+def test_restart_unknown_job_returns_404(client):
+    """Restarting an unknown job name returns 404."""
+    resp = client.post("/api/jobs/nonexistent/restart")
+    assert resp.status_code == 404
+
+
+def test_restart_job_returns_200(client):
+    """Restarting a known job returns 200 with job status."""
+    resp = client.post("/api/jobs/log_scanner/restart")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "log_scanner"
+    assert "running" in data

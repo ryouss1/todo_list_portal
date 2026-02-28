@@ -18,6 +18,18 @@ from app.services.websocket_manager import site_ws_manager
 logger = logging.getLogger("app.services.site_checker")
 
 _last_check_at: Optional[datetime] = None
+_error_history: list = []  # max 10 entries, each: {"ts": str, "msg": str}
+_last_error: Optional[str] = None
+
+
+def _record_error(msg: str) -> None:
+    """Record an error in the rolling error history (max 10 entries)."""
+    global _error_history, _last_error
+    _last_error = msg
+    entry = {"ts": datetime.now(timezone.utc).isoformat(), "msg": msg}
+    _error_history.append(entry)
+    if len(_error_history) > 10:
+        _error_history.pop(0)
 
 
 async def _check_due_links() -> None:
@@ -47,6 +59,7 @@ async def _check_due_links() -> None:
 
         for link, result in zip(due_links, results):
             if isinstance(result, Exception):
+                _record_error(f"link id={link.id}: {result}")
                 logger.exception("Unexpected error checking link id=%d: %s", link.id, result)
                 continue
 
@@ -86,7 +99,8 @@ async def _check_due_links() -> None:
                 }
                 await site_ws_manager.broadcast(broadcast_data)
 
-    except Exception:
+    except Exception as exc:
+        _record_error(str(exc))
         logger.exception("Error in _check_due_links")
     finally:
         db.close()
@@ -154,7 +168,25 @@ def get_status(app) -> dict:
         "enabled": SITE_CHECKER_ENABLED,
         "running": running,
         "last_run_at": _last_check_at.isoformat() if _last_check_at else None,
+        "error_count": len(_error_history),
+        "last_error": _last_error,
     }
+
+
+async def restart(app) -> dict:
+    """Cancel and restart the site checker task. Returns new status."""
+    global _last_check_at
+    task = getattr(app.state, "site_checker_task", None)
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, RuntimeError):
+            pass
+    _last_check_at = None
+    if SITE_CHECKER_ENABLED:
+        app.state.site_checker_task = asyncio.create_task(_checker_loop())
+    return get_status(app)
 
 
 async def start_checker(app) -> None:

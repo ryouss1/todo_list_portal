@@ -14,6 +14,18 @@ logger = logging.getLogger("app.services.reminder_checker")
 _WATCHDOG_INTERVAL = 120  # seconds between watchdog checks
 
 _last_check_at: Optional[datetime] = None
+_error_history: list = []  # max 10 entries, each: {"ts": str, "msg": str}
+_last_error: Optional[str] = None
+
+
+def _record_error(msg: str) -> None:
+    """Record an error in the rolling error history (max 10 entries)."""
+    global _error_history, _last_error
+    _last_error = msg
+    entry = {"ts": datetime.now(timezone.utc).isoformat(), "msg": msg}
+    _error_history.append(entry)
+    if len(_error_history) > 10:
+        _error_history.pop(0)
 
 
 async def _check_reminders() -> None:
@@ -46,7 +58,8 @@ async def _check_reminders() -> None:
                 reminder.user_id,
                 reminder.minutes_before,
             )
-    except Exception:
+    except Exception as exc:
+        _record_error(str(exc))
         logger.exception("Error checking reminders")
     finally:
         db.close()
@@ -110,7 +123,25 @@ def get_status(app) -> dict:
         "enabled": enabled,
         "running": running,
         "last_run_at": _last_check_at.isoformat() if _last_check_at else None,
+        "error_count": len(_error_history),
+        "last_error": _last_error,
     }
+
+
+async def restart(app) -> dict:
+    """Cancel and restart the reminder checker task. Returns new status."""
+    global _last_check_at
+    task = getattr(app.state, "reminder_task", None)
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, RuntimeError):
+            pass
+    _last_check_at = None
+    if CALENDAR_REMINDER_ENABLED:
+        app.state.reminder_task = asyncio.create_task(_reminder_loop())
+    return get_status(app)
 
 
 async def start_reminder_checker(app) -> None:

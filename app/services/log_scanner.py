@@ -18,6 +18,18 @@ from app.services.websocket_manager import alert_ws_manager
 logger = logging.getLogger("app.services.log_scanner")
 
 _last_scan_at: Optional[datetime] = None
+_error_history: list = []  # max 10 entries, each: {"ts": str, "msg": str}
+_last_error: Optional[str] = None
+
+
+def _record_error(msg: str) -> None:
+    """Record an error in the rolling error history (max 10 entries)."""
+    global _error_history, _last_error
+    _last_error = msg
+    entry = {"ts": datetime.now(timezone.utc).isoformat(), "msg": msg}
+    _error_history.append(entry)
+    if len(_error_history) > 10:
+        _error_history.pop(0)
 
 
 def _scan_in_thread(source_id: int) -> dict:
@@ -63,10 +75,12 @@ async def _scan_due_sources() -> None:
                     source_id,
                     result.get("message", ""),
                 )
-            except Exception:
+            except Exception as exc:
+                _record_error(f"source id={source.id}: {exc}")
                 logger.exception("Error scanning source id=%d", source.id)
 
-    except Exception:
+    except Exception as exc:
+        _record_error(str(exc))
         logger.exception("Error in scan_due_sources")
     finally:
         db.close()
@@ -130,7 +144,25 @@ def get_status(app) -> dict:
         "enabled": LOG_SCANNER_ENABLED,
         "running": running,
         "last_run_at": _last_scan_at.isoformat() if _last_scan_at else None,
+        "error_count": len(_error_history),
+        "last_error": _last_error,
     }
+
+
+async def restart(app) -> dict:
+    """Cancel and restart the log scanner task. Returns new status."""
+    global _last_scan_at
+    task = getattr(app.state, "log_scanner_task", None)
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, RuntimeError):
+            pass
+    _last_scan_at = None
+    if LOG_SCANNER_ENABLED:
+        app.state.log_scanner_task = asyncio.create_task(_scanner_loop())
+    return get_status(app)
 
 
 async def start_scanner(app) -> None:

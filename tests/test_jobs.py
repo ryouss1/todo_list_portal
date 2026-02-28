@@ -24,7 +24,14 @@ class TestJobsStatusEndpoint:
         resp = client.get("/api/jobs/status")
         assert resp.status_code == 200
         for job in resp.json()["jobs"]:
-            assert set(job.keys()) == {"name", "enabled", "running", "last_run_at"}
+            assert set(job.keys()) == {
+                "name",
+                "enabled",
+                "running",
+                "last_run_at",
+                "error_count",
+                "last_error",
+            }
 
     def test_get_jobs_status_non_admin_forbidden(self, client_user2):
         """Non-admin users receive 403 Forbidden."""
