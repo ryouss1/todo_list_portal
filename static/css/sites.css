@@ -1,0 +1,138 @@
+/* ── Site Link Cards ────────────────────────────────────────────── */
+
+.site-card {
+    width: 160px;
+    min-width: 160px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.1s ease;
+    position: relative;
+    user-select: none;
+}
+
+.site-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+.site-card .card-body {
+    padding: 0.6rem 0.75rem;
+}
+
+.site-card .card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-card .site-meta {
+    font-size: 0.72rem;
+    color: #6c757d;
+    line-height: 1.3;
+}
+
+/* Status dot */
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.status-dot.up      { background-color: #198754; }
+.status-dot.down    { background-color: #dc3545; }
+.status-dot.timeout { background-color: #fd7e14; }
+.status-dot.error   { background-color: #dc3545; }
+.status-dot.unknown { background-color: #adb5bd; }
+
+/* Card border by status */
+.site-card.status-down,
+.site-card.status-error {
+    border-color: #dc3545 !important;
+}
+
+.site-card.status-timeout {
+    border-color: #fd7e14 !important;
+}
+
+/* Action buttons (shown on hover) */
+.site-card .card-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: none;
+    gap: 2px;
+}
+
+.site-card:hover .card-actions {
+    display: flex;
+}
+
+.site-card .card-actions .btn {
+    padding: 1px 5px;
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+
+/* ── Group section ─────────────────────────────────────────────── */
+
+.site-group-section {
+    margin-bottom: 1.5rem;
+}
+
+.site-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.site-group-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.site-group-header .group-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Cards grid */
+.site-cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* ── Status badge text ─────────────────────────────────────────── */
+
+.site-card .status-text {
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-text.up      { color: #198754; }
+.status-text.down    { color: #dc3545; }
+.status-text.timeout { color: #fd7e14; }
+.status-text.error   { color: #dc3545; }
+.status-text.unknown { color: #adb5bd; }
+
+/* WS indicator */
+#ws-indicator {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+}
