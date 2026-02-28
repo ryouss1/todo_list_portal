@@ -145,6 +145,18 @@ async def _watchdog_loop(app) -> None:
         await _watchdog_step(app)
 
 
+def get_status(app) -> dict:
+    """Return current status of the site checker for /api/jobs/status."""
+    task = getattr(app.state, "site_checker_task", None)
+    running = task is not None and not task.done()
+    return {
+        "name": "site_checker",
+        "enabled": SITE_CHECKER_ENABLED,
+        "running": running,
+        "last_run_at": _last_check_at.isoformat() if _last_check_at else None,
+    }
+
+
 async def start_checker(app) -> None:
     """Start the site health checker background task and watchdog."""
     if not SITE_CHECKER_ENABLED:

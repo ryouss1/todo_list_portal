@@ -121,6 +121,18 @@ async def _watchdog_loop(app) -> None:
         await _watchdog_step(app)
 
 
+def get_status(app) -> dict:
+    """Return current status of the log scanner for /api/jobs/status."""
+    task = getattr(app.state, "log_scanner_task", None)
+    running = task is not None and not task.done()
+    return {
+        "name": "log_scanner",
+        "enabled": LOG_SCANNER_ENABLED,
+        "running": running,
+        "last_run_at": _last_scan_at.isoformat() if _last_scan_at else None,
+    }
+
+
 async def start_scanner(app) -> None:
     """Start the log scanner background task and watchdog."""
     if not LOG_SCANNER_ENABLED:
