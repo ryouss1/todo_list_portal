@@ -91,7 +91,6 @@ class PortalApp:
 
         # Registration lists
         self._nav_items: List[NavItem] = []
-        self._seed_hooks_nav: List[NavItem] = []
         self._startup_hooks: List[Callable] = []
         self._shutdown_hooks: List[Callable] = []
         self._ws_handlers: Dict[str, WebSocketManager] = {}
@@ -148,7 +147,7 @@ class PortalApp:
 
                 _db = SessionLocal()
                 try:
-                    for nav in portal._seed_hooks_nav:
+                    for nav in portal._nav_items:
                         name = nav.path.lstrip("/").replace("/", "_") or "dashboard"
                         _upsert_menu(
                             _db,
@@ -179,12 +178,8 @@ class PortalApp:
         self._register_core_routers()
 
         # Core nav items
-        _dashboard = NavItem("Dashboard", "/", "bi-speedometer2", sort_order=0)
-        _users = NavItem("Users", "/users", "bi-people-fill", sort_order=900)
-        self._nav_items.append(_dashboard)
-        self._nav_items.append(_users)
-        self._seed_hooks_nav.append(_dashboard)
-        self._seed_hooks_nav.append(_users)
+        self._nav_items.append(NavItem("Dashboard", "/", "bi-speedometer2", sort_order=0))
+        self._nav_items.append(NavItem("Users", "/users", "bi-people-fill", sort_order=900))
         self.register_nav_item(NavItem("Roles", "/roles", "bi-shield-fill", sort_order=910))
         self.register_nav_item(NavItem("Menus", "/menus", "bi-list-ul", sort_order=920))
 
@@ -258,7 +253,6 @@ class PortalApp:
     def register_nav_item(self, item: NavItem):
         """Add a navigation bar item."""
         self._nav_items.append(item)
-        self._seed_hooks_nav.append(item)
 
     def register_page(self, path: str, template: str, **extra_context):
         """Register an HTML page route."""
