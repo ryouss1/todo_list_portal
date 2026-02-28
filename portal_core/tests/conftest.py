@@ -80,6 +80,17 @@ def core_app():
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _clear_nav_cache(core_app):
+    """Clear _nav_cache before each test to prevent TTL cross-test pollution.
+
+    The core_app fixture is session-scoped, so the PortalApp instance (and its
+    _nav_cache) persists across all tests.  Without this fixture, a cached nav
+    result from one test leaks into the next, making mock.patch ineffective.
+    """
+    core_app.state.portal._nav_cache.clear()
+
+
 @pytest.fixture()
 def db_session():
     """Create a DB session that rolls back after the test."""

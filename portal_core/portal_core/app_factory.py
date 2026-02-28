@@ -16,6 +16,7 @@ Usage::
 import asyncio
 import logging
 import logging.config
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -35,6 +36,7 @@ from portal_core.core.exceptions import AppError
 from portal_core.core.i18n import get_translator
 from portal_core.core.logging_config import LOGGING_CONFIG
 from portal_core.crud.menu import get_menus, get_visible_menus_for_user
+from portal_core.database import SessionLocal
 from portal_core.init_db import seed_default_roles, seed_default_user
 from portal_core.routers import api_auth, api_departments, api_menus, api_oauth, api_roles, api_users
 from portal_core.services.websocket_manager import WebSocketManager
@@ -101,6 +103,7 @@ class PortalApp:
         self._csrf_exempt_prefixes: List[str] = []
         self._extra_routers: List[Dict[str, Any]] = []
         self._extra_head_scripts: List[str] = []
+        self._nav_cache: dict = {}  # {user_id: (expires_at_monotonic, List[NavItem])}
 
         self.app: Optional[FastAPI] = None
         self._jinja_env: Optional[Environment] = None
@@ -142,7 +145,6 @@ class PortalApp:
             # NavItem → menus DB sync
             try:
                 from portal_core.crud.menu import upsert_menu_from_nav_item as _upsert_menu
-                from portal_core.database import SessionLocal
 
                 _db = SessionLocal()
                 try:
@@ -345,6 +347,7 @@ class PortalApp:
         self.app.state.render = self._render
         self.app.state.nav_items = self._nav_items
         self.app.state.config = self.config
+        self.app.state.portal = self  # expose PortalApp for test cache management
 
         # Register core page routes
         self._register_core_pages()
@@ -364,15 +367,25 @@ class PortalApp:
     def _get_filtered_nav_items(self, user_id: Optional[int]) -> List[NavItem]:
         """Return nav items visible to the user based on DB menus.
 
-        Falls back to all in-memory items if menus table is empty (e.g., first startup)
-        or if any exception occurs (defensive: always render something rather than crash).
-        Returns an empty list when user_id is None (unauthenticated).
+        Results are cached per user for 30 seconds to reduce DB connections.
+        Falls back to all in-memory items if menus table is empty (first startup)
+        or on any exception. Returns an empty list for unauthenticated users.
         """
         if not user_id:
             return []
-        try:
-            from portal_core.database import SessionLocal
 
+        now = time.monotonic()
+        cached = self._nav_cache.get(user_id)
+        if cached and cached[0] > now:
+            return cached[1]
+
+        result = self._fetch_nav_items_for_user(user_id)
+        self._nav_cache[user_id] = (now + 30, result)  # 30-second TTL
+        return result
+
+    def _fetch_nav_items_for_user(self, user_id: int) -> List[NavItem]:
+        """Fetch nav items from DB for a specific user (no cache)."""
+        try:
             db = SessionLocal()
             try:
                 if not get_menus(db):
