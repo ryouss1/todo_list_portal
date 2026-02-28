@@ -381,8 +381,12 @@ class PortalApp:
                 return [item for item in self._nav_items if item.path in visible_paths]
             finally:
                 db.close()
-        except Exception:
-            # Defensive: always render something rather than crash
+        except Exception as e:
+            logger.warning(
+                "Failed to filter nav items for user %s, falling back to all items: %s",
+                user_id,
+                e,
+            )
             return self._nav_items
 
     def _render(self, template_name: str, request: Request, **context) -> HTMLResponse:
