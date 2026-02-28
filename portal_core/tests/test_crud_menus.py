@@ -112,3 +112,26 @@ def test_upsert_menu_from_nav_item(db_session):
     upsert_menu_from_nav_item(db_session, "nav_item", "Nav Item Updated", "/nav", "bi-x", sort_order=50)
     db_session.flush()
     assert len([m for m in get_menus(db_session) if m.name == "nav_item"]) == 1
+
+
+def test_department_menu_model_can_be_created(db_session, test_user):
+    """DepartmentMenu model can be created and queried."""
+    from portal_core.crud.menu import create_menu
+    from portal_core.models.department import Department
+    from portal_core.models.menu import DepartmentMenu
+    from portal_core.schemas.menu import MenuCreate
+
+    dept = Department(name="Test Department for Menu")
+    db_session.add(dept)
+    db_session.flush()
+
+    menu = create_menu(db_session, MenuCreate(name="dept_test_menu", label="Dept", path="/dept-test", sort_order=0))
+    db_session.flush()
+
+    dm = DepartmentMenu(department_id=dept.id, menu_id=menu.id, kino_kbn=1)
+    db_session.add(dm)
+    db_session.flush()
+
+    fetched = db_session.query(DepartmentMenu).filter(DepartmentMenu.menu_id == menu.id).first()
+    assert fetched is not None
+    assert fetched.kino_kbn == 1

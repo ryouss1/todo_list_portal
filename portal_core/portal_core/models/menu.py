@@ -40,3 +40,13 @@ class UserMenu(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True)
     kino_kbn = Column(SmallInteger, nullable=False, default=1)
+
+
+class DepartmentMenu(Base):
+    """Department-level menu visibility override."""
+
+    __tablename__ = "department_menus"
+
+    department_id = Column(Integer, ForeignKey("departments.id", ondelete="CASCADE"), primary_key=True)
+    menu_id = Column(Integer, ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True)
+    kino_kbn = Column(SmallInteger, nullable=False, default=1)
