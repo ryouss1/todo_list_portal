@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -44,3 +44,60 @@ class MenuResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class VisibilityItem(BaseModel):
+    """Single ON/OFF entry in a batch visibility update."""
+
+    id: int  # role_id / department_id / user_id depending on context
+    kino_kbn: int  # 1=show, 0=hide
+
+
+class RoleVisibilityEntry(BaseModel):
+    role_id: int
+    menu_id: int
+    kino_kbn: int
+
+    model_config = {"from_attributes": True}
+
+
+class DepartmentVisibilityEntry(BaseModel):
+    department_id: int
+    menu_id: int
+    kino_kbn: int
+
+    model_config = {"from_attributes": True}
+
+
+class UserVisibilityEntry(BaseModel):
+    user_id: int
+    menu_id: int
+    kino_kbn: int
+
+    model_config = {"from_attributes": True}
+
+
+class VisibilityBatchUpdate(BaseModel):
+    """Request body for batch visibility PUT endpoints."""
+
+    items: List[VisibilityItem]
+
+
+class MyVisibilityEntry(BaseModel):
+    menu_id: int
+    kino_kbn: int
+
+    model_config = {"from_attributes": True}
+
+
+class MyVisibilityUpdate(BaseModel):
+    """Request body for self-service visibility update."""
+
+    menu_id: int
+    kino_kbn: int  # 1=show, 0=hide
+
+
+class MyVisibilityReset(BaseModel):
+    """Request body for self-service visibility reset."""
+
+    menu_id: int
