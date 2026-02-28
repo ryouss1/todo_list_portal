@@ -17,6 +17,8 @@ from app.services.websocket_manager import alert_ws_manager
 
 logger = logging.getLogger("app.services.log_scanner")
 
+_WATCHDOG_INTERVAL = 60  # seconds between watchdog checks
+
 _last_scan_at: Optional[datetime] = None
 _error_history: list = []  # max 10 entries, each: {"ts": str, "msg": str}
 _last_error: Optional[str] = None
@@ -128,10 +130,10 @@ async def _watchdog_step(app) -> None:
 
 
 async def _watchdog_loop(app) -> None:
-    """Watchdog loop: checks scanner health every 60 seconds."""
+    """Watchdog loop: checks scanner health every _WATCHDOG_INTERVAL seconds."""
     logger.info("Log scanner watchdog started")
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(_WATCHDOG_INTERVAL)
         await _watchdog_step(app)
 
 

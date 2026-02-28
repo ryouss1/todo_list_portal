@@ -86,6 +86,8 @@ class TestStartStopScanner:
             await start_scanner(app)
             assert hasattr(app.state, "log_scanner_task")
             assert app.state.log_scanner_task is not None
+            assert hasattr(app.state, "log_scanner_watchdog")
+            assert app.state.log_scanner_watchdog is not None
             # Clean up
             await stop_scanner(app)
 
