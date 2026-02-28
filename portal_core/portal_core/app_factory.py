@@ -34,6 +34,7 @@ from portal_core.core.exception_handlers import app_error_handler
 from portal_core.core.exceptions import AppError
 from portal_core.core.i18n import get_translator
 from portal_core.core.logging_config import LOGGING_CONFIG
+from portal_core.crud.menu import get_menus, get_visible_menus_for_user
 from portal_core.init_db import seed_default_roles, seed_default_user
 from portal_core.routers import api_auth, api_departments, api_menus, api_oauth, api_roles, api_users
 from portal_core.services.websocket_manager import WebSocketManager
@@ -358,12 +359,42 @@ class PortalApp:
     # Rendering
     # =================================================================
 
+    def _get_filtered_nav_items(self, user_id: Optional[int]) -> List[NavItem]:
+        """Return nav items visible to the user based on DB menus.
+
+        Falls back to all in-memory items if menus table is empty (e.g., first startup)
+        or if any exception occurs (defensive: always render something rather than crash).
+        Returns an empty list when user_id is None (unauthenticated).
+        """
+        if not user_id:
+            return []
+        try:
+            from portal_core.database import SessionLocal
+
+            db = SessionLocal()
+            try:
+                if not get_menus(db):
+                    # DB not yet seeded — fall back to all in-memory items
+                    return self._nav_items
+                visible = get_visible_menus_for_user(db, user_id)
+                visible_paths = {m.path for m in visible}
+                return [item for item in self._nav_items if item.path in visible_paths]
+            finally:
+                db.close()
+        except Exception:
+            # Defensive: always render something rather than crash
+            return self._nav_items
+
     def _render(self, template_name: str, request: Request, **context) -> HTMLResponse:
         """Render a Jinja2 template with locale-aware translations and nav items."""
         locale = getattr(request.state, "locale", "ja")
         self._jinja_env.install_gettext_translations(get_translator(locale))
         template = self._jinja_env.get_template(template_name)
-        context.setdefault("nav_items", self._nav_items)
+
+        # Filter nav items by user permissions (DB menus)
+        if "nav_items" not in context:
+            user_id = request.session.get("user_id")
+            context["nav_items"] = self._get_filtered_nav_items(user_id)
         context.setdefault("config", self.config)
         context.setdefault("app_title", self.title)
         context.setdefault("extra_head_scripts", self._extra_head_scripts)
