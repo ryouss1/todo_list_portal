@@ -1917,3 +1917,186 @@ Wikiページを別の親の下に移動する（作成者のみ）。
 | backlog_ticket_id | string \| null | Backlogチケット番号 |
 | is_completed | boolean | true = タスク削除済み |
 | linked_at | datetime | リンク作成日時 |
+
+---
+
+## 24. Roles API (`/api/roles`)
+
+### GET /api/roles/
+ロール一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `RoleResponse[]`
+
+### POST /api/roles/
+ロールを作成する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `RoleCreate`
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| name | string | Yes | ロール名（一意） |
+| display_name | string | Yes | 表示名 |
+| description | string | No | 説明 |
+| sort_order | integer | No | 表示順（デフォルト0） |
+
+- **レスポンス**: `201 Created` - `RoleResponse`
+- **エラー**: `409 Conflict` - ロール名重複
+
+### GET /api/roles/{id}
+ロールを取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `RoleResponse`
+- **エラー**: `404 Not Found`
+
+### PUT /api/roles/{id}
+ロールを更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `RoleUpdate`（display_name/description/sort_order/is_active 任意）
+- **レスポンス**: `200 OK` - `RoleResponse`
+- **エラー**: `404 Not Found`
+
+### DELETE /api/roles/{id}
+ロールを削除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### PUT /api/roles/{id}/permissions
+ロールの権限を一括設定する（上書き更新）。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `PermissionItem[]`
+
+| フィールド | 型 | 必須 | 説明 |
+|------------|-----|------|------|
+| resource | string | Yes | リソース名（例: "wiki", "admin", "*"） |
+| action | string | Yes | アクション名（例: "edit", "view", "*"） |
+| kino_kbn | integer | No | 許可/拒否（1=許可, 0=拒否、デフォルト1） |
+
+- **レスポンス**: `200 OK` - `RoleResponse`
+- **エラー**: `404 Not Found`
+
+### GET /api/users/{user_id}/roles
+ユーザーのロール一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `RoleResponse[]`
+
+### POST /api/users/{user_id}/roles
+ユーザーにロールを付与する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `{"role_id": integer}`
+- **レスポンス**: `200 OK` - `{"detail": "Role assigned"}`
+- **エラー**: `404 Not Found` - ロールが存在しない
+
+### DELETE /api/users/{user_id}/roles/{role_id}
+ユーザーからロールを剥奪する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### RoleResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | ロールID |
+| name | string | ロール名 |
+| display_name | string | 表示名 |
+| description | string \| null | 説明 |
+| sort_order | integer | 表示順 |
+| is_active | boolean | 有効フラグ |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime \| null | 更新日時 |
+| permissions | PermissionItem[] | 権限リスト |
+
+### PermissionItem スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| resource | string | リソース名 |
+| action | string | アクション名 |
+| kino_kbn | integer | 許可/拒否（1=許可, 0=拒否） |
+
+---
+
+## 25. Menus API (`/api/menus`)
+
+### GET /api/menus/
+メニュー一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `MenuResponse[]`
+
+### GET /api/menus/my
+現在のユーザーに表示されるメニュー一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `MenuResponse[]`
+
+### POST /api/menus/
+メニューを作成する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `MenuCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | メニュー名（一意） |
+| label | string | Yes | - | 表示ラベル |
+| path | string | Yes | - | URLパス |
+| icon | string | No | "" | アイコンクラス名 |
+| badge_id | string | No | null | バッジHTML要素ID |
+| parent_id | integer | No | null | 親メニューID |
+| sort_order | integer | No | 100 | 表示順 |
+| required_resource | string | No | null | 表示に必要なリソース権限 |
+| required_action | string | No | null | 表示に必要なアクション権限 |
+
+- **レスポンス**: `201 Created` - `MenuResponse`
+- **エラー**: `409 Conflict` - メニュー名重複
+
+### GET /api/menus/{id}
+メニューを取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `MenuResponse`
+- **エラー**: `404 Not Found`
+
+### PUT /api/menus/{id}
+メニューを更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `MenuUpdate`（全フィールド任意）
+- **レスポンス**: `200 OK` - `MenuResponse`
+- **エラー**: `404 Not Found`
+
+### DELETE /api/menus/{id}
+メニューを削除する。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### MenuResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | メニューID |
+| name | string | メニュー名 |
+| label | string | 表示ラベル |
+| path | string | URLパス |
+| icon | string | アイコンクラス名 |
+| badge_id | string \| null | バッジHTML要素ID |
+| parent_id | integer \| null | 親メニューID |
+| sort_order | integer | 表示順 |
+| is_active | boolean | 有効フラグ |
+| required_resource | string \| null | 必要リソース権限 |
+| required_action | string \| null | 必要アクション権限 |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime \| null | 更新日時 |

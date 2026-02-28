@@ -15,6 +15,9 @@
 | [ISSUE-5-01](#issue-5-01) | Task → DailyReport 密結合 | 高 | 技術的負債 | ✅ 解決済み |
 | [ISSUE-5-02](#issue-5-02) | Log → Alert 密結合 | 高 | 技術的負債 | ✅ 解決済み |
 | [ISSUE-5-03](#issue-5-03) | ページルート登録の拡張性欠如 | 低 | 技術的負債 | 未解決 |
+| [ISSUE-5-04](#issue-5-04) | NavItem と menus DB の二重管理 | 低 | 技術的負債 | 未解決 |
+| [ISSUE-5-05](#issue-5-05) | `require_admin` と `require_permission` の並存 | 低 | 技術的負債 | 未解決 |
+| [ISSUE-5-06](#issue-5-06) | `_render()` でのリクエストごとの DB セッション生成 | 低 | 技術的負債 | 未解決 |
 
 ---
 
@@ -212,6 +215,70 @@ portal.register_router(wiki_pages.router)
 
 ---
 
+---
+
+## ISSUE-5-04
+
+**概要**: NavItem と menus DB テーブルの二重管理
+**優先度**: 低
+**ステータス**: 未解決（暫定措置中）
+
+### 問題
+
+`register_nav_item()` がインメモリリストと `menus` DB テーブルの両方へ書き込む二重管理状態が発生している。移行期間中の暫定措置として許容しているが、将来的には一方に統一する必要がある。
+
+### 影響範囲
+
+- `portal_core/portal_core/app_factory.py`: `register_nav_item()` + `_get_filtered_nav_items()`
+- `main.py`: `portal.register_nav_item()` 呼び出し箇所
+
+### 対策案
+
+`register_nav_item()` を廃止し、DB 管理（`menus` テーブル）のみに統一する。既存の `register_nav_item()` 呼び出しはマイグレーション時に DB 初期データとして移行する。
+
+---
+
+## ISSUE-5-05
+
+**概要**: `require_admin` と `require_permission` の並存
+**優先度**: 低
+**ステータス**: 未解決（暫定措置中）
+
+### 問題
+
+後方互換のため `require_admin`（`users.role == "admin"` 直接チェック）と `require_permission("resource", "action")`（role_permissions テーブル経由チェック）が並存している。将来的にはどちらか一方に統一すべきだが、現時点では移行コストが高い。
+
+### 影響範囲
+
+- `portal_core/portal_core/core/deps.py`: `require_admin`, `require_permission` 定義
+- 全 API ルーター: `Depends(require_admin)` 使用箇所（多数）
+
+### 対策案
+
+`require_admin` を `require_permission("*", "*")` のエイリアスに変更し、全 admin 操作を RBAC テーブル経由に統一する。
+
+---
+
+## ISSUE-5-06
+
+**概要**: `_render()` でのリクエストごとの DB セッション生成
+**優先度**: 低
+**ステータス**: 未解決（暫定措置中）
+
+### 問題
+
+`app_factory.py` の `_get_filtered_nav_items()` がリクエストごとに `SessionLocal()` を新規取得してメニュー権限を照会している。高負荷時のコネクションプール枯渇リスクがある。
+
+### 影響範囲
+
+- `portal_core/portal_core/app_factory.py`: `_render()` → `_get_filtered_nav_items()`
+
+### 対策案
+
+短期間（例: 30秒）のキャッシュを導入するか、ミドルウェアで確立済みの DB セッションを `request.state.db` 経由で再利用する。
+
+---
+
 ## 対応方針サマリー
 
 | ID | 対応方針 | 対応時期の目安 | ステータス |
@@ -219,5 +286,9 @@ portal.register_router(wiki_pages.router)
 | ISSUE-5-01 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 | ✅ 完了 |
 | ISSUE-5-02 | コールバック方式でフック登録に変更 | 次フェーズのアーキテクチャ改善時 | ✅ 完了 |
 | ISSUE-5-03 | 機能別ページルーター方式に移行 | 新機能追加時に順次対応 | 未対応 |
+| ISSUE-5-04 | `register_nav_item()` 廃止、DB 管理に統一 | 次フェーズのナビゲーション整理時 | 未対応 |
+| ISSUE-5-05 | `require_admin` を RBAC 経由に統一 | RBAC 移行完了後 | 未対応 |
+| ISSUE-5-06 | メニュー権限クエリのキャッシュ化 | パフォーマンス問題が顕在化した時点 | 未対応 |
 
 ISSUE-5-01 と ISSUE-5-02 は同一パターンの問題であるため、コールバック/フック方式の基盤を共通化して一括対応した。
+ISSUE-5-04〜5-06 は RBAC + メニュー管理機能（2026-02-28 実装）に伴い追加された技術的負債。

@@ -36,7 +36,7 @@ python main.py
 # Tests (app-specific: ~584 tests)
 pytest tests/ -q
 
-# Tests (portal_core: ~179 tests)
+# Tests (portal_core: ~244 tests)
 cd portal_core && pytest tests/ -q && cd ..
 
 # Tests (all)
@@ -61,9 +61,9 @@ alembic upgrade head
 
 ### Models
 
-全モデル定義は [db-schema.md](docs/db-schema.md) を参照。全41テーブル:
+全モデル定義は [db-schema.md](docs/db-schema.md) を参照。全47テーブル:
 
-`users`, `groups`, `login_attempts`, `auth_audit_logs`, `oauth_providers`, `user_oauth_accounts`, `oauth_states`, `password_reset_tokens`, `todos`, `attendances`, `attendance_breaks`, `attendance_presets`, `tasks`, `task_time_entries`, `task_categories`, `task_list_items`, `daily_reports`, `logs`, `log_sources`, `log_source_paths`, `log_files`, `log_entries`, `presence_statuses`, `presence_logs`, `alerts`, `alert_rules`, `calendar_events`, `calendar_event_exceptions`, `calendar_event_attendees`, `calendar_rooms`, `calendar_reminders`, `user_calendar_settings`, `site_groups`, `site_links`, `wiki_categories`, `wiki_tags`, `wiki_pages`, `wiki_page_tags`, `wiki_page_task_items`, `wiki_page_tasks`, `wiki_attachments`
+`users`, `departments`, `login_attempts`, `auth_audit_logs`, `oauth_providers`, `user_oauth_accounts`, `oauth_states`, `password_reset_tokens`, `roles`, `role_permissions`, `user_roles`, `menus`, `role_menus`, `user_menus`, `todos`, `attendances`, `attendance_breaks`, `attendance_presets`, `tasks`, `task_time_entries`, `task_categories`, `task_list_items`, `daily_reports`, `logs`, `log_sources`, `log_source_paths`, `log_files`, `log_entries`, `presence_statuses`, `presence_logs`, `alerts`, `alert_rules`, `calendar_events`, `calendar_event_exceptions`, `calendar_event_attendees`, `calendar_rooms`, `calendar_reminders`, `user_calendar_settings`, `site_groups`, `site_links`, `wiki_categories`, `wiki_tags`, `wiki_pages`, `wiki_page_tags`, `wiki_page_task_items`, `wiki_page_tasks`, `wiki_attachments`
 
 ## Auth
 
@@ -111,7 +111,7 @@ alembic upgrade head
 - 設計書: @docs/spec_common_separation.md
 - フェーズ1（準備リファクタリング）: ✅ 完了
 - フェーズ2（portal_core パッケージ作成）: ✅ 完了
-- フェーズ3（テスト分離・安定化）: ✅ 完了（コア179テスト + アプリ584テスト = 763テスト）
+- フェーズ3（テスト分離・安定化）: ✅ 完了（コア244テスト + アプリ584テスト = 828テスト）
 - テンプレート重複解消: ✅ 完了（portal_core マスター化、アプリ側の重複5ファイル削除）
 - エントリーポイント: `main.py` → `PortalApp(config).setup_core()` → `register_*()` → `build()`
 - 後方互換: `app/` 配下に再エクスポートshimを配置、既存の `from app.xxx import` は全て動作継続
@@ -125,6 +125,6 @@ alembic upgrade head
 
 ## Alembic
 
-- Current head: `b7c8d9e0f1a2` (migrate_groups_to_departments)
-- Migration chain: initial(`53797f9c29e5`) → ... → groups(`f65f9288d390`) → auth_security(`01ac57c0d3d4`) → oauth(`460b1c6d8e8f`) → password_reset(`a943bf44ce3b`) → preferred_locale(`a5dceaeb239f`) → log_v2(`3c7419e092cb`) → log_source_paths(`b8f2a1c3d4e5`) → alert_on_change(`0d0894c74444`) → group_id(`c1a2b3d4e5f6`) → daily_report_backlog(`2509bc83417f`) → attendance_unique(`6ddf43a20423`) → site_links(`b3df810d3406`) → wiki_pages(`a1c2d3e4f5b6`) → wiki_task_links(`b2c3d4e5f6a7`) → wiki_content_to_markdown(`c3d4e5f6a7b8`) → wiki_attachments(`d4e5f6a7b8c9`) → add_indexes(`f8e8afae33a0`) → wiki_visibility(`4671c277afb4`) → add_departments(`8868b471d6cb`) → users_dept_id(`a9b8c7d6e5f4`) → migrate_groups_to_departments(`b7c8d9e0f1a2`)
+- Current head: `927e937218ac` (add_rbac_menu_id_indexes)
+- Migration chain: initial(`53797f9c29e5`) → ... → groups(`f65f9288d390`) → auth_security(`01ac57c0d3d4`) → oauth(`460b1c6d8e8f`) → password_reset(`a943bf44ce3b`) → preferred_locale(`a5dceaeb239f`) → log_v2(`3c7419e092cb`) → log_source_paths(`b8f2a1c3d4e5`) → alert_on_change(`0d0894c74444`) → group_id(`c1a2b3d4e5f6`) → daily_report_backlog(`2509bc83417f`) → attendance_unique(`6ddf43a20423`) → site_links(`b3df810d3406`) → wiki_pages(`a1c2d3e4f5b6`) → wiki_task_links(`b2c3d4e5f6a7`) → wiki_content_to_markdown(`c3d4e5f6a7b8`) → wiki_attachments(`d4e5f6a7b8c9`) → add_indexes(`f8e8afae33a0`) → wiki_visibility(`4671c277afb4`) → add_departments(`8868b471d6cb`) → users_dept_id(`a9b8c7d6e5f4`) → migrate_groups_to_departments(`b7c8d9e0f1a2`) → add_rbac_and_menus(`08089f89ae62`) → add_rbac_menu_id_indexes(`927e937218ac`)
 - `env.py` imports `portal_core.models` + `app.models`, reads `DATABASE_URL` from `app.config`

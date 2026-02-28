@@ -248,6 +248,31 @@
 |---------|------|------|----------------|------|
 | GET | `/api/attendance-presets/` | プリセット一覧取得 | 200 | 必要 |
 
+#### ロール管理 (`/api/roles`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/roles/` | ロール一覧 | 200 | 必要（admin） |
+| POST | `/api/roles/` | ロール作成 | 201 / 409 | 必要（admin） |
+| GET | `/api/roles/{id}` | ロール取得 | 200 / 404 | 必要（admin） |
+| PUT | `/api/roles/{id}` | ロール更新 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/roles/{id}` | ロール削除 | 204 / 404 | 必要（admin） |
+| PUT | `/api/roles/{id}/permissions` | ロール権限一括設定 | 200 / 404 | 必要（admin） |
+| GET | `/api/users/{user_id}/roles` | ユーザーロール一覧 | 200 | 必要（admin） |
+| POST | `/api/users/{user_id}/roles` | ユーザーロール付与 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/users/{user_id}/roles/{role_id}` | ユーザーロール剥奪 | 204 / 404 | 必要（admin） |
+
+#### メニュー管理 (`/api/menus`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/menus/` | メニュー一覧 | 200 | 必要（admin） |
+| GET | `/api/menus/my` | 自分のメニュー一覧 | 200 | 必要 |
+| POST | `/api/menus/` | メニュー作成 | 201 / 409 | 必要（admin） |
+| GET | `/api/menus/{id}` | メニュー取得 | 200 / 404 | 必要（admin） |
+| PUT | `/api/menus/{id}` | メニュー更新 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/menus/{id}` | メニュー削除 | 204 / 404 | 必要（admin） |
+
 #### OAuthプロバイダ管理 (`/api/admin/oauth-providers`)
 
 | メソッド | パス | 説明 | ステータスコード | 認証 |
@@ -320,6 +345,8 @@
 | GET | `/wiki/new` | Wiki新規ページ作成画面 |
 | GET | `/wiki/{slug}` | Wikiページ閲覧画面 |
 | GET | `/wiki/{slug}/edit` | Wikiページ編集画面 |
+| GET | `/roles` | ロール管理画面 |
+| GET | `/menus` | メニュー管理画面 |
 
 ### WebSocket エンドポイント
 
