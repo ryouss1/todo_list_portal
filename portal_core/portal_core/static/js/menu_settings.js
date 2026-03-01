@@ -56,16 +56,27 @@ const menuSettings = {
         for (const cb of checkboxes) {
             const menuId = parseInt(cb.dataset.menuId);
             const kino = cb.checked ? 1 : 0;
+            const existing = this._myVisibility[menuId];
+            // Skip if no change: no existing override and checked (default show), or override matches
+            if (existing === undefined && kino === 1) continue;
+            if (existing !== undefined && existing === kino) continue;
             updates.push(api.put('/api/menus/my-visibility', { menu_id: menuId, kino_kbn: kino }));
         }
-        await Promise.all(updates);
-        // Close modal and reload page to reflect changes
-        bootstrap.Modal.getInstance(document.getElementById('menuSettingsModal')).hide();
-        window.location.reload();
+        try {
+            await Promise.all(updates);
+            bootstrap.Modal.getInstance(document.getElementById('menuSettingsModal')).hide();
+            window.location.reload();
+        } catch (e) {
+            showToast('保存に失敗しました', 'danger');
+        }
     },
 
     async reset(menuId) {
-        await api.del(`/api/menus/my-visibility/${menuId}`);
-        await this.load();
+        try {
+            await api.del(`/api/menus/my-visibility/${menuId}`);
+            await this.load();
+        } catch (e) {
+            showToast('リセットに失敗しました', 'danger');
+        }
     },
 };
