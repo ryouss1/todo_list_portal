@@ -129,9 +129,13 @@
 {% block scripts %}
 <script>
 async function loadMenus() {
-  const resp = await api.get("/api/menus/");
-  if (!resp.ok) return;
-  const menus = await resp.json();
+  let menus;
+  try {
+    menus = await api.get("/api/menus/");
+  } catch (e) {
+    console.error("Failed to load menus:", e);
+    return;
+  }
   const tbody = document.getElementById("menusBody");
   tbody.innerHTML = menus.map(m => `
     <tr style="cursor:pointer" onclick="visibilityTab.selectMenu(${m.id})">
@@ -167,9 +171,13 @@ function openCreateMenuModal() {
 }
 
 async function editMenu(id) {
-  const resp = await api.get(`/api/menus/${id}`);
-  if (!resp.ok) return;
-  const m = await resp.json();
+  let m;
+  try {
+    m = await api.get(`/api/menus/${id}`);
+  } catch (e) {
+    console.error("Failed to load menu:", e);
+    return;
+  }
   document.getElementById("menuId").value = m.id;
   document.getElementById("menuName").value = m.name;
   document.getElementById("menuName").disabled = true;  // name is immutable
@@ -257,21 +265,26 @@ const visibilityTab = {
       user: `/api/menus/${this.currentMenuId}/user-visibility`,
     };
 
-    const r = await api.get(endpointMap[this.currentSubTab]);
-    if (!r.ok) { container.innerHTML = '<div class="text-danger">取得失敗</div>'; return; }
-    const rows = await r.json();
+    let rows;
+    try {
+      rows = await api.get(endpointMap[this.currentSubTab]);
+    } catch (e) {
+      container.innerHTML = '<div class="text-danger">取得失敗</div>';
+      return;
+    }
 
     // Fetch master list (roles / departments / users)
     let masterList = [];
-    if (this.currentSubTab === 'role') {
-      const mr = await api.get('/api/roles/');
-      masterList = mr.ok ? await mr.json() : [];
-    } else if (this.currentSubTab === 'dept') {
-      const mr = await api.get('/api/departments/');
-      masterList = mr.ok ? await mr.json() : [];
-    } else {
-      const mr = await api.get('/api/users/');
-      masterList = mr.ok ? await mr.json() : [];
+    try {
+      if (this.currentSubTab === 'role') {
+        masterList = await api.get('/api/roles/');
+      } else if (this.currentSubTab === 'dept') {
+        masterList = await api.get('/api/departments/');
+      } else {
+        masterList = await api.get('/api/users/');
+      }
+    } catch (e) {
+      masterList = [];
     }
 
     const idKey = this.currentSubTab === 'role' ? 'role_id'
