@@ -322,7 +322,12 @@ const visibilityTab = {
       user: `/api/menus/${this.currentMenuId}/user-visibility`,
     };
     const kino_kbn = checked ? 1 : 0;
-    await api.put(endpointMap[this.currentSubTab], { items: [{ id: entityId, kino_kbn }] });
+    try {
+      await api.put(endpointMap[this.currentSubTab], { items: [{ id: entityId, kino_kbn }] });
+    } catch (e) {
+      showToast('保存に失敗しました', 'danger');
+      await this.render();
+    }
   },
 };
 
