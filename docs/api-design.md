@@ -37,6 +37,9 @@
 | WikiPage | 全件閲覧可（認証必須） | 編集/削除:作成者のみ |
 | WikiCategory | 全件閲覧可（認証必須） | CUD:admin のみ |
 | WikiTag | 全件閲覧可（認証必須） | 作成:全認証ユーザー、削除:admin のみ |
+| Department | 全件閲覧可（認証必須）、アクティブのみは tree エンドポイント | CUD:admin のみ |
+| Role | admin のみ閲覧・操作可 | CUD:admin のみ |
+| Menu | 一覧:admin のみ、自分のメニュー:全認証ユーザー | CUD:admin のみ |
 
 ---
 
@@ -796,7 +799,7 @@ Todoの完了状態をトグルする。
 | email | string (EmailStr) | No | メールアドレス（admin のみ） |
 | role | string | No | ロール（admin のみ） |
 | is_active | boolean | No | 有効フラグ（admin のみ） |
-| group_id | integer | No | 所属グループID（admin のみ） |
+| department_id | integer | No | 所属部署ID（admin のみ） |
 | preferred_locale | string | No | 優先ロケール（"ja"/"en"、全ユーザー変更可） |
 
 - **レスポンス**: `200 OK` - `UserResponse`
@@ -850,8 +853,8 @@ Todoの完了状態をトグルする。
 | display_name | string | 表示名 |
 | role | string | ロール (admin/user) |
 | is_active | boolean | 有効フラグ |
-| group_id | integer \| null | 所属グループID |
-| group_name | string \| null | 所属グループ名 |
+| department_id | integer \| null | 所属部署ID |
+| department_name | string \| null | 所属部署名 |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime \| null | 更新日時 |
 
@@ -1000,7 +1003,7 @@ Todoの完了状態をトグルする。
 |------------|-----|-----------|------|
 | period | string | "weekly" | 期間 ("daily" / "weekly" / "monthly") |
 | ref_date | date | 当日 | 基準日 |
-| group_id | integer | null | グループIDフィルタ（任意） |
+| department_id | integer | null | 部署IDフィルタ（任意） |
 
 - **レスポンス**: `200 OK` - `BusinessSummaryResponse`
 
@@ -1051,7 +1054,7 @@ Todoの完了状態をトグルする。
 | フィールド | 型 | 必須 | デフォルト | 説明 |
 |------------|-----|------|-----------|------|
 | name | string | Yes | - | ソース名 |
-| group_id | integer | Yes | - | グループID |
+| department_id | integer | Yes | - | 部署ID |
 | access_method | string | Yes | - | 接続方式（"ftp" または "smb"） |
 | host | string | Yes | - | 接続先ホスト名/IP |
 | port | integer | No | null | ポート番号（未指定時はプロトコルデフォルト） |
@@ -1186,8 +1189,8 @@ Todoの完了状態をトグルする。
 |------------|-----|------|
 | id | integer | ソースID |
 | name | string | ソース名 |
-| group_id | integer | グループID |
-| group_name | string | グループ名 |
+| department_id | integer | 部署ID |
+| department_name | string | 部署名 |
 | access_method | string | 接続方式（ftp/smb） |
 | host | string | 接続先ホスト名/IP |
 | port | integer \| null | ポート番号 |
@@ -1217,8 +1220,8 @@ Todoの完了状態をトグルする。
 |------------|-----|------|
 | id | integer | ソースID |
 | name | string | ソース名 |
-| group_id | integer | グループID |
-| group_name | string | グループ名 |
+| department_id | integer | 部署ID |
+| department_name | string | 部署名 |
 | access_method | string | 接続方式（ftp/smb） |
 | host | string | 接続先ホスト名/IP |
 | source_type | string | ソース種別 |
@@ -1268,6 +1271,44 @@ Todoの完了状態をトグルする。
 | status | string | ステータス |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime | 更新日時 |
+
+### GET /api/log-sources/{id}/entries
+ログエントリを検索する。カーソルベースのページネーション対応。`collection_mode=full_import` のソースのみエントリが存在する。
+
+- **クエリパラメータ**:
+
+| パラメータ | 型 | デフォルト | 説明 |
+|------------|-----|-----------|------|
+| file_id | integer | null | ファイルIDフィルタ |
+| severity | string | null | 重要度フィルタ（INFO/WARNING/ERROR/CRITICAL/DEBUG） |
+| keyword | string | null | メッセージ部分一致フィルタ |
+| from_date | datetime | null | 取込日時の開始フィルタ |
+| to_date | datetime | null | 取込日時の終了フィルタ |
+| after_id | integer | 0 | カーソル（このID以降のエントリを取得） |
+| limit | integer | 100 | 取得件数上限 |
+
+- **レスポンス**: `200 OK` - `LogEntrySearchResponse`
+- **エラー**: `404 Not Found`
+
+### LogEntryResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | エントリID |
+| file_id | integer | ファイルID |
+| line_number | integer | 行番号 |
+| severity | string | 重要度 |
+| message | string | メッセージ |
+| received_at | datetime | 取込日時 |
+
+### LogEntrySearchResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| entries | LogEntryResponse[] | エントリ一覧 |
+| total_count | integer | 条件一致の総件数 |
+| has_more | boolean | 次ページがあるか |
+| next_cursor | string \| null | 次ページ取得用カーソル（`after_id` に使用） |
 
 ---
 
@@ -1920,7 +1961,18 @@ Wikiページを別の親の下に移動する（作成者のみ）。
 
 ---
 
-## 24. Roles API (`/api/roles`)
+## 24. Wiki タスクアイテム逆引き API (`/api/wiki/task-items`)
+
+### GET /api/wiki/task-items/{task_item_id}/pages
+タスクリストアイテムに紐づくWikiページ一覧を取得する。閲覧権限のないページは除外される。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `WikiPageResponse[]`
+- **エラー**: `404 Not Found` - タスクリストアイテムが存在しない
+
+---
+
+## 25. Roles API (`/api/roles`)
 
 ### GET /api/roles/
 ロール一覧を取得する。
@@ -2026,7 +2078,7 @@ Wikiページを別の親の下に移動する（作成者のみ）。
 
 ---
 
-## 25. Menus API (`/api/menus`)
+## 26. Menus API (`/api/menus`)
 
 ### GET /api/menus/
 メニュー一覧を取得する。
@@ -2083,6 +2135,72 @@ Wikiページを別の親の下に移動する（作成者のみ）。
 - **レスポンス**: `204 No Content`
 - **エラー**: `404 Not Found`
 
+### GET /api/menus/{id}/role-visibility
+ロール別メニュー表示設定一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `RoleVisibilityEntry[]`
+- **エラー**: `404 Not Found`
+
+### PUT /api/menus/{id}/role-visibility
+ロール別メニュー表示設定を一括更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `VisibilityBatchUpdate` (`{"items": [{"id": role_id, "kino_kbn": int}]}`)
+- **レスポンス**: `200 OK` - `RoleVisibilityEntry[]`
+- **副作用**: 全ユーザーのナビキャッシュを即時無効化
+
+### GET /api/menus/{id}/department-visibility
+部署別メニュー表示設定一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `DepartmentVisibilityEntry[]`
+- **エラー**: `404 Not Found`
+
+### PUT /api/menus/{id}/department-visibility
+部署別メニュー表示設定を一括更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `VisibilityBatchUpdate` (`{"items": [{"id": department_id, "kino_kbn": int}]}`)
+- **レスポンス**: `200 OK` - `DepartmentVisibilityEntry[]`
+- **副作用**: 全ユーザーのナビキャッシュを即時無効化
+
+### GET /api/menus/{id}/user-visibility
+ユーザー別メニュー表示設定一覧を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `UserVisibilityEntry[]`
+- **エラー**: `404 Not Found`
+
+### PUT /api/menus/{id}/user-visibility
+ユーザー別メニュー表示設定を一括更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `VisibilityBatchUpdate` (`{"items": [{"id": user_id, "kino_kbn": int}]}`)
+- **レスポンス**: `200 OK` - `UserVisibilityEntry[]`
+- **副作用**: 指定ユーザーのナビキャッシュを即時無効化
+
+### GET /api/menus/my-visibility
+自分のメニュー表示設定一覧を取得する。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `MyVisibilityEntry[]`
+
+### PUT /api/menus/my-visibility
+自分のメニュー表示設定を更新する（自己サービス）。
+
+- **権限**: 認証済みユーザー
+- **リクエストボディ**: `MyVisibilityUpdate` (`{"menu_id": int, "kino_kbn": int}`)
+- **レスポンス**: `200 OK` - `MyVisibilityEntry`
+- **副作用**: 自分のナビキャッシュを即時無効化
+
+### DELETE /api/menus/my-visibility/{menu_id}
+自分のメニュー表示設定をリセットする（部署/ロール設定にフォールバック）。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `204 No Content`
+- **副作用**: 自分のナビキャッシュを即時無効化
+
 ### MenuResponse スキーマ
 
 | フィールド | 型 | 説明 |
@@ -2100,3 +2218,101 @@ Wikiページを別の親の下に移動する（作成者のみ）。
 | required_action | string \| null | 必要アクション権限 |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime \| null | 更新日時 |
+
+---
+
+## 27. 部署管理 API (`/api/departments`)
+
+### GET /api/departments/tree
+アクティブな部署一覧を取得する（`is_active=true` のみ）。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `DepartmentResponse[]`
+
+### GET /api/departments/
+全部署一覧を取得する（非アクティブ含む）。
+
+- **権限**: 認証済みユーザー
+- **レスポンス**: `200 OK` - `DepartmentResponse[]`
+
+### POST /api/departments/
+部署を作成する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `DepartmentCreate`
+
+| フィールド | 型 | 必須 | デフォルト | 説明 |
+|------------|-----|------|-----------|------|
+| name | string | Yes | - | 部署名 |
+| code | string | No | null | 部署コード |
+| description | string | No | null | 説明 |
+| parent_id | integer | No | null | 親部署ID |
+| sort_order | integer | No | 0 | 表示順 |
+| is_active | boolean | No | true | 有効フラグ |
+
+- **レスポンス**: `201 Created` - `DepartmentResponse`
+- **エラー**: `400 Bad Request` - 名前重複
+
+### PUT /api/departments/{id}
+部署を更新する。
+
+- **権限**: admin のみ
+- **リクエストボディ**: `DepartmentUpdate`（全フィールド任意）
+- **レスポンス**: `200 OK` - `DepartmentResponse`
+- **エラー**: `404 Not Found`
+
+### DELETE /api/departments/{id}
+部署を削除する。所属ユーザーの `department_id` は NULL に設定される。
+
+- **権限**: admin のみ
+- **レスポンス**: `204 No Content`
+- **エラー**: `404 Not Found`
+
+### DepartmentResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | integer | 部署ID |
+| name | string | 部署名 |
+| code | string \| null | 部署コード |
+| description | string \| null | 説明 |
+| parent_id | integer \| null | 親部署ID |
+| sort_order | integer | 表示順 |
+| is_active | boolean | 有効フラグ |
+| member_count | integer | 所属メンバー数 |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime \| null | 更新日時 |
+
+---
+
+## 28. バックグラウンドジョブ API (`/api/jobs`)
+
+### GET /api/jobs/status
+バックグラウンドジョブの稼働状況を取得する。
+
+- **権限**: admin のみ
+- **レスポンス**: `200 OK` - `JobStatusResponse`
+
+### POST /api/jobs/{name}/restart
+指定したバックグラウンドジョブを再起動する。
+
+- **権限**: admin のみ
+- **パスパラメータ**: `name` — ジョブ名（`log_scanner` / `site_checker` / `reminder_checker`）
+- **レスポンス**: `200 OK` - `{"detail": "Job {name} restarted"}`
+- **エラー**: `404 Not Found` - 不明なジョブ名
+
+### JobStatusResponse スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| log_scanner | JobInfo | ログスキャナー状態 |
+| site_checker | JobInfo | サイトチェッカー状態 |
+| reminder_checker | JobInfo | リマインダーチェッカー状態 |
+
+### JobInfo スキーマ
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| enabled | boolean | 有効フラグ（環境変数で制御） |
+| running | boolean | 現在稼働中かどうか |
+| last_run | datetime \| null | 最終実行日時 |

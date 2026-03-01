@@ -111,15 +111,6 @@
 | PUT | `/api/users/{id}/password` | パスワード強制リセット | 200 | 必要（admin） |
 | POST | `/api/users/{id}/unlock` | アカウントアンロック | 200 / 404 | 必要（admin） |
 
-#### グループ (`/api/groups`)
-
-| メソッド | パス | 説明 | ステータスコード | 認証 |
-|---------|------|------|----------------|------|
-| GET | `/api/groups/` | グループ一覧取得 | 200 | 必要 |
-| POST | `/api/groups/` | グループ作成 | 201 / 400 | 必要（admin） |
-| PUT | `/api/groups/{id}` | グループ更新 | 200 / 400 / 404 | 必要（admin） |
-| DELETE | `/api/groups/{id}` | グループ削除 | 204 / 404 | 必要（admin） |
-
 #### 在籍 (`/api/presence`)
 
 | メソッド | パス | 説明 | ステータスコード | 認証 |
@@ -160,6 +151,7 @@
 | POST | `/api/log-sources/{id}/scan` | ソーススキャン実行 | 200 / 404 | 必要（admin） |
 | POST | `/api/log-sources/{id}/re-read` | コンテンツ再読込 | 200 / 404 | 必要（admin） |
 | GET | `/api/log-sources/{id}/files` | ファイル一覧 | 200 / 404 | 必要 |
+| GET | `/api/log-sources/{id}/entries` | ログエントリ検索 | 200 / 404 | 必要 |
 
 #### アラート (`/api/alerts`)
 
@@ -248,6 +240,16 @@
 |---------|------|------|----------------|------|
 | GET | `/api/attendance-presets/` | プリセット一覧取得 | 200 | 必要 |
 
+#### 部署管理 (`/api/departments`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/departments/tree` | アクティブ部署ツリー取得 | 200 | 必要 |
+| GET | `/api/departments/` | 全部署一覧取得 | 200 | 必要 |
+| POST | `/api/departments/` | 部署作成 | 201 / 400 | 必要（admin） |
+| PUT | `/api/departments/{id}` | 部署更新 | 200 / 404 | 必要（admin） |
+| DELETE | `/api/departments/{id}` | 部署削除 | 204 / 404 | 必要（admin） |
+
 #### ロール管理 (`/api/roles`)
 
 | メソッド | パス | 説明 | ステータスコード | 認証 |
@@ -272,6 +274,15 @@
 | GET | `/api/menus/{id}` | メニュー取得 | 200 / 404 | 必要（admin） |
 | PUT | `/api/menus/{id}` | メニュー更新 | 200 / 404 | 必要（admin） |
 | DELETE | `/api/menus/{id}` | メニュー削除 | 204 / 404 | 必要（admin） |
+| GET | `/api/menus/{id}/role-visibility` | ロール別表示設定一覧 | 200 / 404 | 必要（admin） |
+| PUT | `/api/menus/{id}/role-visibility` | ロール別表示設定一括更新 | 200 | 必要（admin） |
+| GET | `/api/menus/{id}/department-visibility` | 部署別表示設定一覧 | 200 / 404 | 必要（admin） |
+| PUT | `/api/menus/{id}/department-visibility` | 部署別表示設定一括更新 | 200 | 必要（admin） |
+| GET | `/api/menus/{id}/user-visibility` | ユーザー別表示設定一覧 | 200 / 404 | 必要（admin） |
+| PUT | `/api/menus/{id}/user-visibility` | ユーザー別表示設定一括更新 | 200 | 必要（admin） |
+| GET | `/api/menus/my-visibility` | 自分の表示設定一覧 | 200 | 必要 |
+| PUT | `/api/menus/my-visibility` | 自分の表示設定更新 | 200 | 必要 |
+| DELETE | `/api/menus/my-visibility/{menu_id}` | 自分の表示設定リセット | 204 | 必要 |
 
 #### OAuthプロバイダ管理 (`/api/admin/oauth-providers`)
 
@@ -316,6 +327,19 @@
 | PUT | `/api/wiki/pages/{id}/tasks/task-items` | タスクリストアイテムリンク一括更新 | 200 / 403 / 404 | 必要 |
 | POST | `/api/wiki/pages/{id}/tasks/{task_id}` | タスクリンク追加 | 204 / 403 / 404 | 必要 |
 | DELETE | `/api/wiki/pages/{id}/tasks/{task_id}` | タスクリンク解除 | 204 / 403 / 404 | 必要 |
+
+#### Wiki タスクアイテム逆引き (`/api/wiki/task-items`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/wiki/task-items/{task_item_id}/pages` | タスクリストアイテムに紐づくWikiページ一覧 | 200 / 404 | 必要 |
+
+#### バックグラウンドジョブ (`/api/jobs`)
+
+| メソッド | パス | 説明 | ステータスコード | 認証 |
+|---------|------|------|----------------|------|
+| GET | `/api/jobs/status` | ジョブ稼働状況取得 | 200 | 必要（admin） |
+| POST | `/api/jobs/{name}/restart` | ジョブ再起動 | 200 / 404 | 必要（admin） |
 
 ---
 
