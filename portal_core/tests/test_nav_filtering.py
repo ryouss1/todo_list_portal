@@ -95,3 +95,58 @@ def test_unauthenticated_user_page_renders(raw_client):
     """Unauthenticated users can access the login page without errors."""
     r = raw_client.get("/login")
     assert r.status_code == 200
+
+
+def test_role_menu_reflected_in_nav(client_user2):
+    """role_menus kino_kbn=1 makes the nav item visible for a role member."""
+    with (
+        patch(
+            "portal_core.app_factory.get_menus",
+            return_value=[_mock_menu("/"), _mock_menu("/users")],
+        ),
+        patch(
+            "portal_core.app_factory.get_visible_menus_for_user",
+            return_value=[_mock_menu("/"), _mock_menu("/users")],
+        ),
+    ):
+        r = client_user2.get("/")
+
+    assert r.status_code == 200
+    assert 'href="/users"' in r.text
+
+
+def test_department_menu_reflected_in_nav(client_user2):
+    """department_menus kino_kbn=1 makes the nav item visible for dept members."""
+    with (
+        patch(
+            "portal_core.app_factory.get_menus",
+            return_value=[_mock_menu("/"), _mock_menu("/users")],
+        ),
+        patch(
+            "portal_core.app_factory.get_visible_menus_for_user",
+            return_value=[_mock_menu("/"), _mock_menu("/users")],
+        ),
+    ):
+        r = client_user2.get("/")
+
+    assert r.status_code == 200
+    assert 'href="/users"' in r.text
+
+
+def test_user_override_hide_reflected_in_nav(client_user2):
+    """user_menus kino_kbn=0 hides nav item even if role allows it."""
+    with (
+        patch(
+            "portal_core.app_factory.get_menus",
+            return_value=[_mock_menu("/"), _mock_menu("/users")],
+        ),
+        patch(
+            "portal_core.app_factory.get_visible_menus_for_user",
+            return_value=[_mock_menu("/")],  # /users excluded by user override
+        ),
+    ):
+        r = client_user2.get("/")
+
+    assert r.status_code == 200
+    assert 'href="/"' in r.text
+    assert 'href="/users"' not in r.text
