@@ -42,6 +42,9 @@
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#passwordChangeModal">
                                 <i class="bi bi-key"></i> {{ _("Change Password") }}
                             </a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#menuSettingsModal">
+                                <i class="bi bi-toggles"></i> {{ _("Menu Settings") }}
+                            </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" onclick="changeLocale('ja')">
                                 <i class="bi bi-translate"></i> 日本語
@@ -91,6 +94,25 @@
         </div>
     </div>
 
+    <!-- Menu Settings Modal (global) -->
+    <div class="modal fade" id="menuSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content modal-styled">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-toggles"></i> {{ _("Menu Settings") }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-2 px-3" id="menuSettingsBody">
+                    <div class="text-muted small">読み込み中...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _("Cancel") }}</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="menuSettings.save()">{{ _("Save") }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container-fluid mt-3">
         {% block content %}{% endblock %}
     </div>
@@ -99,6 +121,7 @@
     <script src="/static/core/js/common.js"></script>
     <script src="/static/core/js/i18n.js"></script>
     <script src="/static/core/js/api.js?v=2"></script>
+    <script src="/static/core/js/menu_settings.js"></script>
     {% for script_path in extra_head_scripts|default([]) %}
     <script src="{{ script_path }}"></script>
     {% endfor %}
@@ -143,6 +166,10 @@
             location.reload();
         } catch(e) { console.error(e); }
     }
+
+    document.getElementById('menuSettingsModal').addEventListener('show.bs.modal', () => {
+        menuSettings.load();
+    });
 
     async function changeMyPassword() {
         const current = document.getElementById('pw-current').value;
